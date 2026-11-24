@@ -38,6 +38,8 @@
 #define PF_MASK 0x20
 
 BYTE colvect[256];
+static BYTE collision_table[64];
+static unsigned collision_ready;
 
 
 /* Resets the collision registers of the tia */
@@ -46,44 +48,44 @@ void reset_collisions(void)
 	int i;
 	for(i=CXM0P; i<INPT0; i++)
 	tiaRead[i]=0;
+	if(!collision_ready) {
+		int object;
+		for(object=0;object<64;++object) {
+			BYTE result=0;
+			if((object&ML0_MASK)&&(object&PL1_MASK))result|=0x01;
+			if((object&ML0_MASK)&&(object&PL0_MASK))result|=0x02;
+			if((object&ML1_MASK)&&(object&PL0_MASK))result|=0x04;
+			if((object&ML1_MASK)&&(object&PL1_MASK))result|=0x08;
+			if((object&PL0_MASK)&&(object&PF_MASK))result|=0x10;
+			if((object&PL0_MASK)&&(object&BL_MASK))result|=0x20;
+			if((object&PL1_MASK)&&(object&PF_MASK))result|=0x40;
+			if((object&PL1_MASK)&&(object&BL_MASK))result|=0x80;
+			collision_table[object]=result;
+		}
+		collision_ready=1;
+	}
 }
 
 
 /* Does collision testing on the pixel b */
 void set_collisions(BYTE b)
 {
-	/* unfortunately this needs to be run for every pixel! */
-	/* C'est trez slow */
-	if( (b & ML0_MASK) && (b & PL1_MASK) )
-	tiaRead[CXM0P]|=0x80;
-	if( (b & ML0_MASK) && (b & PL0_MASK) )
-	tiaRead[CXM0P]|=0x40;
-	if( (b & ML1_MASK) && (b & PL0_MASK) )
-	tiaRead[CXM1P]|=0x80;
-	if( (b & ML1_MASK) && (b & PL1_MASK) )
-	tiaRead[CXM1P]|=0x40;
-	if( (b & PL0_MASK) && (b & PF_MASK) )
-	tiaRead[CXP0FB]|=0x80;
-	if( (b & PL0_MASK) && (b & BL_MASK) )
-	tiaRead[CXP0FB]|=0x40;
-	if( (b & PL1_MASK) && (b & PF_MASK) )
-	tiaRead[CXP1FB]|=0x80;
-	if( (b & PL1_MASK) && (b & BL_MASK) )
-	tiaRead[CXP1FB]|=0x40;
-	if( (b & ML0_MASK) && (b & PF_MASK) )
-	tiaRead[CXM0FB]|=0x80;
-	if( (b & ML0_MASK) && (b & BL_MASK) )
-	tiaRead[CXM0FB]|=0x40;
-	if( (b & ML1_MASK) && (b & PF_MASK) )
-	tiaRead[CXM1FB]|=0x80;
-	if( (b & ML1_MASK) && (b & BL_MASK) )
-	tiaRead[CXM1FB]|=0x40;
-	if( (b & BL_MASK) && (b & PF_MASK) )
-	tiaRead[CXBLPF]|=0x80;
-	if( (b & PL0_MASK) && (b & PL1_MASK) )
-	tiaRead[CXPPMM]|=0x80;
-	if( (b & ML0_MASK) && (b & ML1_MASK) )
-	tiaRead[CXPPMM]|=0x40;
+	BYTE p=collision_table[b&63];
+	tiaRead[CXM0P]|=(p&0x01)?0x80:0;
+	tiaRead[CXM0P]|=(p&0x02)?0x40:0;
+	tiaRead[CXM1P]|=(p&0x04)?0x80:0;
+	tiaRead[CXM1P]|=(p&0x08)?0x40:0;
+	tiaRead[CXP0FB]|=(p&0x10)?0x80:0;
+	tiaRead[CXP0FB]|=(p&0x20)?0x40:0;
+	tiaRead[CXP1FB]|=(p&0x40)?0x80:0;
+	tiaRead[CXP1FB]|=(p&0x80)?0x40:0;
+	if((b&ML0_MASK)&&(b&PF_MASK))tiaRead[CXM0FB]|=0x80;
+	if((b&ML0_MASK)&&(b&BL_MASK))tiaRead[CXM0FB]|=0x40;
+	if((b&ML1_MASK)&&(b&PF_MASK))tiaRead[CXM1FB]|=0x80;
+	if((b&ML1_MASK)&&(b&BL_MASK))tiaRead[CXM1FB]|=0x40;
+	if((b&BL_MASK)&&(b&PF_MASK))tiaRead[CXBLPF]|=0x80;
+	if((b&PL0_MASK)&&(b&PL1_MASK))tiaRead[CXPPMM]|=0x80;
+	if((b&ML0_MASK)&&(b&ML1_MASK))tiaRead[CXPPMM]|=0x40;
 }
 
 
