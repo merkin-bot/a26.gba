@@ -46,7 +46,7 @@
       "artifact": "SuperFW Chis build",
       "source": "superfw/",
       "firmware_sha256": "7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24",
-      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; native menu scenes 1,2,3,5-14 and Chis NOR scenes 16-19 passed; A26 runner host-tests Chis NOR register writes and matching selected-ROM run reaches 0x0800788A with 2,000-frame hash E6AFE00D3895221D; NOR/page backing and physical SD behavior remain unverified"
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; native menu scenes 1,2,3,5-14 and Chis NOR scenes 16-19 passed; A26 runner host-tests Build769 NOR-map write transcript and matching selected-ROM run reaches 0x0800788A with 2,000-frame hash E6AFE00D3895221D. NOR/SRAM mapping is not modeled: Build769 register sequences conflict with pinned ChisBread CPLD source; board-revision equivalence and physical behavior are unverified"
     },
     {
       "id": "supercard-sd",
@@ -111,7 +111,7 @@
       "sd_data": "The conditional read path shares Lite's 0x09200000 block port; writes use the 0x09000000/0x0B000000 serial register path",
       "flash_difference": "rom_boot.S programs eight NOR map entries using three writes (0xA55A twice, then 0x100 | map value); Chis also assigns mode bit 3 to SRAM bank selection"
     },
-    "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Host tests cover SD read port windows/lane packing, SD/Chis serial writes, and Chis NOR map register sequencing. Clean matching Build769 selected-ROM runs reach plugin code for all three boards: Lite/Chis at 0x0800788A with hash E6AFE00D3895221D; SD at pl_normal (0x080062A2) with hash C321C3B99B2E799D in two independent runs. Different kernel states are unsynchronized. Chis NOR backing/page mapping and SRAM banking remain unmodeled; no profile is hardware-qualified."
+    "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Host tests cover SD read port windows/lane packing, SD/Chis serial writes, and the Build769 Chis NOR-map write transcript. Clean matching Build769 selected-ROM runs reach plugin code for all three boards: Lite/Chis at 0x0800788A with hash E6AFE00D3895221D; SD at pl_normal (0x080062A2) with hash C321C3B99B2E799D in two independent runs. Different kernel states are unsynchronized. Chis NOR/SRAM mappings remain unmodeled because Build769 register expectations conflict with pinned ChisBread CPLD source; board-revision equivalence is UNVERIFIED. No profile is hardware-qualified."
   },
   "verification": "profile inventory and launch test reuse are source-level only until recorded per-session results; do not infer hardware compatibility from mGBA"
 }
