@@ -35,7 +35,7 @@
       "source_commit": "9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278",
       "artifact": "ezbluekernel.bin",
       "source": "ezfblue/",
-      "status": "published pre-release, hardware-untested; harness fixture validation pending"
+      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); release is hardware-untested and physical SD behavior unverified"
     },
     {
       "id": "supercard-chis",
