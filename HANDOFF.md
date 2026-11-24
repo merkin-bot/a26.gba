@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** StellaDS permission documented; TIA polynomial lookup/masked-counter optimization passes host and cold-boot tests.
+- **Doing now:** StellaDS permission documented; TIA polynomial and collision lookup optimizations pass host/cold-boot/frame tests.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `d9a5e10`
+- **Last pushed commit:** `d4c4af5`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
