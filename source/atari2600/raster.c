@@ -639,21 +639,27 @@ static void update_registers(void)
 	int i,num;
 
 	/* Playfield */
-	for(i=0 ; i < pf_change_count[0]; i++)
-	use_pfraster_change( &pf[0], &pf_change[0][i]);
-	pf_change_count[0]=0;
+		if(pf_change_count[0]) {
+			for(i=0 ; i < pf_change_count[0]; i++)
+			use_pfraster_change( &pf[0], &pf_change[0][i]);
+			pf_change_count[0]=0;
+		}
 
 	/* Player graphics */
 	for(num=0; num < 2; num ++) {
-	for(i=0 ; i < pl_change_count[num]; i++)
-		use_plraster_change( &pl[num], &pl_change[num][i]);
-		pl_change_count[num]=0;
+		if(pl_change_count[num]) {
+			for(i=0 ; i < pl_change_count[num]; i++)
+			use_plraster_change( &pl[num], &pl_change[num][i]);
+			pl_change_count[num]=0;
+		}
 	}
 
 	/* Unified */
-	for(i=0; i < unified_count; i++)
-	use_unified_change(&unified[i]);
-	unified_count=0;
+	if(unified_count) {
+		for(i=0; i< unified_count; i++)
+		use_unified_change(&unified[i]);
+		unified_count=0;
+	}
 }
 
 
