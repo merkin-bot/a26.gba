@@ -46,7 +46,7 @@
       "artifact": "SuperFW Chis build",
       "source": "superfw/",
       "firmware_sha256": "7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24",
-      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; native menu scenes 1,2,3,5-14 and Chis NOR scenes 16-19 passed; virtual SRAM only, physical SD behavior unverified"
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; native menu scenes 1,2,3,5-14 and Chis NOR scenes 16-19 passed; common SDRAM fetch mapping is source-supported; Chis NOR/page map and physical SD behavior remain unverified"
     },
     {
       "id": "supercard-sd",
@@ -57,7 +57,7 @@
       "artifact": "SuperFW SD build",
       "source": "superfw/",
       "firmware_sha256": "89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf",
-      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; virtual SRAM only, physical SD behavior unverified"
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; common SDRAM fetch mapping is source-supported; its 0x09100000/0x0B100000 read stream is not yet implemented in the A26 runner; physical SD behavior unverified"
     },
     {
       "id": "supercard-lite",
@@ -68,7 +68,7 @@
       "artifact": "SuperFW Lite build",
       "source": "superfw/",
       "firmware_sha256": "476e9d5fef4b07cc2b3a59476bae7692ea7405ab41fb92166489778b5a48c283",
-      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; virtual SRAM only, physical SD behavior unverified"
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; Lite 0x09200000 data port is source-shaped in the A26 runner; common SDRAM fetch mapping is source-supported; physical SD behavior unverified"
     }
   ],
   "mGBA_upstream": {
@@ -83,6 +83,35 @@
       "ezfblue/scripts/test-native-launch-mgba.sh"
     ],
     "coverage": "Real selected kernel launcher/path/metadata functions and UI execute in mGBA; save, FAT block transfer, patch, cartridge page/bank changes and physical boot effects are fixture boundaries/mocks. These are not full card+SD emulations."
+  },
+  "superfw_build769_source_audit": {
+    "common": {
+      "source_files": [
+        "superfw/rom_boot.S",
+        "superfw/src/supercard_driver.c",
+        "superfw/src/loader.c",
+        "superfw/src/supercard_io.S"
+      ],
+      "mode_register": "0x09FFFFFE; write_supercard_mode sends 0xA55A twice followed by mode bits twice",
+      "mode_bits": "bit 0 selects SDRAM versus firmware/flash; bit 1 enables the SD interface; bit 2 controls SDRAM write access",
+      "boot_fetch": "rom_boot.S copies the first 1 KiB from GAMEPAK_BASEADDR 0x08000000 to 0x03800000, then executes the copied bytes; plugin launch writes the plugin/game to GBA_ROM_ADDR 0x08000000 and launches after selecting SDRAM mode",
+      "evidence_scope": "DSSMM Build769 source only; physical card mapping and timing UNVERIFIED"
+    },
+    "supercard_sd": {
+      "build_define": "SUPERCARD_FLASH_ADDRPERM",
+      "sd_read": "The non-Lite, non-Chis path streams sector data from 0x09100000 or 0x0B100000; writes use 0x09000000 or 0x0B000000",
+      "flash_difference": "Internal flash address permutation is applied by flash.c; it does not change the source-described SDRAM mode bit"
+    },
+    "supercard_lite": {
+      "build_define": "SUPERCARD_LITE_IO",
+      "sd_data": "Reads and writes use 32-bit block port 0x09200000; source comments state the cart clocks data and requires slower waitstates"
+    },
+    "supercard_chis": {
+      "build_define": "SUPERCHIS_IO",
+      "sd_data": "The conditional read path shares Lite's 0x09200000 block port; writes use the 0x09000000/0x0B000000 serial register path",
+      "flash_difference": "rom_boot.S programs eight NOR map entries using three writes (0xA55A twice, then 0x100 | map value); Chis also assigns mode bit 3 to SRAM bank selection"
+    },
+    "runner_status": "The current A26 runner selects no board profile. Its image-backed SD model covers the Lite Build769 path. Reusing it for Chis/SD requires explicit board selection and the source-specific NOR/read-port behavior; no profile is fully hardware-qualified."
   },
   "verification": "profile inventory and launch test reuse are source-level only until recorded per-session results; do not infer hardware compatibility from mGBA"
 }
