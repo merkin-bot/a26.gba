@@ -1,30 +1,43 @@
 #include "supercard_model.h"
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
 #define SC_MODE_REG 0x09FFFFFEu
 #define SC_MAGIC 0xA55Au
 
-static int s_magic;
-
 void supercard_reset(SuperCardModel *model) {
     model->mode = SUPERCARD_MODE_FIRMWARE;
     model->sd_interface = 0;
     model->write_access = 0;
-    s_magic = 0;
+    model->mode_magic_writes = 0;
+    model->mode_value_writes = 0;
+    model->pending_mode = 0;
 }
 
 int supercard_write(SuperCardModel *model, uint32_t address, uint16_t value) {
     if (address != SC_MODE_REG)
         return 0;
-    if (s_magic) {
-        s_magic = 0;
-        model->mode = (value & 1u) ? SUPERCARD_MODE_SDRAM : SUPERCARD_MODE_FIRMWARE;
-        model->sd_interface = (value & 2u) != 0;
-        model->write_access = (value & 4u) != 0;
+    if (model->mode_magic_writes < 2 && value == SC_MAGIC) {
+        ++model->mode_magic_writes;
+        model->mode_value_writes = 0;
         return 1;
     }
-    s_magic = value == SC_MAGIC;
+    if (model->mode_magic_writes == 2) {
+        if (model->mode_value_writes == 0) {
+            model->pending_mode = value;
+            model->mode_value_writes = 1;
+            return 1;
+        }
+        if (model->mode_value_writes == 1 && value == model->pending_mode) {
+            model->mode = (value & 1u) ? SUPERCARD_MODE_SDRAM : SUPERCARD_MODE_FIRMWARE;
+            model->sd_interface = (value & 2u) != 0;
+            model->write_access = (value & 4u) != 0;
+        }
+    }
+    model->mode_magic_writes = value == SC_MAGIC ? 1u : 0u;
+    model->mode_value_writes = 0;
+    model->pending_mode = 0;
     return 1;
 }
 
@@ -39,7 +52,8 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
 
 void supercard_set_payload(SuperCardModel *model, uint32_t offset,
                            const uint8_t *data, size_t size) {
-    if (!model->sdram || offset > model->sdram_size)
+    if (!model->sdram || (!data && size) || model->mode != SUPERCARD_MODE_SDRAM ||
+        !model->write_access || offset > model->sdram_size)
         return;
     size_t available = model->sdram_size - offset;
     if (size > available)
@@ -49,13 +63,15 @@ void supercard_set_payload(SuperCardModel *model, uint32_t offset,
 
 int supercard_sd_read(SuperCardModel *model, uint32_t lba,
                       uint8_t *buffer, size_t blocks) {
-    if (!model->sd_path || !buffer)
+    if (!model->sd_path || !buffer || !model->sd_interface || blocks > SIZE_MAX / 512u)
         return 0;
     FILE *file = fopen(model->sd_path, "rb");
     if (!file)
         return 0;
     size_t bytes = blocks * 512u;
-    if (fseek(file, (long)lba * 512l, SEEK_SET) != 0) {
+    uint64_t offset = (uint64_t)lba * 512u;
+    if (offset > LONG_MAX || bytes > (uint64_t)LONG_MAX - offset ||
+        fseek(file, (long)offset, SEEK_SET) != 0) {
         fclose(file);
         return 0;
     }
@@ -66,13 +82,16 @@ int supercard_sd_read(SuperCardModel *model, uint32_t lba,
 
 int supercard_sd_write(SuperCardModel *model, uint32_t lba,
                        const uint8_t *buffer, size_t blocks) {
-    if (!model->sd_path || !buffer)
+    if (!model->sd_path || !buffer || !model->sd_interface || !model->write_access ||
+        blocks > SIZE_MAX / 512u)
         return 0;
     FILE *file = fopen(model->sd_path, "r+b");
     if (!file)
         return 0;
     size_t bytes = blocks * 512u;
-    if (fseek(file, (long)lba * 512l, SEEK_SET) != 0) {
+    uint64_t offset = (uint64_t)lba * 512u;
+    if (offset > LONG_MAX || bytes > (uint64_t)LONG_MAX - offset ||
+        fseek(file, (long)offset, SEEK_SET) != 0) {
         fclose(file);
         return 0;
     }

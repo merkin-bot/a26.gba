@@ -10,11 +10,21 @@ int main(void) {
     memset(cart, 0xCC, sizeof(cart));
     memset(sdram, 0, sizeof(sdram));
     SuperCardModel model = {cart, sizeof(cart), sdram, sizeof(sdram), NULL,
-                            SUPERCARD_MODE_FIRMWARE, 0, 0};
+                            SUPERCARD_MODE_FIRMWARE, 0, 0, 0, 0, 0};
+    SuperCardModel second = {cart, sizeof(cart), sdram, sizeof(sdram), NULL,
+                             SUPERCARD_MODE_FIRMWARE, 0, 0, 0, 0, 0};
     supercard_reset(&model);
     assert(model.mode == SUPERCARD_MODE_FIRMWARE);
 
     assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&second, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&second, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(model.mode == SUPERCARD_MODE_FIRMWARE); /* Mode applies on the second matching write. */
+    assert(supercard_write(&second, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&second, 0x09FFFFFEu, 0x0007));
+    assert(second.mode == SUPERCARD_MODE_SDRAM); /* First model's state is per-card. */
     assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
     assert(model.mode == SUPERCARD_MODE_SDRAM);
     assert(model.sd_interface);
@@ -34,6 +44,13 @@ int main(void) {
     fclose(file);
     model.sd_path = sd;
     uint8_t read_block[512];
+    model.sd_interface = 0;
+    assert(!supercard_sd_read(&model, 0, read_block, 1));
+    model.sd_interface = 1;
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
     assert(supercard_sd_read(&model, 0, read_block, 1));
     assert(memcmp(read_block, block, sizeof(block)) == 0);
     read_block[0] ^= 0xFF;

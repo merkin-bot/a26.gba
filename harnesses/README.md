@@ -6,7 +6,11 @@ The harness has three independent layers:
 2. **Flash card and kernel:** the matching DSSMM kernel runs and interacts with a per-model card profile. Do not merge different card mappings or kernel builds into one generic profile.
 3. **SD storage:** each card profile reads a block image containing that card's matching kernel/support files, the A26 plugin, and the open-source Atari ROM. FAT/filesystem operations must cross the emulated card's SD interface; a host FAT image check alone does not prove this path.
 
-The six target profiles and exact DSSMM kernel artifacts are listed in `cards.json`. Kernels are maintained in [voluptuary/dssmm](https://github.com/voluptuary/dssmm); local audit snapshot: `f6350776f07eba91ba2ffa34c6833d85f348f2a1`.
+The six target profiles and exact DSSMM kernel release tags/artifacts are listed in `cards.json`. Kernels are maintained in [voluptuary/dssmm](https://github.com/voluptuary/dssmm); the earlier untagged audit snapshot `f6350776f07eba91ba2ffa34c6833d85f348f2a1` is not current release validation.
+
+## Current SuperCard model boundary
+
+The standalone host model is not yet connected to mGBA. Its mode-register sequence follows the SuperFW Build769 source in `superfw/src/supercard_driver.c`: two `0xA55A` writes to `0x09FFFFFE`, then two identical mode writes. Bits 0, 1, and 2 select SDRAM/flash mapping, SD-interface visibility, and write access. This source confirms DSSMM SuperFW behavior only; other firmware builds and physical cards still need independent evidence. SuperChis NOR-map writes use a separate two-magic/one-value sequence and are not modeled here. The host SD block-file functions are a test seam, not the card's real bit-banged CMD/data bus. The mGBA runner target is omitted until `src/mgba_supercard_runner.c` exists, so CMake can still build and test the standalone model without claiming end-to-end support.
 
 ## Reuse existing DSSMM tests
 

@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** 76e9f4e
+**Last pushed commit:** See `git log -1 --oneline`; the commit before current edits was `ffe12d2`.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -123,19 +123,19 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ## 6. Task board
 
 ### In progress
-- **Task:** Refresh kernel matrix and rerun reused DSSMM launch fixtures against current published release tags.
-- **Exact step:** All three published EZ kernel tags passed their five existing launch scenarios on mGBA 0.10.2; the fixture JSON incorrectly says 0.10.1. Next checkout SuperFW `superfw-build769`, build each of `chis`, `sd`, and `lite`, then run applicable existing mGBA fixtures. Full SD/card integration remains missing.
-- **Files touched:** `PROGRESS.md`, `HANDOFF.md`, `harnesses/cards.json`.
-- **Uncommitted changes:** None at start; DSSMM clone, fetched tags and outputs are ignored.
+- **Task:** Complete the evidence-based SuperCard host model and proceed toward mGBA card/SD integration.
+- **Exact step:** Corrected the standalone SuperCard register model to the source-confirmed four-write mode protocol; added per-model state, SDRAM/SD access gates, and overflow checks. Host model test and CMake build pass. Next integrate source-confirmed card behavior with mGBA bus access; the bit-banged SD bus and runner remain unimplemented.
+- **Files touched:** `AGENTS.md`, `HANDOFF.md`, `PROGRESS.md`, `harnesses/cards.json`, `harnesses/CMakeLists.txt`, `harnesses/README.md`, `harnesses/include/supercard_model.h`, `harnesses/src/supercard_model.c`, `harnesses/tests/supercard_model_test.c`.
+- **Uncommitted changes:** Source-evidence-driven model correction and logs are ready to commit; DSSMM/mGBA clones and generated outputs are ignored.
 - **Branch:** main
-- **Resume command:** From `harnesses/third_party/dssmm`, checkout the exact tag for each EZ profile and run `PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash <profile>/scripts/test-native-launch-mgba.sh`; see `harnesses/cards.json` for tag-to-profile map.
+- **Resume command:** Review `harnesses/cards.json` for exact release tags/evidence. Run standalone harness validation with `cmake -S harnesses -B build/harness-cmake -G Ninja && cmake --build build/harness-cmake --target supercard-model-test && build/harness-cmake/supercard-model-test`. The mGBA runner is still unimplemented. For EZ fixtures checkout the listed tag and run `PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash <profile>/scripts/test-native-launch-mgba.sh`. For SuperFW always `make clean` before switching boards.
 
 ### Next up (ordered)
-1. Reuse and qualify existing DSSMM mGBA fixtures against exact published versions for all six matching kernels: three EZ-FLASH profiles and SuperFW Chis/SD/Lite.
-2. Implement only the missing mGBA hardware/card/SD layers needed to run the actual kernel and its FAT-based plugin/ROM loading path.
-3. Keep mGBA harness behavior separate from plugin workarounds; document hardware gaps.
-4. After harness verification, resume plugin timing/optimization with responsive input and stable 30 fps plus audio sync as targets.
-5. Compare Stella and plugin output at synchronized game states; hardware qualification remains final authority.
+1. Integrate the SuperCard GBA memory bus with per-board card mappings and the real SuperFW bit-banged CMD/data protocol over a disk-image-backed SD card; use source evidence per board and keep unverified hardware details marked.
+2. Add the matching EZ-FLASH cartridge/SD interface models using DSSMM source and existing kernel fixtures; do not assume SuperCard protocol applies.
+3. Exercise PogoShell kernel launch, plugin loading, ROM handoff, save and return paths through each matching card profile and an SD image.
+4. Keep mGBA harness behavior separate from plugin workarounds; document hardware gaps.
+5. After harness verification, resume plugin timing/optimization with responsive input and stable 30 fps plus audio sync as targets; compare Stella/plugin output at synchronized states.
 
 ### Backlog
 - Headless screenshot/frame-hash capture
@@ -182,7 +182,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | PogoShell real-layout helper | `build/pogo-layout-test` | PASS | Cartridge offset, table offset, and ABI block bounds |
 | TIA collision lookup | `build/collision-table-test` | PASS | 64-entry object-pair lookup plus cold-boot/frame parity |
 | 30 fps default cadence | `app_data.rr=2` | PASS | Every-second-frame render target; CPU/TIA/RIOT core continues at its emulated clock |
-| SuperCard mode/SDRAM host model | `build/harness/supercard-model-test` | PASS | Magic/register mode and SDRAM payload copy pass strict C11 tests |
+| SuperCard mode/SDRAM/SD host model | `cmake -S harnesses -B build/harness-cmake -G Ninja && cmake --build build/harness-cmake --target supercard-model-test && build/harness-cmake/supercard-model-test` | PASS | Source-evidenced two magic + two equal mode writes, per-model state, access gates and block-file operations. SuperFW source only; not integrated with mGBA. |
 | EZ-FLASH Omega card harness | `<TODO>` | PARTIAL | Omega source exists; kernel launch and card register fixture remain |
 | SuperCard 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
 | Minimal mGBA SuperCard runner | `build/harness/supercard-mgba-runner` | BLOCKED | Scratch static-core crashes at `core->init`; hook code not yet qualified |
@@ -244,3 +244,7 @@ Short dated entries. Trim old entries periodically.
 - 2026-11-24: Updated card matrix from release page tags and full commit IDs; prior results were explicitly demoted to older snapshot evidence. Checked out published DE `v8.4.1` and reran all five fixture scenarios (FAT-SFN, exFAT, long exFAT name, quick-clean, quick-addon). All report “all launch stages reached handoff,” source commit `a948b936...`, traces `d7ffaa...` (quick-addon `d7bfaa...`). Runtime was mGBA 0.10.2; generated metadata still says 0.10.1. Mock seams and lack of hardware qualification remain unchanged. Next: Original OMEGA Test 5.
 - 2026-11-24: Published Original OMEGA `v8.4.1-omega-test5` also passed all five reused launch scenarios on mGBA 0.10.2, reaching mocked `0x200` handoff. The run was at source `29bbb055...`; metadata continues to claim mGBA 0.10.1. This validates only DSSMM launcher/path/metadata behavior at the fixture boundary, not physical card or SD behavior. Next: BLUE Test 5.
 - 2026-11-24: Published BLUE `v8.4.1-blue-test5` passed all five reused launch scenarios on mGBA 0.10.2, reaching mocked `0x400` handoff. The run was at source `9bc24e04...`; metadata continues to claim mGBA 0.10.1. All current EZ release fixtures now pass, but they mock storage/boot seams and do not qualify physical hardware. Next: SuperFW Build769 per-board builds and tests.
+- 2026-11-24: Built published SuperFW `superfw-build769` at `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4` for all three targets through devkitARM Docker. Chis ROM SHA-256 `c987108d91682394451d5217a6cbb74fa3f3a7a63664b47cfd798e4af7c1f5fd` (1.6 MiB); SD `c9ce3f78a8ef3cdf05ab2354885ab59cac2b0803282fefff55a7b9569f28fccf` (493 KiB); Lite `45adebcbcfa219c9dfec569124d7a58d72dbe282e3d8b2d0f172f13e1fa6cc6d` (493 KiB). Ignored copies saved under DSSMM `superfw/build/release-builds/superfw-build769/`. All builds pass; no physical card qualification. Next run existing native menu/settings mGBA fixtures.
+- 2026-11-24: Reconciliation found the preceding sequential SuperFW matrix command did not clean between `BOARD` values. Since Make reuses `firmware.ewram.*` across profiles without encoding `BOARD` in the target path, SD/Lite might contain Chis/previous-board intermediate code. Discard the SD/Lite hashes above and clean each profile before rebuilding; no SD/Lite build success is claimed until then. Chis-native settings two-boot and 12 renderer scenes plus four Chis NOR carousel scenes passed against linked fixture code. These use virtual SRAM/ROM fixtures and do not model the SuperCard SD bus.
+- 2026-11-24: Rebuilt all three SuperFW Build769 profiles after `make clean` before each target, confirmed profile macros in compiler commands, and saved separate ignored artifacts. Clean hashes: Chis `7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24`, SD `89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf`, Lite `476e9d5fef4b07cc2b3a59476bae7692ea7405ab41fb92166489778b5a48c283`. Each compile line had the expected board define and Build769 version words. Clean-built each again and ran native settings mGBA fixture against board-specific linked EWRAM firmware; Chis, SD, Lite each passed two boots using virtual SRAM-backed SD. Chis also passed 12 native menu visual scenes and four NOR carousel scenes. Physical bus/SD/NOR timings remain unverified.
+- 2026-11-24: Source audit found the host SuperCard model was wrong: DSSMM `supercard_driver.c` writes `0xA55A` twice to `0x09FFFFFE`, then the same mode word twice, while our model accepted one magic plus one mode. Corrected the per-model register state, gated SDRAM writes on SDRAM+write access and block-file ops on SD mapping/write bits, and added size/seek overflow checks. Strict C11 host compile/test and CMake configure/build/run pass. CMake now skips the absent mGBA runner instead of failing before the host model can be tested. Evidence is DSSMM SuperFW Build769 only; Chis NOR-map and physical bit-banged SD commands remain unmodeled.

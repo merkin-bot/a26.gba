@@ -29,9 +29,13 @@ target_include_directories(supercard_model PUBLIC include)
 add_executable(supercard-model-test tests/supercard_model_test.c)
 target_link_libraries(supercard-model-test PRIVATE supercard_model)
 
-add_executable(supercard-mgba-runner src/mgba_supercard_runner.c)
-target_include_directories(supercard-mgba-runner PRIVATE
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/third_party/mgba/include
-  ${CMAKE_BINARY_DIR}/third_party/mgba/include)
-target_link_libraries(supercard-mgba-runner PRIVATE supercard_model mgba)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/mgba_supercard_runner.c")
+  add_executable(supercard-mgba-runner src/mgba_supercard_runner.c)
+  target_include_directories(supercard-mgba-runner PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_BINARY_DIR}/third_party/mgba/include)
+  target_link_libraries(supercard-mgba-runner PRIVATE supercard_model mgba)
+else()
+  message(STATUS "mGBA SuperCard runner is not implemented; building the standalone card model only")
+endif()

@@ -17,6 +17,9 @@ typedef struct {
     SuperCardMapMode mode;
     int sd_interface;
     int write_access;
+    unsigned mode_magic_writes;
+    unsigned mode_value_writes;
+    uint16_t pending_mode;
 } SuperCardModel;
 
 void supercard_reset(SuperCardModel *model);

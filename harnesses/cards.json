@@ -45,7 +45,8 @@
       "source_commit": "37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4",
       "artifact": "SuperFW Chis build",
       "source": "superfw/",
-      "status": "published release; only Chis has hardware test history; per-board fixture validation pending"
+      "firmware_sha256": "7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24",
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; native menu scenes 1,2,3,5-14 and Chis NOR scenes 16-19 passed; virtual SRAM only, physical SD behavior unverified"
     },
     {
       "id": "supercard-sd",
@@ -55,7 +56,8 @@
       "source_commit": "37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4",
       "artifact": "SuperFW SD build",
       "source": "superfw/",
-      "status": "published release; SD board hardware-untested; per-board fixture validation pending"
+      "firmware_sha256": "89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf",
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; virtual SRAM only, physical SD behavior unverified"
     },
     {
       "id": "supercard-lite",
@@ -65,7 +67,8 @@
       "source_commit": "37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4",
       "artifact": "SuperFW Lite build",
       "source": "superfw/",
-      "status": "published release; Lite board hardware-untested; per-board fixture validation pending"
+      "firmware_sha256": "476e9d5fef4b07cc2b3a59476bae7692ea7405ab41fb92166489778b5a48c283",
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; virtual SRAM only, physical SD behavior unverified"
     }
   ],
   "mGBA_upstream": {
