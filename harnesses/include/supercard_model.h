@@ -42,6 +42,14 @@ typedef struct {
     uint64_t sd_data_token_polls;
     uint64_t sd_read_commands;
     uint64_t sd_stop_commands;
+    uint8_t sd_write_buffer[520];
+    size_t sd_write_offset;
+    uint32_t sd_write_lba;
+    int sd_write_active;
+    uint8_t sd_write_response_bit;
+    uint64_t sd_write_commands;
+    uint64_t sd_write_blocks;
+    uint64_t sd_write_failures;
 } SuperCardModel;
 
 void supercard_reset(SuperCardModel *model);
@@ -52,6 +60,8 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
                    uint32_t *value);
 int supercard_sd_command_write(SuperCardModel *model, uint32_t address,
                                uint32_t width, uint32_t value);
+int supercard_sd_data_write(SuperCardModel *model, uint32_t address,
+                            uint32_t width, uint32_t value);
 int supercard_sd_decode_command(const uint16_t *writes, size_t write_count,
                                uint8_t command[6]);
 void supercard_set_payload(SuperCardModel *model, uint32_t offset,

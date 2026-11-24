@@ -9,11 +9,20 @@ static int is_sdram_address(uint32_t address) {
     return address >= 0x08000000u && address < 0x0A000000u;
 }
 
+static int is_lite_data_address(uint32_t address) {
+    return address >= 0x09200000u && address <= 0x0920001Cu;
+}
+
 static int is_sdram_multiple(struct ARMCore *cpu, uint32_t address,
                              int mask, enum LSMDirection direction) {
     (void)cpu;
     (void)mask;
     return direction == LSM_IA && is_sdram_address(address);
+}
+
+static int is_lite_data_multiple(uint32_t address, int mask,
+                                enum LSMDirection direction) {
+    return direction == LSM_IA && address == 0x09200000u && mask != 0;
 }
 
 static uint32_t supercard_load_multiple(struct ARMCore *cpu, uint32_t address,
@@ -47,7 +56,8 @@ static uint32_t supercard_load_multiple(struct ARMCore *cpu, uint32_t address,
 static uint32_t supercard_store_multiple(struct ARMCore *cpu, uint32_t address,
                                          int mask, enum LSMDirection direction,
                                          int *cycle_counter) {
-    if (active_bus && is_sdram_multiple(cpu, address, mask, direction)) {
+    if (active_bus && (is_sdram_multiple(cpu, address, mask, direction) ||
+                       is_lite_data_multiple(address, mask, direction))) {
         uint32_t next = active_bus->original_store_multiple(
             cpu, address, mask, direction, cycle_counter);
         uint32_t data_address = address;
@@ -55,8 +65,12 @@ static uint32_t supercard_store_multiple(struct ARMCore *cpu, uint32_t address,
             if (!(mask & (1 << reg))) {
                 continue;
             }
-            (void)supercard_store_memory(active_bus->model, data_address, 32,
-                                         cpu->gprs[reg]);
+            if (is_lite_data_address(data_address) ||
+                !supercard_store_memory(active_bus->model, data_address, 32,
+                                        cpu->gprs[reg])) {
+                (void)supercard_sd_data_write(active_bus->model, data_address,
+                                              32, cpu->gprs[reg]);
+            }
             data_address += 4u;
         }
         return next;
@@ -156,8 +170,13 @@ static void supercard_store16(struct ARMCore *cpu, uint32_t address,
 static void supercard_store32(struct ARMCore *cpu, uint32_t address,
                               int32_t value, int *cycle_counter) {
     count_sd_write(address);
-    if (active_bus && supercard_store_memory(active_bus->model, address, 32,
+    if (active_bus && !is_lite_data_address(address) &&
+        supercard_store_memory(active_bus->model, address, 32,
                                               (uint32_t)value)) {
+        return;
+    }
+    if (active_bus && supercard_sd_data_write(active_bus->model, address, 32,
+                                               (uint32_t)value)) {
         return;
     }
     active_bus->original_store32(cpu, address, value, cycle_counter);

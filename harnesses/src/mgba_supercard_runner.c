@@ -282,8 +282,17 @@ int main(int argc, char **argv) {
            model.sd_data_lba, model.sd_data_blocks_loaded,
            model.sd_data_load_failures, model.sd_data_token_polls,
            model.sd_path ? model.sd_path : "(none)");
-    printf("sd_block_commands read=%" PRIu64 " stop=%" PRIu64 "\n",
-           model.sd_read_commands, model.sd_stop_commands);
+    printf("sd_block_commands read=%" PRIu64 " write=%" PRIu64
+           " written=%" PRIu64 " write_failures=%" PRIu64
+           " stop=%" PRIu64 "\n",
+           model.sd_read_commands, model.sd_write_commands,
+           model.sd_write_blocks, model.sd_write_failures,
+           model.sd_stop_commands);
+    fputs("sdram_window=", stdout);
+    for (unsigned i = 0; i < 16; ++i) {
+        printf("%02X", model.sdram[i]);
+    }
+    putchar('\n');
     printf("cmd_write_trace count=%" PRIu32 ":", bus.cmd_write_trace_count);
     for (uint32_t i = 0; i < bus.cmd_write_trace_count; ++i) {
         printf(" %02X", bus.cmd_write_trace[i] & 0xFFu);

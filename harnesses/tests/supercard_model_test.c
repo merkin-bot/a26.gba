@@ -5,6 +5,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void send_command(SuperCardModel *model, const uint8_t command[6]) {
+    for (size_t byte = 0; byte < 6; ++byte) {
+        uint16_t shifted = command[byte];
+        for (size_t bit = 0; bit < 8; ++bit) {
+            assert(supercard_sd_command_write(model, 0x09800000u, 16, shifted));
+            shifted <<= 1;
+        }
+    }
+}
+
 int main(void) {
     const uint8_t cmd0[] = {0x40, 0x00, 0x00, 0x00, 0x00, 0x95};
     uint16_t cmd_writes[48];
@@ -143,6 +153,33 @@ int main(void) {
     assert(supercard_sd_write(&model, 0, read_block, 1));
     assert(supercard_sd_read(&model, 0, read_block, 1));
     assert(read_block[0] == (uint8_t)(255 ^ 0));
+    const uint8_t cmd55[] = {0x77, 0, 0, 0, 0, 0};
+    const uint8_t acmd23[] = {0x57, 0, 0, 0, 1, 0};
+    send_command(&model, cmd55);
+    assert(model.sd_application_command);
+    send_command(&model, acmd23);
+    assert(!model.sd_application_command && model.sd_responses_issued > 0);
+    assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+    assert(line_value == 0); /* ACMD23 has a response instead of timing out. */
+    const uint8_t cmd25[] = {0x59, 0, 0, 0, 0, 0};
+    send_command(&model, cmd25);
+    assert(model.sd_write_active && model.sd_write_commands == 1);
+    for (size_t word = 0; word < 130; ++word) {
+        uint32_t data = 0;
+        if (word < 128) {
+            size_t offset = word * 4;
+            data = (uint32_t)read_block[offset] |
+                   ((uint32_t)read_block[offset + 1] << 8) |
+                   ((uint32_t)read_block[offset + 2] << 16) |
+                   ((uint32_t)read_block[offset + 3] << 24);
+        }
+        assert(supercard_sd_data_write(&model, 0x09200000u +
+                                       (uint32_t)(word % 8u) * 4u, 32, data));
+    }
+    assert(model.sd_write_blocks == 1 && model.sd_write_failures == 0);
+    assert(supercard_sd_read(&model, 0, read_block, 1));
+    assert(read_block[0] == (uint8_t)(255 ^ 0));
+    assert(read_block[1] == 1);
     remove(sd);
 
     puts("SuperCard mode, SDRAM, and SD block model passed");
