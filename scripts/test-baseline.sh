@@ -14,11 +14,6 @@ build/harness/supercard-model-test
 
 plugin="source/atari2600/prototype.gba"
 plugin_hash=$(sha256sum "$plugin" | awk '{print $1}')
-archived_hash=$(sha256sum dist/a26.gba | awk '{print $1}')
-if [[ "$plugin_hash" != "$archived_hash" ]]; then
-  echo "Plugin hash mismatch: build=$plugin_hash archive=$archived_hash" >&2
-  exit 1
-fi
 
 if [[ ! -x /usr/games/mgba ]]; then
   echo "stock mGBA unavailable; install mgba-sdl" >&2

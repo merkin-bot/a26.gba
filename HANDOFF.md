@@ -1,6 +1,6 @@
 # Crash Recovery
 
-- **Doing now:** StellaDS-adapted TIA audio implementation complete; commit and baseline verification are in progress.
+- **Doing now:** Candidate build is StellaDS-audio and Goomba-font enabled; harnesses run the newly compiled candidate hash.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
 - **Last pushed commit:** `1eb570c`

@@ -52,6 +52,25 @@ static uint8_t glyph(unsigned c,unsigned row) {
     if(c=='+')return row==3?14:row==2||row==4?4:0;
     if(c=='/')return row<5?1u<<row:0;
     if(c=='*')return row==2||row==4?10:row==3?31:0;
+    if(c=='!')return (row==1||row==2||row==3||row==4)?16:row==6?16:0;
+    if(c=='.')return row==6?16:0;
+    if(c==',')return row==5?16:row==6?8:0;
+    if(c=='_')return row==6?31:0;
+    if(c=='|')return row>=1&&row<=5?16:0;
+    if(c==';')return row==3?12:row==4?16:row==5?8:row==6?16:0;
+    if(c=='@')return row==1?14:row==2?17:row==3?19:row==4?21:row==5?14:row==6?31:0;
+    if(c=='\\')return row<5?16u>>row:0;
+    if(c=='~')return row==3?5:row==4?10:0;
+    if(c=='^')return row==1?4:row==2?10:0;
+    if(c=='`')return row==1?16:row==2?8:0;
+    if(c=='{' )return row==1||row==5?6:row==2||row==4?16:row==3?24:0;
+    if(c=='}')return row==1||row==5?24:row==2||row==4?1:row==3?3:0;
+    if(c=='(')return row==1||row==5?8:row==2||row==4?16:row==3?16:0;
+    if(c==')')return row==1||row==5?2:row==2||row==4?1:row==3?1:0;
+    if(c=='[')return row==1||row==5?14:row>=2&&row<=4?16:0;
+    if(c==']')return row==1||row==5?28:row>=2&&row<=4?1:0;
+    if(c=='\'')return row==1||row==2?4:0;
+    if(c=='\"')return row==1||row==2?10:0;
     return 0;
 }
 static void text(const char *s,unsigned x,unsigned y,unsigned color) {
@@ -72,6 +91,10 @@ static void release_keys(void) {while((KEYS&0x30f)!=0x30f)wait_frame();}
 static void footer(void) {
     text("2600 GBA - DSSMM",72,134,0x7fff);
     text("MikeDX / Virtual VCS",60,146,0x4210);
+}
+static void title(const char *s) {
+    unsigned len=0;while(s[len])++len;
+    text(s,(240-(len*6))/2,24,0x7fff);
 }
 int atari_return_ready(void) {
     const volatile uint32_t *image=(const volatile uint32_t *)0x09800000;
@@ -98,6 +121,7 @@ static void draw_menu(unsigned page,unsigned selected) {
     unsigned i;char value[]="Frame skip: 0";
     blank();footer();
     if(!page) {
+        title("2600 GBA");
         for(i=0;i<7;++i)text(main_items[i],8,40+i*8,i==selected?0x7fe0:0x7fff);
         text("*",0,40+selected*8,0x7fe0);
     } else if(page==1) {
@@ -112,7 +136,7 @@ static void draw_menu(unsigned page,unsigned selected) {
     } else {
         text("L+R: Menu",8,40,0x7fff);text("A: Select  B: Back",8,48,0x7fff);
         text("ROMs: 2K 4K F8 F6",8,64,0x7fff);
-        text("Experimental - no sound",8,80,0x7fff);
+        text("TIA sound: Direct Sound",8,80,0x7fff);
         text("Alex Hornby / Daniel Boris",8,96,0x7fff);
     }
 }

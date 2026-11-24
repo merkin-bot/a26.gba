@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-python3 scripts/build-card-fixture.py
+PLUGIN_GBA=source/atari2600/prototype.gba python3 scripts/build-card-fixture.py
 seconds="${1:-5}"
 export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-dummy}"
 timeout "${seconds}s" xvfb-run -a /usr/games/mgba work/card-fixture/a26-card-fixture.gba >/tmp/a26-card-mgba.log 2>&1 || rc=$?

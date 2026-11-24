@@ -18,7 +18,7 @@ typedef struct {
 } TiaTone;
 
 static TiaTone tone[2];
-static volatile uint32_t tia_fifo_ring[8192] __attribute__((section(".sbss")));
+static volatile uint32_t tia_fifo_ring[512] __attribute__((section(".sbss")));
 static uint16_t poly4[2];
 static uint16_t poly5[2];
 static uint16_t poly9[2];
@@ -51,13 +51,10 @@ static unsigned channel_mix(TiaTone *t);
 static void tia_audio_dma_setup(void) {
 #ifdef A26_GBA_BUILD
     *(volatile uint16_t *)0x04000080 = 0x0b0c;
-    *(volatile uint16_t *)0x04000084 = 0x0200;
-    *(volatile uint16_t *)0x04000088 = 0x0200;
-    *(volatile uint16_t *)0x04000070 = 0;
 
     *(volatile uint32_t *)0x040000bc = (uint32_t)(uintptr_t)tia_fifo_ring;
     *(volatile uint32_t *)0x040000c0 = 0x040000a0u;
-    *(volatile uint16_t *)0x040000c4 = 8192;
+    *(volatile uint16_t *)0x040000c4 = 512;
     *(volatile uint16_t *)0x040000c6 = 0xb600;
 
     *(volatile uint16_t *)0x04000100 = (uint16_t)(0xffffu - 512u);
@@ -67,7 +64,7 @@ static void tia_audio_dma_setup(void) {
 
 void tia_audio_refill(void) {
     unsigned i;
-    for (i = 0; i < 8192u; ++i) {
+    for (i = 0; i < 512u; ++i) {
         unsigned sample = channel_mix(&tone[0]) + channel_mix(&tone[1]);
         unsigned char value = direct_sample(sample);
         tia_fifo_ring[i] = value | ((uint32_t)value << 8) |
