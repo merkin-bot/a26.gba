@@ -4,6 +4,7 @@
 #include <mgba/core/core.h>
 #include <mgba/core/log.h>
 #include <mgba/gba/core.h>
+#include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/input.h>
 #include <mgba-util/image.h>
 
@@ -289,6 +290,19 @@ int main(int argc, char **argv) {
            model.sd_write_blocks, model.sd_write_failures,
            model.sd_stop_commands);
     fputs("sdram_window=", stdout);
+    for (unsigned i = 0; i < 16; ++i) {
+        printf("%02X", model.sdram[i]);
+    }
+    putchar('\n');
+    struct GBA *gba = core->board;
+    const uint8_t *ewram = (const uint8_t *)gba->memory.wram;
+    const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
+    printf("reset_state iwram_softreset_flag=%u ewram_entry=",
+           iwram[0x7FFAu]);
+    for (unsigned i = 0; i < 16; ++i) {
+        printf("%02X", ewram[i]);
+    }
+    printf(" sdram_entry=");
     for (unsigned i = 0; i < 16; ++i) {
         printf("%02X", model.sdram[i]);
     }
