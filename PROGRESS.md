@@ -103,6 +103,7 @@ Each fact needs a source or evidence. Separate verified from unverified.
 - Public PocketNES/GoombaColor source confirms PogoShell launch at `0x0203FBFC` and tail at `0x0203FBF8`, plus ROM filename parsing from `0x0203FC08` (source: public GPL/Github references; license verify per-file before reuse).
 - EZ-FLASH Omega kernel public metadata is Apache-2.0 (source: GitHub API); it is a kernel reference only, not evidence of physical cartridge behavior.
 - A 64 MB FAT32 SD image is verified with `a26.gba` under `SYSTEM/PLUG/` and `flappy.a26` under `ROMS/`; plugin and ROM hashes match source assets (source: `scripts/verify-harness.sh`).
+- A stock-mGBA PogoShell cold-boot fixture seeds `0x0203FBF8/FC`, appends Flappy, and survives 5 seconds; this proves portable ABI execution, not card firmware/SD/NOR behavior (source: `scripts/run-card-fixture.sh`).
 - DSSMM SuperFW source confirms portable PogoShell ABI argument layout and SuperCard cartridge-SDRAM/NOR/SD boundaries, but explicitly states stock mGBA cannot emulate full card I/O (source: `voluptuary/dssmm/superfw/docs/MGBA-TESTING.md`, Apache-2.0).
 - EZ-FLASH Omega Definitive kernel source is public and Apache-2.0; PogoShell detection is code-confirmed at `0x0203FBFC`/`0x0203FBF8` and filename parsing at `0x0203FC08` (source: `ez-flash/omega-de-kernel`).
 - SuperFlash build 822 kernel/register/SD implementation remains UNVERIFIED; no redistributable kernel or public register evidence was found.
@@ -164,6 +165,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | Stock mGBA plugin launch | `bash scripts/run-mgba.sh <plugin> <seconds>` | NOT VALID | Plugin rejected as incompatible because PogoShell ABI is absent |
 | FAT32 virtual SD | `bash scripts/verify-harness.sh` | PASS | 64 MB FAT32, plugin and Flappy hashes verified |
 | PogoShell portable ABI | `bash scripts/test-baseline.sh` | PASS | Layout and argument-block assertions pass; no card I/O |
+| PogoShell cold-boot fixture | `bash scripts/run-card-fixture.sh 5` | PASS | Actual plugin fixture survived 5 seconds in stock mGBA; card I/O excluded |
 | EZ-FLASH Omega card harness | `<TODO>` | PARTIAL | Omega source exists; kernel launch and card register fixture remain |
 | SuperFlash 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
 

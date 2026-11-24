@@ -1,7 +1,7 @@
 # Crash Recovery
 
-- **Doing now:** Flashcard/harness audit: FAT32 staging and PogoShell ABI pass; full Omega/SuperFlash launch remains.
-- **Exact next command:** `bash scripts/verify-harness.sh && bash scripts/test-baseline.sh`
+- **Doing now:** Flashcard/harness audit: FAT32, portable ABI, and cold-boot fixture pass; full card I/O remains.
+- **Exact next command:** `bash scripts/run-card-fixture.sh 5`
 - **Branch:** `main`
 - **Last pushed commit:** `cf5e58f`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
