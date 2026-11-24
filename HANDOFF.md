@@ -3,7 +3,7 @@
 - **Doing now:** StellaDS permission, GPL-2.0 policy, polynomial/collision lookup, and empty-queue raster optimizations pass cold-boot/frame tests.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `8cddc1a`
+- **Last pushed commit:** `ffed2e4`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
