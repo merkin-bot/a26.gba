@@ -48,7 +48,9 @@ int main(void) {
     }
     core->busWrite16(core, 0x09FFFFFEu, 0x0007);
     if (model.mode != SUPERCARD_MODE_SDRAM || !model.sd_interface ||
-        !model.write_access) {
+        !model.write_access || bus.mode_register_writes != 4 ||
+        bus.mode_magic_writes != 2 || bus.mode_value_writes != 2 ||
+        bus.last_mode_word != 0x0007) {
         fputs("SuperCard mode sequence was not observed through mGBA's CPU bus\n", stderr);
         supercard_mgba_bus_detach(&bus);
         mCoreConfigDeinit(&core->config);

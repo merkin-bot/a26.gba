@@ -5,13 +5,47 @@
 
 static SuperCardMGBABus *active_bus;
 
+static void count_sd_write(uint32_t address) {
+    if (!active_bus) {
+        return;
+    }
+    /* Addresses are from DSSMM SuperFW src/supercard_io.S, Build769. */
+    if (address == 0x09800000u) {
+        ++active_bus->sd_command_writes;
+    }
+    if (address == 0x09000000u || address == 0x0B000000u ||
+        address == 0x09200000u) {
+        ++active_bus->sd_data_writes;
+    }
+}
+
+static void supercard_store8(struct ARMCore *cpu, uint32_t address,
+                             int8_t value, int *cycle_counter) {
+    count_sd_write(address);
+    active_bus->original_store8(cpu, address, value, cycle_counter);
+}
+
 static void supercard_store16(struct ARMCore *cpu, uint32_t address,
                               int16_t value, int *cycle_counter) {
     if (active_bus && address == 0x09FFFFFEu) {
         (void) supercard_write(active_bus->model, address, (uint16_t) value);
+        ++active_bus->mode_register_writes;
+        if ((uint16_t) value == 0xA55Au) {
+            ++active_bus->mode_magic_writes;
+        } else {
+            ++active_bus->mode_value_writes;
+            active_bus->last_mode_word = (uint16_t) value;
+        }
         return;
     }
+    count_sd_write(address);
     active_bus->original_store16(cpu, address, value, cycle_counter);
+}
+
+static void supercard_store32(struct ARMCore *cpu, uint32_t address,
+                              int32_t value, int *cycle_counter) {
+    count_sd_write(address);
+    active_bus->original_store32(cpu, address, value, cycle_counter);
 }
 
 int supercard_mgba_bus_attach(SuperCardMGBABus *bus, struct mCore *core,
@@ -22,14 +56,18 @@ int supercard_mgba_bus_attach(SuperCardMGBABus *bus, struct mCore *core,
     struct ARMCore *cpu = core->cpu;
     bus->core = core;
     bus->model = model;
+    bus->original_store8 = cpu->memory.store8;
     bus->original_store16 = cpu->memory.store16;
-    if (!bus->original_store16) {
+    bus->original_store32 = cpu->memory.store32;
+    if (!bus->original_store8 || !bus->original_store16 || !bus->original_store32) {
         bus->core = NULL;
         bus->model = NULL;
         return 0;
     }
     active_bus = bus;
+    cpu->memory.store8 = supercard_store8;
     cpu->memory.store16 = supercard_store16;
+    cpu->memory.store32 = supercard_store32;
     return 1;
 }
 
@@ -38,9 +76,13 @@ void supercard_mgba_bus_detach(SuperCardMGBABus *bus) {
         return;
     }
     struct ARMCore *cpu = bus->core->cpu;
+    cpu->memory.store8 = bus->original_store8;
     cpu->memory.store16 = bus->original_store16;
+    cpu->memory.store32 = bus->original_store32;
     active_bus = NULL;
     bus->core = NULL;
     bus->model = NULL;
+    bus->original_store8 = NULL;
     bus->original_store16 = NULL;
+    bus->original_store32 = NULL;
 }
