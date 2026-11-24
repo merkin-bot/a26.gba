@@ -96,7 +96,7 @@ int main(void)
 	app_data.autoconfig=0;
 	app_data.swap=0;
 	//app_data.autoconfig=1;
-	app_data.rr=5;
+	app_data.rr=2;
 	//app_data.left=KEYPAD;
 	/* if (argc > 1) {
 		for(i=1; i<argc; i++) {

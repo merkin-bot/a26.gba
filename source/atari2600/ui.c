@@ -187,7 +187,7 @@ static void draw_menu(unsigned page,unsigned selected) {
         text("D-pad: Joystick",8,64,0x7fff);text("A: Fire",8,72,0x7fff);
         text("Start: Reset",8,80,0x7fff);text("Select: Game select",8,88,0x7fff);
     } else if(page==2) {
-        value[12]='0'+app_data.rr-1;text(value,8,40,0x7fe0);
+        value[12]='0'+(app_data.rr==2?'2':app_data.rr==1?'1':'5');text(value,8,40,0x7fe0);
         text("Left/Right or A to change",8,64,0x7fff);
     } else if(page==3) {
         text(riotRead[0x282]&8?"Console: Color":"Console: B/W",8,40,0x7fe0);
@@ -223,7 +223,10 @@ int atari_menu(void) {
             }
         } else if(pressed&(1|16|32)) {
             if(page==1)app_data.swap^=1;
-            if(page==2)app_data.rr=pressed&32?(app_data.rr+3)%5+1:app_data.rr%5+1;
+            if(page==2) {
+                if(pressed&32)app_data.rr=app_data.rr==1?2:app_data.rr==2?5:1;
+                else app_data.rr=app_data.rr==5?2:app_data.rr==2?1:5;
+            }
             if(page==3)riotRead[0x282]^=8;
         }
         draw_menu(page,selected);
