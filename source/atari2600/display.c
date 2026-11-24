@@ -57,6 +57,11 @@ char coltable[256];
 /* The refresh skipping counter */
 int tv_counter=0;
 int redraw_flag=1;
+static unsigned pace_frame=1;
+static unsigned pace_budget=0;
+int atari_pace_render(void) {
+	return pace_frame;
+}
 
 void set_palette(int index,BYTE red,BYTE green,BYTE blue)
 {
@@ -179,6 +184,34 @@ int tv_on()
 void tv_display(void)
 {
 	tia_audio_refill();
+	{
+		volatile uint16_t *tm1d=(volatile uint16_t *)0x04000104;
+		volatile uint16_t *tm1cnt=(volatile uint16_t *)0x04000106;
+		static unsigned started;
+		static uint16_t last;
+		uint16_t now=*tm1d;
+		if(!started) {
+			volatile uint16_t *tm0d=(volatile uint16_t *)0x04000100;
+			volatile uint16_t *tm0cnt=(volatile uint16_t *)0x04000102;
+			*tm0d=0;
+			*tm0cnt=0;
+			*tm0d=(uint16_t)(0xffffu-1023u);
+			*tm0cnt=0x0080;
+			*tm1cnt=0;
+			*tm1cnt=0x0086;
+			last=now=*tm1d;
+			started=1;
+		}
+		uint16_t elapsed=(uint16_t)(now-last);
+		last=now;
+		if(elapsed>=516) {
+			pace_budget=0;
+			pace_frame=1;
+		} else {
+			pace_budget++;
+			pace_frame=0;
+		}
+	}
 	if (!app_data.debug) {
 		put_image();
 	}

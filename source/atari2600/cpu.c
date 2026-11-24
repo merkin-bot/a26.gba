@@ -78,7 +78,7 @@ void mainloop()
 	SET_SR(0x20);
 	SP = 0xFF;
 	while (1) {
-  if ((menu_poll++ & 63) == 0 && ((~(*KEYS)) & 0x300) == 0x300 && atari_menu()) return;
+  if ((menu_poll++ & 15) == 0 && ((~(*KEYS)) & 0x300) == 0x300 && atari_menu()) return;
 //	  keyboard();
 	  do_screen(clkcount);
 	//  if (app_data.debug) x_loop();

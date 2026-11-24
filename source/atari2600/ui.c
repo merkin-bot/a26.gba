@@ -187,7 +187,7 @@ static void draw_menu(unsigned page,unsigned selected) {
         text("D-pad: Joystick",8,64,0x7fff);text("A: Fire",8,72,0x7fff);
         text("Start: Reset",8,80,0x7fff);text("Select: Game select",8,88,0x7fff);
     } else if(page==2) {
-        value[12]='0'+(app_data.rr==2?'2':app_data.rr==1?'1':'5');text(value,8,40,0x7fe0);
+        text("Render: Auto",8,40,0x7fe0);
         text("Left/Right or A to change",8,64,0x7fff);
     } else if(page==3) {
         text(riotRead[0x282]&8?"Console: Color":"Console: B/W",8,40,0x7fe0);

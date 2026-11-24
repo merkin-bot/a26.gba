@@ -162,6 +162,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | 2026-11-24 | collision-table-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `ecca333d6ecb0c0357315bcd3c6628a6e423067aea760fc281e5f212b180eaf7`; frame unchanged |
 | 2026-11-24 | queue-early-exit-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `ea0bacfd8eb9e4b2e987378111fb07a805a3f4ed2c712156ec5ff2bd26bfa1df`; frame unchanged |
 | 2026-11-24 | 30fps-default-candidate | generated PogoShell fixture | SHA-256/frame/ELF | devkitARM + mGBA | SHA-256 `b3b6e8067a1d8ec313353ab62b0325fa3cc964fef192dea0d847ddd24cd46b31`; frame unchanged; 209,494 bytes ELF |
+| 2026-11-24 | opcode-fetch-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `cc868252fb113cd4160b8c6677d39cfe076056a4422f262b0975c99f5fb21de7`; frame unchanged |
 | 2026-11-24 | audio/menu-candidate | generated fixture | ELF total/text/sbss + frame hash | devkitARM size + mGBA capture | Total 202,874→207,046 (+4,172); `.text` 30,944→32,344 (+1,400); `.sbss` 155,184→157,232 (+2,048); frame hash unchanged |
 | 2026-11-24 | goomba-font-candidate | generated fixture | menu/game frame hash | mGBA F12 + L+R | Menu frame `863be190...0682`, game frame `47fbde60...c15e`; menu differs as expected |
 

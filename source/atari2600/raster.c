@@ -670,7 +670,7 @@ void tv_raster( int line ){
 	int i;
 
 	keyboard();
-	if(tv_counter % app_data.rr != 0) {
+	if(!atari_pace_render()) {
 		update_registers();
 		return;
 	}

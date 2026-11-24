@@ -23,6 +23,7 @@ extern BYTE *vscreen;
 extern int magstep;
 extern int vwidth,vheight;
 extern int tv_counter;
+extern int atari_pace_render(void);
 extern unsigned int linetab[256];
 extern char coltable[256];
 #endif

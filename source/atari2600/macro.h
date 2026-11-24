@@ -19,9 +19,14 @@
 #include "types.h"
 #include "extern.h"
 #include "cpu.h"
+extern BYTE theRom[4096];
+extern BYTE theRam[128];
 
 #define LOAD(a)      		decRead(a)
-#define LOADEXEC(a)      	undecRead(a)
+static inline BYTE fast_exec_read(ADDRESS a) {
+	return (a & 0x1000) ? theRom[a & 0xfff] : theRam[a & 0x7f];
+}
+#define LOADEXEC(a)      	fast_exec_read(a)
 #define DLOAD(a)                dbgRead(a)
 #define LOAD_ZERO(a) 		decRead((ADDRESS)a)
 #define LOAD_ADDR(a)		((LOADEXEC(a+1)<<8)+LOADEXEC(a))
