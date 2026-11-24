@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `a175095` (`Advance handoff to Chis NOR modeling`); Chis source-discrepancy documentation is uncommitted.
+**Last pushed commit:** `ce005a2` (`Document unresolved SuperChis mapping evidence`); workspace was clean after push.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -124,15 +124,15 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Complete the evidence-based SuperCard host model and proceed toward mGBA card/SD integration.
-- **Exact step:** `3376261` fixes the SD stream; all three matching clean Build769 kernels reach selected plugin code (Lite/Chis `0x0800788A`, hash `E6AFE00D3895221D`; SD `0x080062A2`/`pl_normal`, hash `C321C3B99B2E799D` in two fresh runs). These are synthetic mGBA results, not physical qualification; states are unsynchronized. Chis audit found an unresolved source mismatch: Build769 uses three-write NOR mapping and mode bit 3 for SRAM, while pinned ChisBread CPLD HDL expects four config writes and selects SRAM through a write at `0x09000000`. Board revision equivalence is **UNVERIFIED**. **Active:** record source and licensing evidence without guessing Chis hardware behavior, then source-audit the EZ-FLASH profiles and their SD access paths. Keep all six profiles distinct. Stella remains unsynchronized. Plugin remains untouched. User priorities remain responsive input, stable native game time, synced audio; target 30 rendered fps with drops allowed to preserve timing.
-- **Files touched:** `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `harnesses/cards.json`, `reference/repositories.txt`, `docs/provenance/superchis-source-audit.md`.
-- **Uncommitted changes:** source discrepancy and license record; no Chis NOR/SRAM behavior added.
+- **Exact step:** `ce005a2` records the unresolved Chis firmware/HDL register mismatch; do not guess NOR/SRAM semantics. SuperCard Build769 Lite/SD/Chis selected-ROM runs all reach plugin code in synthetic mGBA, with hashes and physical limitations in `harnesses/cards.json`. **Active:** source-audit the three EZ-FLASH kernels (OMEGA DE Rev A/B, Original OMEGA, BLUE) for GBA-side cartridge, save and SD access boundaries; reuse their native launch fixture results without treating mocks as full card emulation. Record evidence per profile, including any matching source differences. No SuperCard protocol assumptions. Plugin remains untouched. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
+- **Files touched:** none for the active EZ source audit yet.
+- **Uncommitted changes:** none; Chis evidence and handoff are pushed in `ce005a2`.
 - **Branch:** main
-- **Resume command:** Commit/push the Chis discrepancy record. Then compare EZ-FLASH Omega DE, Original Omega and BLUE kernel sources for GBA-side cartridge/SD access, reuse their native launch fixtures, and mark physical unknowns `UNVERIFIED`. Do not infer EZ registers from SuperCard. SuperCard source-matched runner commands/results are in sections 3 and 8.
+- **Resume command:** Inspect ignored pinned DSSMM source checkouts for `ezfomegade/`, `ezfomega/`, and `ezfblue/`; trace their GBA memory hooks, SD sector calls, kernel handoff and save paths. Compare source at the exact commits in `harnesses/cards.json`, then add concise evidence to `harnesses/README.md` and `cards.json`. Existing fixture commands and coverage are in section 8. Do not infer EZ registers from SuperCard.
 
 ### Next up (ordered)
-1. Resolve the Chis Build769/CPLD mismatch with board-revision-matched evidence; leave NOR/SRAM mapping `UNVERIFIED` meanwhile.
-2. Add matching EZ-FLASH cartridge/SD models from each DSSMM profile's own source; do not assume SuperCard protocol applies.
+1. Audit EZ-FLASH Omega DE, Original Omega and BLUE kernels' own cartridge/SD/save paths and reuse existing launch fixtures; do not assume SuperCard protocol applies.
+2. Resolve the Chis Build769/CPLD mismatch with board-revision-matched evidence; leave NOR/SRAM mapping `UNVERIFIED` meanwhile.
 3. Exercise matching kernel launch, plugin loading, ROM handoff, save and return paths through all six card profiles and SD images.
 4. Record which paths are source-tested, mocked seams, and hardware-unverified; preserve separation between GBA, card/kernel, and SD layers.
 5. After harness verification, resume measured plugin timing/optimization. Input response, stable native game time, and synchronized audio are top priorities; target 30 rendered fps and drop rendered frames if needed to preserve time/audio. Use open-source Stella at 240x160 for visual comparison after synchronizing game state. The goal is to feel as smooth and responsive as established GBC/SMS/NES emulators; this may not be fully reachable on GBA. Desktop output is a visual reference, never timing evidence.
