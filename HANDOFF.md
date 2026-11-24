@@ -3,7 +3,7 @@
 - **Doing now:** Initial audit: archive extraction, repository inventory, and reproducible build setup.
 - **Exact next command:** `git --no-pager status --short --branch && bash .devcontainer/setup.sh && bash archive-inputs/test-source/atari2600/build.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `07d6bad`
+- **Last pushed commit:** `f9c87d7`
 - **Build passes:** Verified with Docker devkitARM 16.1.0; output SHA-256 matches archive plugin.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
