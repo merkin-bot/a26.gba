@@ -12,6 +12,59 @@
 #define VIDEO ((volatile uint16_t *)0x06000000)
 #define LR 0x300u
 static uint16_t saved_frame[240 * 160] __attribute__((section(".sbss")));
+static uint8_t goomba_font_tiles[2752] __attribute__((section(".sbss")));
+extern const uint8_t goomba_font[];
+static unsigned goomba_font_ready;
+
+static unsigned char goomba_lookup(unsigned c) {
+    if(c < 32)return 32;
+    if(c < 43) {
+        static const unsigned char map[]={'*','|',';','@','\\','~','^','`','{','}','\x7f'};
+        c=map[c-32];
+    }
+    if(c<32)return 32;
+    c-=32;
+    c-=10;
+    if(c>85)c=0;
+    return c;
+}
+
+static void goomba_font_unpack(void) {
+    const uint8_t *src=goomba_font;
+    unsigned ip=4,op=0,size=src[1]|((unsigned)src[2]<<8)|((unsigned)src[3]<<16);
+    if(src[0]!=0x10 || size>2752)return;
+    while(op<size) {
+        unsigned flags=src[ip++],bit;
+        for(bit=0;bit<8 && op<size;++bit) {
+            if(flags&(128u>>bit)) {
+                unsigned a=src[ip++],b=src[ip++];
+                unsigned length=(a>>4)+3,distance=((a&15)<<8)+b+1;
+                if(distance>op)return;
+                while(length-- && op<size) {
+                    goomba_font_tiles[op]=goomba_font_tiles[op-distance];
+                    ++op;
+                }
+            }else {
+                if(ip>=1724)return;
+                goomba_font_tiles[op++]=src[ip++];
+            }
+        }
+    }
+    goomba_font_ready=1;
+}
+
+static void goomba_tile(unsigned c,unsigned x,unsigned y,unsigned color) {
+    unsigned tile=goomba_lookup(c),row,col,byte,nibble;
+    if(!goomba_font_ready)goomba_font_unpack();
+    if(!goomba_font_ready)return;
+    for(row=0;row<8;++row) {
+        byte=(tile*32)+(row*4);
+        for(col=0;col<8;++col) {
+            nibble=(goomba_font_tiles[byte+(col>>1)]>>((col&1)*4))&15u;
+            if(nibble)VIDEO[(y+row)*240+x+col]=color;
+        }
+    }
+}
 
 /* Original compact raster glyphs; lower-case labels follow the familiar menus. */
 static const uint8_t capitals[26][7] = {
@@ -76,9 +129,14 @@ static uint8_t glyph(unsigned c,unsigned row) {
 static void text(const char *s,unsigned x,unsigned y,unsigned color) {
     unsigned row,col;
     while(*s && x+5<=240) {
-        for(row=0;row<7;++row)for(col=0;col<5;++col)
-            if(glyph((unsigned char)*s,row)&(16u>>col))VIDEO[(y+row)*240+x+col]=color;
-        ++s;x+=6;
+        if(goomba_font_ready) {
+            goomba_tile((unsigned char)*s,x,y,color);
+            ++s;x+=8;
+        } else {
+            for(row=0;row<7;++row)for(col=0;col<5;++col)
+                if(glyph((unsigned char)*s,row)&(16u>>col))VIDEO[(y+row)*240+x+col]=color;
+            ++s;x+=6;
+        }
     }
 }
 static void blank(void) {
@@ -142,6 +200,7 @@ static void draw_menu(unsigned page,unsigned selected) {
 }
 int atari_menu(void) {
     unsigned i,page=0,selected=0,parent=0,previous,pressed,held;
+    goomba_font_unpack();
     for(i=0;i<240*160;++i)saved_frame[i]=VIDEO[i];
     release_keys();previous=0;draw_menu(page,selected);
     for(;;) {
