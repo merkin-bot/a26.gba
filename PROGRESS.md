@@ -82,7 +82,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 |------|-----------|---------|----------|
 | [MikeDX/2600_gba](https://github.com/MikeDX/2600_gba) | Starting upstream; legacy GBA emulator source | GPLv2 according to GitHub metadata but source archive notes GNU GPL without numbered version | Starting point, CPU/core/TIA/legacy build |
 | [Sterophonick/PocketStella](https://github.com/Sterophonick/PocketStella) | GBA Atari 2600 emulator | GPLv2 according to GitHub metadata | GBA compatibility/performance/PogoShell/GBA port techniques |
-| [wavemotion-dave/StellaDS](https://github.com/wavemotion-dave/StellaDS) | Nintendo DS Atari 2600 emulator, Phoenix edition | NO_LICENSE metadata/unverified | CPU/TIA/audio/optimization research; not usable without separate license verification |
+| [wavemotion-dave/StellaDS](https://github.com/wavemotion-dave/StellaDS) | Nintendo DS Atari 2600 emulator, Phoenix edition | GPL-2.0 metadata/owner authorization | CPU/TIA/audio/optimization research |
 | [stella-emu/stella](https://github.com/stella-emu/stella) | Reference Atari 2600 emulator | GPLv2 according to GitHub metadata | Accuracy and reference behavior |
 | [JetSetIlly/Atari2600-Flappy-Bird](https://github.com/JetSetIlly/Atari2600-Flappy-Bird) | Open-source Atari 2600 Flappy Bird source/game | BSD-2-Clause according to GitHub metadata | Compatibility test ROM candidate |
 
@@ -97,7 +97,7 @@ Each fact needs a source or evidence. Separate verified from unverified.
 - Prepared source reproduces the archived plugin SHA-256 `14d28e63...f4500` with devkitARM 16.1.0 (source: Docker build and `sha256sum`).
 - Prepared plugin source is GPLv3-or-later adapters/menu with upstream GPL legacy code; `COPYING` and `NOTICE.txt` are retained (source: archive).
 - Stock Ubuntu mGBA 0.10.2 is available at `/usr/games/mgba` and Xvfb is installed (source: apt).
-- GitHub metadata identifies MikeDX/2600_gba and PocketStella as GPL-2.0, Stella as GPL-2.0, StellaDS as NO_LICENSE, and Flappy Bird BSD-2-Clause (source: GitHub API metadata; license files should be independently read before copying).
+- GitHub metadata identifies MikeDX/2600_gba and Stella as GPL-2.0, StellaDS is GPL-2.0, and Flappy Bird BSD-2-Clause. For any referenced repository with no license metadata, assume GPL-2.0 and verify before copying (source: GitHub API and owner authorization).
 - Existing prepared plugin supports 2K/4K/8K F8/16K F6 only; no TIA audio implementation is present (source: `atari2600-test.txt`, source search).
 - PogoShell argument block is fixed at EWRAM `0x0203fbf8` and ROM handoff validates a known ABI marker (source: `startup.S`, `files.c`).
 - A hardware SuperCard 822 trial and compatibility claims beyond the diagnostic are unqualified (source: `atari2600-test.txt`).
@@ -209,7 +209,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### Licensing notes
 - Archive prepared source retains GPLv3; legacy upstream code is GNU GPL as stated in source/CREDITS without a numbered version in some files.
-- MikeDX/PocketStella/Stella GitHub metadata says GPL-2.0; verify license files before reuse. StellaDS metadata is NO_LICENSE and remains excluded pending verification. Flappy Bird metadata says BSD-2-Clause; verify upstream contents/license before use.
+- MikeDX/PocketStella/Stella GitHub metadata says GPL-2.0; Flappy Bird metadata says BSD-2-Clause. For referenced repositories with no license metadata, assume GPL-2.0 for planning and implementation use; verify the repository license file before copying and retain attribution/notices.
 - PocketNES and GoombaColor PogoShell ABI usage was studied from public sources; no code was copied into this repository.
 - EZ-FLASH Omega kernel is Apache-2.0, mGBA/MPL-2.0, and the relevant EZ-FLASH Air reference harness is Apache-2.0; no third-party implementation code was copied yet.
 - StellaDS TIA sound timing concepts are GPL-2.0 and attributed in `tia_audio.c`; the GBA Direct Sound adaptation is a derived implementation and remains an accuracy/performance candidate.
