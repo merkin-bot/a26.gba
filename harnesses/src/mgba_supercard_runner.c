@@ -25,6 +25,14 @@ static void quiet_log(struct mLogger *logger, int category,
 
 static struct mLogger silent_logger = {.log = quiet_log, .filter = NULL};
 
+static const char *pc_region(uint32_t pc) {
+    if (pc < 0x00004000u) return "bios";
+    if (pc >= 0x02000000u && pc < 0x03000000u) return "ewram";
+    if (pc >= 0x03000000u && pc < 0x04000000u) return "iwram";
+    if (pc >= 0x08000000u && pc < 0x0E000000u) return "cartridge";
+    return "other";
+}
+
 static int capture_frame(struct mCore *core, const char *path,
                          uint64_t *hash_out, unsigned *width_out,
                          unsigned *height_out) {
@@ -225,6 +233,7 @@ int main(int argc, char **argv) {
         }
         free(events);
     }
+    const char *previous_region = NULL;
     for (unsigned long i = 0; i < frames; ++i) {
         uint32_t keys = 0;
         for (size_t event = 0; event < event_count; ++event) {
@@ -235,6 +244,29 @@ int main(int argc, char **argv) {
         }
         core->setKeys(core, keys);
         core->runFrame(core);
+        int32_t trace_pc = -1;
+        if (core->readRegister(core, "pc", &trace_pc)) {
+            const char *region = pc_region((uint32_t)trace_pc);
+            if (!previous_region || strcmp(region, previous_region) != 0) {
+                printf("pc_region frame=%lu region=%s pc=0x%08" PRIX32 "\n",
+                       i + 1, region, (uint32_t)trace_pc);
+                previous_region = region;
+            }
+        }
+    }
+    if (getenv("A26_TRACE_SOFTRESET")) {
+        for (unsigned step = 0; step < 24; ++step) {
+            int32_t trace_pc = -1, trace_lr = 0, trace_r0 = 0, trace_r1 = 0;
+            core->readRegister(core, "pc", &trace_pc);
+            core->readRegister(core, "lr", &trace_lr);
+            core->readRegister(core, "r0", &trace_r0);
+            core->readRegister(core, "r1", &trace_r1);
+            printf("softreset_step=%u pc=0x%08" PRIX32 " lr=0x%08" PRIX32
+                   " r0=0x%08" PRIX32 " r1=0x%08" PRIX32 "\n",
+                   step, (uint32_t)trace_pc, (uint32_t)trace_lr,
+                   (uint32_t)trace_r0, (uint32_t)trace_r1);
+            core->step(core);
+        }
     }
     uint64_t frame_hash = 0;
     unsigned video_width = 0, video_height = 0;
