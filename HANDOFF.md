@@ -3,7 +3,7 @@
 - **Doing now:** Baseline/harness audit: plugin hash verified and standalone Flappy fixture running in stock mGBA.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `574e0cb`
+- **Last pushed commit:** `cf5e58f`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.

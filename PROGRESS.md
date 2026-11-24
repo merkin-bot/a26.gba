@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 16:10 UTC by Copilot
 **Current branch:** main
-**Last pushed commit:** 574e0cb
+**Last pushed commit:** cf5e58f
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -138,7 +138,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ### Done
 | Date | Task | Commit | Notes |
 |------|------|--------|-------|
-| 2026-11-24 | Initial audit and reproducible build baseline | f9c87d7 | Extracted archive, created handoff, Docker build reproduces plugin SHA-256 |
+| 2026-11-24 | Initial audit and reproducible build baseline | cf5e58f | Extracted archive, created handoff, Docker build reproduces plugin SHA-256 |
 
 ---
 
