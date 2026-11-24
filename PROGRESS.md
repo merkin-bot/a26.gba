@@ -124,15 +124,15 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Performance optimization with Stella desktop reference baseline.
-- **Exact step:** DE and Original OMEGA DSSMM native mGBA launch suites pass all five cases each. BLUE suite is pending after moving its stale nested target build directory. All traces stop at mocked card handoff and do not verify full SD/card I/O. Actual mGBA runtime is 0.10.2; DSSMM generated JSON hardcodes stale 0.10.1. Then audit uncovered GBA/card/SD behavior.
+- **Exact step:** DE and Original OMEGA DSSMM native mGBA launch suites pass all five cases each; BLUE suite is running after moving its stale nested target build directory. All traces stop at mocked card handoff and do not verify full SD/card I/O. Actual mGBA runtime is 0.10.2; DSSMM generated JSON hardcodes stale 0.10.1. Next check SuperFW Chis/SD/Lite build and native mGBA preview coverage, then design only the uncovered GBA/card/SD layer.
 - **Files touched:** `AGENTS.md`, `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `harnesses/cards.json`, `harnesses/.gitignore`.
 - **Uncommitted changes:** None after commit `3c71a24`; test outputs and DSSMM clone are ignored.
 - **Branch:** main
 - **Resume command:** `cd harnesses/third_party/dssmm && PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash ezfomegade/scripts/test-native-launch-mgba.sh` (repeat for `ezfomega` and `ezfblue`; wrapper is session-local).
 
 ### Next up (ordered)
-1. Finish a documented, hardware-evidence-based mGBA harness for EZ-FLASH Omega and SuperCard behavior.
-2. Verify PogoShell launch, ROM handoff, inputs, save/SD paths with reproducible headless traces.
+1. Reuse and qualify existing DSSMM mGBA fixtures for all six matching kernels: three EZ-FLASH profiles and SuperFW Chis/SD/Lite.
+2. Implement only the missing mGBA hardware/card/SD layers needed to run the actual kernel and its FAT-based plugin/ROM loading path.
 3. Keep mGBA harness behavior separate from plugin workarounds; document hardware gaps.
 4. After harness verification, resume plugin timing/optimization with responsive input and stable 30 fps plus audio sync as targets.
 5. Compare Stella and plugin output at synchronized game states; hardware qualification remains final authority.
@@ -239,3 +239,4 @@ Short dated entries. Trim old entries periodically.
 - 2026-11-24: Owner clarified all target cards use the matching DSSMM kernels and requested reuse of that repository’s GBA/SuperCard/EZ mGBA tests. Pinned snapshot `f6350776`; found three EZ native launch suites plus SuperFW renderer/menu fixtures. Their docs explicitly say physical SD transfer, saves, patching, boot/page effects are mocked; full card+SD is not emulated. Added six-profile matrix and three-layer harness description; no DSSMM code copied. EZ DE/Original/BLUE native launch scripts are being run with Docker devkitARM and host mGBA; first attempt failed due stale `/work` dependency paths.
 
 - 2026-11-24: Reused DSSMM native launch suites. `ezfomegade` and `ezfomega` each passed five mGBA launch scenarios (FAT alias, exFAT, long name, quick clean, quick addon), reaching mocked cartridge handoff. Actual runtime was mGBA 0.10.2, Xvfb, no BIOS; generated DSSMM JSON labels 0.10.1 incorrectly. BLUE first build hit stale `/work` dependencies; the nested `ezfblue/targets/blue/build-launch` directory was preserved/renamed and rerun is next. These tests do not validate physical SD/card protocols.
+- 2026-11-24: Owner reminded to include all SuperCard variants. Matrix already lists DSSMM SuperFW Build667 profiles for Chis/Chis Prime, SD, and Lite. SuperFW has existing native menu/settings/renderer tests, but its own `MGBA-TESTING.md` says these do not initialize physical SD/NOR/SDRAM. Next after BLUE: inspect per-board build/test switches and reuse those tests; record which one exercises kernel code versus presentation fixture, then implement missing emulated card bus only against source evidence.

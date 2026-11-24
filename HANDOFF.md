@@ -1,7 +1,7 @@
 # Crash Recovery
 
 - **Doing now:** Hardware faithful mGBA harness work for EZ-FLASH Omega and SuperCard. Do not resume plugin optimizations until the harness is verified; do not alter harness behavior to compensate for plugin problems.
-- **Exact next step:** Finish the BLUE DSSMM native launch suite, then map the still-missing full GBA/card/SD path. DE and Original OMEGA each passed five launch cases; traces reach mocked cartridge handoff only. Six kernel profiles are in `harnesses/cards.json`. Full kernel/card/SD integration remains unimplemented. `harnesses/CMakeLists.txt` references missing runner source. Do not resume plugin tuning until harness is verified.
+- **Exact next step:** Finish BLUE native launch suite, then inspect/build/reuse SuperFW Chis, SD, and Lite tests. DE and Original OMEGA each passed five launch cases; BLUE first case reached mocked handoff. These fixtures stop before real card/SD operations. All six matching kernels are in `harnesses/cards.json`. Full kernel/card/SD integration remains unimplemented. `harnesses/CMakeLists.txt` references missing runner source. Do not resume plugin tuning until harness is verified.
 - **Branch:** `main`
 - **Last known commit:** `3c71a24` (pushed to origin/main)
 - **Build:** `bash scripts/build-plugin.sh` and `bash scripts/test-baseline.sh` completed during resume. Actual host mGBA is 0.10.2.
@@ -22,5 +22,6 @@
    ```
 4. If missing, clone DSSMM and pin the snapshot: `git clone https://github.com/voluptuary/dssmm.git harnesses/third_party/dssmm && git -C harnesses/third_party/dssmm checkout f6350776f07eba91ba2ffa34c6833d85f348f2a1`.
 5. From `harnesses/third_party/dssmm`, run `PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash ezfblue/scripts/test-native-launch-mgba.sh`. For stale `/work` `.d` paths, preserve/rename `ezfblue/targets/blue/build-launch` before retry. Inspect JSON/logs; note the script labels mGBA 0.10.1 while this host runs 0.10.2.
-6. Fresh Codespace setup is in `PROGRESS.md` section 3. Plugin build: `bash scripts/build-plugin.sh`; smoke baseline: `bash scripts/test-baseline.sh`. Do not commit BIOS, card/kernel binaries, generated SD images or ignored source clones.
+7. SuperCard profiles are DSSMM SuperFW Build 667 `BOARD=chis`, `BOARD=sd`, and `BOARD=lite`; existing preview/menu tests are documented at `harnesses/third_party/dssmm/superfw/docs/MGBA-TESTING.md`. They do not exercise the SD/card bus.
+8. Fresh Codespace setup is in `PROGRESS.md` section 3. Plugin build: `bash scripts/build-plugin.sh`; smoke baseline: `bash scripts/test-baseline.sh`. Do not commit BIOS, card/kernel binaries, generated SD images or ignored source clones.
 - **Priority:** Complete and verify GBA + six card profiles + SD images before plugin optimization. The harness must represent documented hardware; plugin fixes belong in plugin source. Stella/mGBA are desktop references only; real hardware remains final authority.
