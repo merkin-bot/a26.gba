@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** StellaDS permission and GPL-2.0 reference policy documented; TIA polynomial and collision lookup optimizations pass host/cold-boot/frame tests.
+- **Doing now:** StellaDS permission, GPL-2.0 policy, polynomial/collision lookup, and empty-queue raster optimizations pass cold-boot/frame tests.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `c284c61`
+- **Last pushed commit:** `8cddc1a`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
