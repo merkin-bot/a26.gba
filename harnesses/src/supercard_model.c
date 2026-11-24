@@ -24,11 +24,27 @@ static int load_sd_data_block(SuperCardModel *model) {
     return ok;
 }
 
-static int is_sd_interface_address(uint32_t address) {
+static int is_sd_interface_address(const SuperCardModel *model,
+                                  uint32_t address) {
     return address == SC_RDWR_COMMAND || address == SC_WRITE_REGISTER_8 ||
            address == SC_WRITE_REGISTER_A || address == SC_READ_REGISTER_8 ||
            address == SC_READ_REGISTER_A ||
+           (model->board == SUPERCARD_BOARD_SD &&
+            ((address >= SC_READ_REGISTER_8 &&
+              address <= SC_READ_REGISTER_8 + 0x1Cu) ||
+             (address >= SC_READ_REGISTER_A &&
+              address <= SC_READ_REGISTER_A + 0x1Cu))) ||
            (address >= 0x09200000u && address <= 0x0920001Cu);
+}
+
+static int is_sd_data_port(const SuperCardModel *model, uint32_t address) {
+    if (model->board == SUPERCARD_BOARD_SD) {
+        return (address >= SC_READ_REGISTER_8 &&
+                address <= SC_READ_REGISTER_8 + 0x1Cu) ||
+               (address >= SC_READ_REGISTER_A &&
+                address <= SC_READ_REGISTER_A + 0x1Cu);
+    }
+    return address >= 0x09200000u && address <= 0x0920001Cu;
 }
 
 void supercard_reset(SuperCardModel *model) {
@@ -50,12 +66,27 @@ void supercard_reset(SuperCardModel *model) {
     model->sd_write_offset = 0;
     model->sd_write_lba = 0;
     model->sd_write_active = 0;
+    model->sd_write_payload_active = 0;
     model->sd_write_response_bit = 0;
+    memset(model->chis_nor_map, 0, sizeof(model->chis_nor_map));
+    model->chis_nor_map_cursor = 0;
+    model->chis_nor_map_writes = 0;
 }
 
 int supercard_write(SuperCardModel *model, uint32_t address, uint16_t value) {
     if (address != SC_MODE_REG)
         return 0;
+    if (model->board == SUPERCARD_BOARD_CHIS &&
+        model->mode_magic_writes == 2 && model->mode_value_writes == 0 &&
+        (value & 0x0100u)) {
+        model->chis_nor_map[model->chis_nor_map_cursor] = (uint8_t)value;
+        model->chis_nor_map_cursor = (model->chis_nor_map_cursor + 1u) & 7u;
+        ++model->chis_nor_map_writes;
+        model->mode_magic_writes = 0;
+        model->mode_value_writes = 0;
+        model->pending_mode = 0;
+        return 1;
+    }
     if (model->mode_magic_writes < 2 && value == SC_MAGIC) {
         ++model->mode_magic_writes;
         model->mode_value_writes = 0;
@@ -84,7 +115,7 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
     if (!model || !value) {
         return 0;
     }
-    if (!(model->sd_interface && is_sd_interface_address(address)) &&
+    if (!(model->sd_interface && is_sd_interface_address(model, address)) &&
         model->mode == SUPERCARD_MODE_SDRAM &&
         address >= 0x08000000u && address < 0x0A000000u &&
         (width == 8 || width == 16 || width == 32)) {
@@ -102,7 +133,7 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
     if (!model->sd_interface) {
         return 0;
     }
-    if (address >= 0x09200000u && address <= 0x0920001Cu && width == 32) {
+    if (is_sd_data_port(model, address) && width == 32) {
         if (!model->sd_data_active || model->sd_data_offset + 4u > 520u) {
             return 0;
         }
@@ -160,7 +191,8 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
         }
         return 1;
     }
-    if (address == SC_WRITE_REGISTER_8 && model->sd_write_response_bit) {
+    if ((address == SC_WRITE_REGISTER_8 || address == SC_WRITE_REGISTER_A) &&
+        model->sd_write_response_bit) {
         static const uint8_t accepted[] = {0, 1, 0, 1};
         size_t bit = (size_t)model->sd_write_response_bit - 1u;
         *value = bit < sizeof(accepted) ?
@@ -300,6 +332,7 @@ int supercard_sd_command_write(SuperCardModel *model, uint32_t address,
             model->sd_data_active = 0;
             model->sd_data_token_pending = 0;
             model->sd_write_active = 0;
+            model->sd_write_payload_active = 0;
             model->sd_write_response_bit = 0;
             queue_short_response(model, index, 0);
         } else if (index == 25u) {
@@ -307,6 +340,7 @@ int supercard_sd_command_write(SuperCardModel *model, uint32_t address,
             model->sd_write_lba = argument;
             model->sd_write_offset = 0;
             model->sd_write_active = 1;
+            model->sd_write_payload_active = 0;
             queue_short_response(model, index, 0);
         } else if (index == 6u || index == 7u || index == 13u || index == 16u) {
             queue_short_response(model, index, 0);
@@ -319,27 +353,56 @@ int supercard_sd_command_write(SuperCardModel *model, uint32_t address,
 
 int supercard_sd_data_write(SuperCardModel *model, uint32_t address,
                             uint32_t width, uint32_t value) {
-    if (!model || !model->sd_interface || !model->sd_write_active ||
-        address < 0x09200000u || address > 0x0920001Cu || width != 32 ||
-        model->sd_write_offset + 4u > sizeof(model->sd_write_buffer)) {
+    if (!model || !model->sd_interface || !model->sd_write_active) {
         return 0;
     }
-    size_t offset = model->sd_write_offset;
-    for (unsigned i = 0; i < 4; ++i) {
-        model->sd_write_buffer[offset + i] = (uint8_t)(value >> (i * 8u));
+    int serial_port = address == SC_WRITE_REGISTER_8 ||
+                      address == SC_WRITE_REGISTER_A;
+    if (serial_port && model->board == SUPERCARD_BOARD_LITE) {
+        return width == 16 || width == 32; /* Lite uses this port for control bits. */
     }
-    model->sd_write_offset += 4u;
+    if (serial_port) {
+        if (width != 16 && width != 32) {
+            return 0;
+        }
+        if (!model->sd_write_payload_active) {
+            if (value == 0u && width == 16) {
+                model->sd_write_payload_active = 1;
+                model->sd_write_offset = 0;
+            }
+            return 1; /* Ignore the source's all-high clocks and start token. */
+        }
+        if (width != 32 || model->sd_write_offset >=
+                           sizeof(model->sd_write_buffer)) {
+            return 0;
+        }
+        model->sd_write_buffer[model->sd_write_offset++] = (uint8_t)value;
+    } else if (model->board == SUPERCARD_BOARD_LITE) {
+        if (address < 0x09200000u || address > 0x0920001Cu || width != 32 ||
+            model->sd_write_offset + 4u > sizeof(model->sd_write_buffer)) {
+            return 0;
+        }
+        size_t offset = model->sd_write_offset;
+        for (unsigned i = 0; i < 4; ++i) {
+            model->sd_write_buffer[offset + i] = (uint8_t)(value >> (i * 8u));
+        }
+        model->sd_write_offset += 4u;
+    } else {
+        return 0;
+    }
     if (model->sd_write_offset == sizeof(model->sd_write_buffer)) {
         if (!supercard_sd_write(model, model->sd_write_lba,
                                 model->sd_write_buffer, 1)) {
             ++model->sd_write_failures;
             model->sd_write_active = 0;
+            model->sd_write_payload_active = 0;
             model->sd_write_response_bit = 0;
             return 0;
         }
         ++model->sd_write_blocks;
         ++model->sd_write_lba;
         model->sd_write_offset = 0;
+        model->sd_write_payload_active = 0;
         model->sd_write_response_bit = 1;
     }
     return 1;

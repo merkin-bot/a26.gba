@@ -15,6 +15,44 @@ static void send_command(SuperCardModel *model, const uint8_t command[6]) {
     }
 }
 
+static void read_sd_port_sector(SuperCardModel *model, uint32_t port,
+                                const uint8_t expected[512]) {
+    const uint8_t cmd18[] = {0x52, 0, 0, 0, 0, 0};
+    send_command(model, cmd18);
+    uint32_t value = 0;
+    assert(supercard_read(model, 0x09100000u, 16, &value));
+    assert(value == 0); /* Source polls DAT0 until a block is ready. */
+    for (size_t word = 0; word < 130; ++word) {
+        uint32_t address = port + (uint32_t)(word % 8u) * 4u;
+        assert(supercard_read(model, address, 32, &value));
+        uint32_t want = 0;
+        if (word < 128) {
+            size_t offset = word * 4u;
+            want = (uint32_t)expected[offset] |
+                   ((uint32_t)expected[offset + 1u] << 8) |
+                   ((uint32_t)expected[offset + 2u] << 16) |
+                   ((uint32_t)expected[offset + 3u] << 24);
+        }
+        assert(value == want); /* Last 8 bytes are the source-read checksum. */
+    }
+}
+
+static void write_serial_sector(SuperCardModel *model, uint32_t port,
+                                const uint8_t data[512]) {
+    const uint8_t cmd25[] = {0x59, 0, 0, 0, 0, 0};
+    send_command(model, cmd25);
+    assert(model->sd_write_active);
+    for (unsigned i = 0; i < 3; ++i)
+        assert(supercard_sd_data_write(model, port, 32, 0xFFFFFFFFu));
+    assert(supercard_sd_data_write(model, port, 16, 0xFFFFu));
+    assert(supercard_sd_data_write(model, port, 16, 0)); /* Start token. */
+    for (size_t i = 0; i < 520; ++i) {
+        uint32_t byte = i < 512 ? data[i] : 0;
+        assert(supercard_sd_data_write(model, port, 32, byte));
+    }
+    assert(model->sd_write_blocks > 0 && model->sd_write_failures == 0);
+}
+
 int main(void) {
     const uint8_t cmd0[] = {0x40, 0x00, 0x00, 0x00, 0x00, 0x95};
     uint16_t cmd_writes[48];
@@ -149,10 +187,83 @@ int main(void) {
         }
         assert(line_value == expected);
     }
+    model.board = SUPERCARD_BOARD_SD;
+    supercard_reset(&model);
+    model.board = SUPERCARD_BOARD_SD;
+    model.sd_path = sd;
+    model.sdram = sdram;
+    model.sdram_size = sizeof(sdram);
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    read_sd_port_sector(&model, 0x09100000u, block);
+    read_sd_port_sector(&model, 0x0B100000u, block);
+
+    model.board = SUPERCARD_BOARD_CHIS;
+    supercard_reset(&model);
+    model.board = SUPERCARD_BOARD_CHIS;
+    model.sd_path = sd;
+    const uint8_t nor_map[8] = {0x10, 0x21, 0x32, 0x43,
+                                0x54, 0x65, 0x76, 0x87};
+    for (size_t i = 0; i < 8; ++i) {
+        assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+        assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+        assert(supercard_write(&model, 0x09FFFFFEu,
+                               (uint16_t)(0x0100u | nor_map[i])));
+        assert(model.chis_nor_map[i] == nor_map[i]);
+    }
+    assert(model.chis_nor_map_writes == 8 && model.chis_nor_map_cursor == 0);
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(model.mode == SUPERCARD_MODE_SDRAM && model.sd_interface &&
+           model.write_access);
     read_block[0] ^= 0xFF;
     assert(supercard_sd_write(&model, 0, read_block, 1));
     assert(supercard_sd_read(&model, 0, read_block, 1));
     assert(read_block[0] == (uint8_t)(255 ^ 0));
+
+    model.board = SUPERCARD_BOARD_SD;
+    supercard_reset(&model);
+    model.board = SUPERCARD_BOARD_SD;
+    model.sd_path = sd;
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    write_serial_sector(&model, 0x0B000000u, read_block);
+    assert(supercard_sd_read(&model, 0, read_block, 1));
+    assert(read_block[0] == 0xFF && read_block[1] == 1);
+
+    model.board = SUPERCARD_BOARD_CHIS;
+    supercard_reset(&model);
+    model.board = SUPERCARD_BOARD_CHIS;
+    model.sd_path = sd;
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    read_block[0] = 0x5A;
+    write_serial_sector(&model, 0x09000000u, read_block);
+    assert(supercard_sd_read(&model, 0, read_block, 1));
+    assert(read_block[0] == 0x5A && read_block[1] == 1);
+
+    /* Keep the pre-existing Lite block-port path isolated from board tests. */
+    model.board = SUPERCARD_BOARD_LITE;
+    supercard_reset(&model);
+    model.board = SUPERCARD_BOARD_LITE;
+    model.sd_path = sd;
+    model.sdram = sdram;
+    model.sdram_size = sizeof(sdram);
+    model.sd_write_commands = 0;
+    model.sd_write_blocks = 0;
+    model.sd_write_failures = 0;
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0xA55A));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
+    assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
     const uint8_t cmd55[] = {0x77, 0, 0, 0, 0, 0};
     const uint8_t acmd23[] = {0x57, 0, 0, 0, 1, 0};
     send_command(&model, cmd55);
@@ -161,6 +272,8 @@ int main(void) {
     assert(!model.sd_application_command && model.sd_responses_issued > 0);
     assert(supercard_read(&model, 0x09800000u, 16, &line_value));
     assert(line_value == 0); /* ACMD23 has a response instead of timing out. */
+    read_block[0] = 0xFF;
+    read_block[1] = 1;
     const uint8_t cmd25[] = {0x59, 0, 0, 0, 0, 0};
     send_command(&model, cmd25);
     assert(model.sd_write_active && model.sd_write_commands == 1);

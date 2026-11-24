@@ -25,6 +25,31 @@ static void quiet_log(struct mLogger *logger, int category,
 
 static struct mLogger silent_logger = {.log = quiet_log, .filter = NULL};
 
+static const char *supercard_board_name(SuperCardBoard board) {
+    switch (board) {
+    case SUPERCARD_BOARD_SD: return "sd";
+    case SUPERCARD_BOARD_CHIS: return "chis";
+    case SUPERCARD_BOARD_LITE:
+    default: return "lite";
+    }
+}
+
+static int parse_supercard_board(const char *name, SuperCardBoard *board) {
+    if (!name || strcmp(name, "lite") == 0) {
+        *board = SUPERCARD_BOARD_LITE;
+        return 1;
+    }
+    if (strcmp(name, "sd") == 0) {
+        *board = SUPERCARD_BOARD_SD;
+        return 1;
+    }
+    if (strcmp(name, "chis") == 0) {
+        *board = SUPERCARD_BOARD_CHIS;
+        return 1;
+    }
+    return 0;
+}
+
 static const char *pc_region(uint32_t pc) {
     if (pc < 0x00004000u) return "bios";
     if (pc >= 0x02000000u && pc < 0x03000000u) return "ewram";
@@ -126,7 +151,8 @@ int main(int argc, char **argv) {
     mLogSetDefaultLogger(&silent_logger);
     if (argc < 2 || argc > 6) {
         fprintf(stderr, "usage: %s <gba-image> [frames [sd-image [capture.ppm [key-events]]]]\n"
-                        "  key-events: comma-separated frame:mask taps (e.g. 1800:0x1)\n", argv[0]);
+                        "  key-events: comma-separated frame:mask taps (e.g. 1800:0x1)\n"
+                        "  A26_SUPERCARD_BOARD: lite (default), sd, or chis\n", argv[0]);
         return 2;
     }
     char *end = NULL;
@@ -137,6 +163,10 @@ int main(int argc, char **argv) {
     }
 
     SuperCardModel model = {0};
+    if (!parse_supercard_board(getenv("A26_SUPERCARD_BOARD"), &model.board)) {
+        fputs("A26_SUPERCARD_BOARD must be lite, sd, or chis\n", stderr);
+        return 2;
+    }
     supercard_reset(&model);
     model.sdram_size = 0x02000000u;
     model.sdram = calloc(1, model.sdram_size);
@@ -490,7 +520,7 @@ int main(int argc, char **argv) {
            " mode_register_writes=%" PRIu64 " magic_writes=%" PRIu64
            " mode_words=%" PRIu64 " last_mode=0x%04X sd_command_writes=%" PRIu64
            " sd_data_writes=%" PRIu64 " cartridge_writes=%" PRIu64
-           " last_cartridge_write=0x%08" PRIX32 " map=%s sd=%d write=%d"
+           " last_cartridge_write=0x%08" PRIX32 " board=%s map=%s sd=%d write=%d"
            " framebuffer=%ux%u fnv64=%016" PRIX64 " capture=%s\n",
            frames, end_frame - start_frame, has_pc ? "" : "unavailable:",
            has_pc ? (uint32_t) pc : 0, (uint32_t) r0, (uint32_t) r1,
@@ -499,6 +529,7 @@ int main(int argc, char **argv) {
            bus.mode_magic_writes, bus.mode_value_writes, bus.last_mode_word,
            bus.sd_command_writes, bus.sd_data_writes,
            bus.cartridge_writes, bus.last_cartridge_write,
+           supercard_board_name(model.board),
            model.mode == SUPERCARD_MODE_SDRAM ? "sdram" : "firmware",
            model.sd_interface, model.write_access, video_width, video_height,
            frame_hash, capture_path ? capture_path : "(not-written)");

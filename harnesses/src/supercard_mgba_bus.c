@@ -43,7 +43,21 @@ static int is_sdram_address(uint32_t address) {
     return address >= 0x08000000u && address < 0x0A000000u;
 }
 
-static int is_lite_data_address(uint32_t address) {
+static int is_lite_data_address(const SuperCardModel *model,
+                                uint32_t address) {
+    return model && model->board == SUPERCARD_BOARD_LITE &&
+           address >= 0x09200000u && address <= 0x0920001Cu;
+}
+
+static int is_sd_read_data_address(const SuperCardModel *model,
+                                   uint32_t address) {
+    if (!model) {
+        return 0;
+    }
+    if (model->board == SUPERCARD_BOARD_SD) {
+        return (address >= 0x09100000u && address <= 0x0910001Cu) ||
+               (address >= 0x0B100000u && address <= 0x0B10001Cu);
+    }
     return address >= 0x09200000u && address <= 0x0920001Cu;
 }
 
@@ -103,15 +117,17 @@ static int is_sdram_multiple(struct ARMCore *cpu, uint32_t address,
 }
 
 static int is_lite_data_multiple(uint32_t address, int mask,
-                                enum LSMDirection direction) {
-    return direction == LSM_IA && address == 0x09200000u && mask != 0;
+                                enum LSMDirection direction,
+                                const SuperCardModel *model) {
+    return model && model->board == SUPERCARD_BOARD_LITE &&
+           direction == LSM_IA && address == 0x09200000u && mask != 0;
 }
 
 static uint32_t supercard_load_multiple(struct ARMCore *cpu, uint32_t address,
                                         int mask, enum LSMDirection direction,
                                         int *cycle_counter) {
     if (active_bus && direction == LSM_IA &&
-        ((address >= 0x09200000u && address <= 0x0920001Cu) ||
+        (is_sd_read_data_address(active_bus->model, address) ||
          is_sdram_address(address))) {
         uint32_t next = active_bus->original_load_multiple(
             cpu, address, mask, direction, cycle_counter);
@@ -123,7 +139,7 @@ static uint32_t supercard_load_multiple(struct ARMCore *cpu, uint32_t address,
             uint32_t value;
             if (supercard_read(active_bus->model, data_address, 32, &value)) {
                 cpu->gprs[reg] = value;
-                if (data_address >= 0x09200000u && data_address <= 0x0920001Cu) {
+                if (is_sd_read_data_address(active_bus->model, data_address)) {
                     ++active_bus->sd_data_reads;
                 }
             }
@@ -139,7 +155,8 @@ static uint32_t supercard_store_multiple(struct ARMCore *cpu, uint32_t address,
                                          int mask, enum LSMDirection direction,
                                          int *cycle_counter) {
     if (active_bus && (is_sdram_multiple(cpu, address, mask, direction) ||
-                       is_lite_data_multiple(address, mask, direction))) {
+                       is_lite_data_multiple(address, mask, direction,
+                                             active_bus->model))) {
         uint32_t next = active_bus->original_store_multiple(
             cpu, address, mask, direction, cycle_counter);
         trace_reset_stack_multiple(cpu, address, mask, direction);
@@ -148,7 +165,7 @@ static uint32_t supercard_store_multiple(struct ARMCore *cpu, uint32_t address,
             if (!(mask & (1 << reg))) {
                 continue;
             }
-            if (is_lite_data_address(data_address) ||
+            if (is_lite_data_address(active_bus->model, data_address) ||
                 !supercard_store_memory(active_bus->model, data_address, 32,
                                         cpu->gprs[reg])) {
                 (void)supercard_sd_data_write(active_bus->model, data_address,
@@ -168,7 +185,7 @@ static uint32_t supercard_load32(struct ARMCore *cpu, uint32_t address,
                                  int *cycle_counter) {
     uint32_t value;
     if (active_bus && supercard_read(active_bus->model, address, 32, &value)) {
-        if (address >= 0x09200000u && address <= 0x0920001Cu) {
+        if (is_sd_read_data_address(active_bus->model, address)) {
             ++active_bus->sd_data_reads;
         }
         return value;
@@ -215,6 +232,10 @@ static void count_sd_write(uint32_t address) {
 static void supercard_store8(struct ARMCore *cpu, uint32_t address,
                              int8_t value, int *cycle_counter) {
     count_sd_write(address);
+    if (active_bus && supercard_sd_data_write(active_bus->model, address, 8,
+                                               (uint8_t)value)) {
+        return;
+    }
     if (active_bus && supercard_store_memory(active_bus->model, address, 8,
                                               (uint8_t)value)) {
         return;
@@ -247,6 +268,10 @@ static void supercard_store16(struct ARMCore *cpu, uint32_t address,
             (uint16_t) value;
     }
     count_sd_write(address);
+    if (active_bus && supercard_sd_data_write(active_bus->model, address, 16,
+                                               (uint16_t)value)) {
+        return;
+    }
     if (active_bus && supercard_store_memory(active_bus->model, address, 16,
                                               (uint16_t)value)) {
         return;
@@ -258,13 +283,13 @@ static void supercard_store16(struct ARMCore *cpu, uint32_t address,
 static void supercard_store32(struct ARMCore *cpu, uint32_t address,
                               int32_t value, int *cycle_counter) {
     count_sd_write(address);
-    if (active_bus && !is_lite_data_address(address) &&
-        supercard_store_memory(active_bus->model, address, 32,
-                                              (uint32_t)value)) {
-        return;
-    }
     if (active_bus && supercard_sd_data_write(active_bus->model, address, 32,
                                                (uint32_t)value)) {
+        return;
+    }
+    if (active_bus && !is_lite_data_address(active_bus->model, address) &&
+        supercard_store_memory(active_bus->model, address, 32,
+                                              (uint32_t)value)) {
         return;
     }
     active_bus->original_store32(cpu, address, value, cycle_counter);

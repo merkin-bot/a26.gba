@@ -8,6 +8,12 @@ typedef enum {
     SUPERCARD_MODE_SDRAM = 1
 } SuperCardMapMode;
 
+typedef enum {
+    SUPERCARD_BOARD_LITE = 0,
+    SUPERCARD_BOARD_SD = 1,
+    SUPERCARD_BOARD_CHIS = 2
+} SuperCardBoard;
+
 typedef struct {
     uint8_t *cart;
     size_t cart_size;
@@ -46,10 +52,15 @@ typedef struct {
     size_t sd_write_offset;
     uint32_t sd_write_lba;
     int sd_write_active;
+    int sd_write_payload_active;
     uint8_t sd_write_response_bit;
     uint64_t sd_write_commands;
     uint64_t sd_write_blocks;
     uint64_t sd_write_failures;
+    SuperCardBoard board;
+    uint8_t chis_nor_map[8];
+    unsigned chis_nor_map_cursor;
+    uint64_t chis_nor_map_writes;
 } SuperCardModel;
 
 void supercard_reset(SuperCardModel *model);
