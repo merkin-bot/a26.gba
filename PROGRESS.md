@@ -2,9 +2,9 @@
 
 Handoff document for any AI agent or human continuing this project. Read `AGENTS.md` first, then this file in full.
 
-**Last updated:** 2026-11-24 16:05 UTC by Copilot
+**Last updated:** 2026-11-24 16:10 UTC by Copilot
 **Current branch:** main
-**Last pushed commit:** f9c87d7
+**Last pushed commit:** 574e0cb
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -45,14 +45,15 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 - Unpack `a26.zip`: `unzip -oq a26.zip -d archive-inputs` -> extracted assets live in `archive-inputs/`
 - Extract test source: `unzip -oq archive-inputs/atari2600-test-source.zip -d archive-inputs/test-source`
 - PogoShell and other required third-party binaries: where to get them, where to place them, license notes. **Do not commit** anything whose redistribution is not permitted.
-- Open-source test game: `<path>`, license: <TODO>
+- Open-source test game: `archive-inputs/flappy.a26`, source/license: archive-provenance `JetSetIlly/Atari2600-Flappy-Bird` BSD-2-Clause source at `/tmp/flappy` during audit; verify source matches binary by its upstream build if copied.
 
 ### 3.4 Build and test commands
 - Build plugin: `<TODO>`
 - Build plugin: `bash scripts/build-plugin.sh` (official `devkitpro/devkitarm:latest` Docker image)
+- Build standalone stock-mGBA fixture: `bash scripts/build-fixture.sh`
 - Build patched mGBA (with SuperCard/EZ-Flash harnesses): `<TODO>`
 - Run stock mGBA headlessly: `bash scripts/run-mgba.sh <gba-rom> <seconds>`
-- Run tests: native source regression checks are embedded under the prepared source; exact command: `<TODO>`
+- Run baseline: `bash scripts/test-baseline.sh`
 
 ### 3.5 Codespaces limitations hit
 - No USB passthrough to real hardware, storage limits, idle timeout, etc.: <TODO, add as discovered, with workarounds>
@@ -97,6 +98,9 @@ Each fact needs a source or evidence. Separate verified from unverified.
 - Existing prepared plugin supports 2K/4K/8K F8/16K F6 only; no TIA audio implementation is present (source: `atari2600-test.txt`, source search).
 - PogoShell argument block is fixed at EWRAM `0x0203fbf8` and ROM handoff validates a known ABI marker (source: `startup.S`, `files.c`).
 - A hardware SuperFlash 822 trial and compatibility claims beyond the diagnostic are unqualified (source: `atari2600-test.txt`).
+- A standalone `A26_FIXTURE` GBA image embeds `archive-inputs/flappy.a26` and survives 3 seconds under stock Ubuntu mGBA 0.10.2/Xvfb (source: `scripts/test-baseline.sh`).
+- Public PocketNES/GoombaColor source confirms PogoShell launch at `0x0203FBFC` and tail at `0x0203FBF8`, plus ROM filename parsing from `0x0203FC08` (source: public GPL/Github references; license verify per-file before reuse).
+- EZ-FLASH Omega kernel public metadata is Apache-2.0 (source: GitHub API); it is a kernel reference only, not evidence of physical cartridge behavior.
 
 ### UNVERIFIED
 - PogoShell ABI details, return stub layout, and save memory behavior beyond the source's fixed argument block (how to verify: obtain PogoShell/plugin source or a real firmware experiment).
@@ -111,8 +115,8 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ## 6. Task board
 
 ### In progress
-- **Task:** Onboard and audit
-- **Exact step:** Archive audit and reproducible build baseline complete; next establish native baseline tests and mGBA harness.
+- **Task:** Baseline and harness audit
+- **Exact step:** Normal plugin and standalone fixture builds pass; next replace stock fixture seam with a PogoShell/mGBA harness and capture hashes.
 - **Files touched:** `AGENTS.md`, `PROGRESS.md`, `HANDOFF.md`, `.devcontainer/*`, `scripts/*`, `archive-inputs/*`
 - **Uncommitted changes:** yes
 - **Branch:** main
@@ -151,7 +155,8 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | Test/harness | How to run | Status | Notes |
 |--------------|-----------|--------|-------|
 | Reproducible plugin build | `bash scripts/build-plugin.sh` | PASS | SHA-256 matches `archive-inputs/a26.gba` |
-| Stock mGBA launch | `bash scripts/run-mgba.sh <rom> <seconds>` | PARTIAL | mGBA executable verified, plugin/harness execution not yet proven |
+| Stock mGBA standalone fixture | `bash scripts/test-baseline.sh` | PASS | Fixture survived 3 seconds under stock mGBA 0.10.2/Xvfb |
+| Stock mGBA plugin launch | `bash scripts/run-mgba.sh <plugin> <seconds>` | NOT VALID | Plugin rejected as incompatible because PogoShell ABI is absent |
 | PogoShell ABI harness | `<TODO>` | NOT STARTED | no patched harness found or built |
 
 ### Known harness-vs-hardware differences
@@ -170,10 +175,12 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ### Design decisions
 - Official `devkitpro/devkitarm:latest` Docker image is the default build path because it produced the exact archived plugin hash and avoids broken host bootstrap.
 - Keep extracted archive assets under `archive-inputs/` until source layout is stabilized; do not add build outputs or commercial ROM payloads to Git.
+- Use a standalone fixture only for core smoke tests; never treat stock-mGBA PogoShell simulation as proof of card firmware behavior.
 
 ### Licensing notes
 - Archive prepared source retains GPLv3; legacy upstream code is GNU GPL as stated in source/CREDITS without a numbered version in some files.
 - MikeDX/PocketStella/Stella GitHub metadata says GPL-2.0; verify license files before reuse. StellaDS metadata is NO_LICENSE and remains excluded pending verification. Flappy Bird metadata says BSD-2-Clause; verify upstream contents/license before use.
+- PocketNES and GoombaColor PogoShell ABI usage was studied from public sources; no code was copied into this repository.
 
 ---
 
