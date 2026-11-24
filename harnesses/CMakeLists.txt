@@ -29,13 +29,34 @@ target_include_directories(supercard_model PUBLIC include)
 add_executable(supercard-model-test tests/supercard_model_test.c)
 target_link_libraries(supercard-model-test PRIVATE supercard_model)
 
+if(TARGET mgba)
+  add_library(supercard_mgba_bus STATIC src/supercard_mgba_bus.c)
+  target_include_directories(supercard_mgba_bus PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(supercard_mgba_bus PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(supercard_mgba_bus PUBLIC supercard_model mgba)
+
+  add_executable(mgba-core-smoke src/mgba_core_smoke.c)
+  target_include_directories(mgba-core-smoke PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(mgba-core-smoke PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(mgba-core-smoke PRIVATE supercard_mgba_bus)
+endif()
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/mgba_supercard_runner.c")
   add_executable(supercard-mgba-runner src/mgba_supercard_runner.c)
   target_include_directories(supercard-mgba-runner PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
     ${CMAKE_BINARY_DIR}/third_party/mgba/include)
-  target_link_libraries(supercard-mgba-runner PRIVATE supercard_model mgba)
+  target_compile_definitions(supercard-mgba-runner PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(supercard-mgba-runner PRIVATE supercard_mgba_bus)
 else()
-  message(STATUS "mGBA SuperCard runner is not implemented; building the standalone card model only")
+  message(STATUS "mGBA SuperCard runner is not implemented; model and core-smoke targets remain available")
 endif()
