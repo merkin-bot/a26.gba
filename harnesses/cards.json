@@ -25,7 +25,7 @@
       "source_commit": "29bbb055b26968468cadf7358bdffd340209a355",
       "artifact": "ezkernel.bin",
       "source": "ezfomega/",
-      "status": "published pre-release, hardware-untested; harness fixture validation pending"
+      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); physical launch and SD behavior unverified"
     },
     {
       "id": "ezfblue",
