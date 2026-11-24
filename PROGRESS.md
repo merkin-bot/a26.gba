@@ -156,6 +156,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 |------|--------|----------|--------|--------|--------|
 | 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e` |
 | 2026-11-24 | placement-candidate | none/generated fixture | `.text`/`.iwram` layout | ELF size | Before: 30,944-byte `.text`; candidate: 12,464-byte `.text`, 18,752-byte `.iwram` |
+| 2026-11-24 | arm-hot-candidate | generated fixture | hot symbol size/frame hash | ELF nm + mGBA capture | `mainloop` 17,968→27,996 bytes; `do_screen` 284→496; `tv_raster` 260→380; frame hash unchanged `47fb...c15e`; reverted without timing proof |
 
 ---
 
@@ -188,6 +189,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ### Dead ends (do not repeat)
 - Direct devkitPro apt installer endpoint at `apt.devkitpro.org` returned HTTP 403 in this environment; use official Docker image or a host-specific installer.
 - IWRAM placement candidate moved `mainloop`, `do_screen`, and `tv_raster` into `.iwram`, changing `.text` 30,944→12,464 bytes and `.iwram` 0→18,752 bytes, but the plugin hash changed and speed was not measured. Reverted; no claim of improvement.
+- ARM hot-function candidate grew `mainloop` 17,968→27,996 bytes and preserved frame hash and cold-boot survival, but speed was not measured and the plugin hash changed. Reverted.
 - Minimal copied mGBA static-core runner crashes at `core->init(core)` even before ROM load. Retested through an EZ-FLASH-style CMake build; both scratch-linked variants crash, so the failure is in static-core platform setup, not BIOS or card hooks. Runner removed; host model remains passing.
 
 ### Design decisions
