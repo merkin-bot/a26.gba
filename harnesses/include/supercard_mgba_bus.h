@@ -13,6 +13,8 @@ typedef void (*SuperCardStore8)(struct ARMCore *, uint32_t, int8_t, int *);
 typedef void (*SuperCardStore32)(struct ARMCore *, uint32_t, int32_t, int *);
 typedef uint32_t (*SuperCardLoad16)(struct ARMCore *, uint32_t, int *);
 
+#define SUPERCARD_CMD_TRACE_CAPACITY 64u
+
 typedef struct {
     struct mCore *core;
     SuperCardModel *model;
@@ -28,6 +30,8 @@ typedef struct {
     uint64_t sd_data_writes;
     uint64_t cartridge_writes;
     uint32_t last_cartridge_write;
+    uint16_t cmd_write_trace[SUPERCARD_CMD_TRACE_CAPACITY];
+    uint32_t cmd_write_trace_count;
 } SuperCardMGBABus;
 
 /* One attached GBA core per process is supported by this initial adapter. */

@@ -106,6 +106,11 @@ int main(int argc, char **argv) {
            bus.cartridge_writes, bus.last_cartridge_write,
            model.mode == SUPERCARD_MODE_SDRAM ? "sdram" : "firmware",
            model.sd_interface, model.write_access);
+    printf("cmd_write_trace count=%" PRIu32 ":", bus.cmd_write_trace_count);
+    for (uint32_t i = 0; i < bus.cmd_write_trace_count; ++i) {
+        printf(" %02X", bus.cmd_write_trace[i] & 0xFFu);
+    }
+    putchar('\n');
 
     cleanup(core, &bus, &model, config_initialized);
     return 0;

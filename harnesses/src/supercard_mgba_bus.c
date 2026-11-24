@@ -51,6 +51,11 @@ static void supercard_store16(struct ARMCore *cpu, uint32_t address,
         }
         return;
     }
+    if (active_bus && address == 0x09800000u &&
+        active_bus->cmd_write_trace_count < SUPERCARD_CMD_TRACE_CAPACITY) {
+        active_bus->cmd_write_trace[active_bus->cmd_write_trace_count++] =
+            (uint16_t) value;
+    }
     count_sd_write(address);
     active_bus->original_store16(cpu, address, value, cycle_counter);
 }
