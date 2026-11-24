@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** Porting: original hash restored; IWRAM and ARM hot-loop candidates rejected without speed evidence.
+- **Doing now:** Porting: original hash and baseline restored; IWRAM, ARM hot-loop, and incomplete timer profile rejected.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `89bc467`
+- **Last pushed commit:** `b5b8d7b`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
