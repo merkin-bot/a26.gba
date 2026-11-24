@@ -3,7 +3,7 @@
 - **Doing now:** Porting/harness: FAT32, PogoShell ABI, cold-boot, and host SuperCard mode/SDRAM/SD model pass.
 - **Exact next command:** `bash scripts/run-card-fixture.sh 5`
 - **Branch:** `main`
-- **Last pushed commit:** `ef46bb9`
+- **Last pushed commit:** `4fdc93d`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
