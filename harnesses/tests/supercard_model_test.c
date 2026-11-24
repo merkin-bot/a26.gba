@@ -92,6 +92,11 @@ int main(void) {
     const uint8_t payload[] = {1, 2, 3, 4};
     supercard_set_payload(&model, 4096, payload, sizeof(payload));
     assert(memcmp(sdram + 4096, payload, sizeof(payload)) == 0);
+    assert(supercard_read(&model, 0x08001000u, 32, &line_value));
+    assert(line_value == 0x04030201u);
+    assert(supercard_store_memory(&model, 0x08001004u, 32, 0xA1B2C3D4u));
+    assert(sdram[4100] == 0xD4 && sdram[4101] == 0xC3 &&
+           sdram[4102] == 0xB2 && sdram[4103] == 0xA1);
 
     const char *sd = "/tmp/a26-supercard-model.img";
     FILE *file = fopen(sd, "wb");

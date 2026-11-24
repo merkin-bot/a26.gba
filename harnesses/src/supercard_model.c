@@ -24,6 +24,13 @@ static int load_sd_data_block(SuperCardModel *model) {
     return ok;
 }
 
+static int is_sd_interface_address(uint32_t address) {
+    return address == SC_RDWR_COMMAND || address == SC_WRITE_REGISTER_8 ||
+           address == SC_WRITE_REGISTER_A || address == SC_READ_REGISTER_8 ||
+           address == SC_READ_REGISTER_A ||
+           (address >= 0x09200000u && address <= 0x0920001Cu);
+}
+
 void supercard_reset(SuperCardModel *model) {
     model->mode = SUPERCARD_MODE_FIRMWARE;
     model->sd_interface = 0;
@@ -70,7 +77,25 @@ int supercard_write(SuperCardModel *model, uint32_t address, uint16_t value) {
 
 int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
                    uint32_t *value) {
-    if (!model || !value || !model->sd_interface) {
+    if (!model || !value) {
+        return 0;
+    }
+    if (!(model->sd_interface && is_sd_interface_address(address)) &&
+        model->mode == SUPERCARD_MODE_SDRAM &&
+        address >= 0x08000000u && address < 0x0A000000u &&
+        (width == 8 || width == 16 || width == 32)) {
+        size_t offset = address - 0x08000000u;
+        size_t bytes = width / 8u;
+        if (offset > model->sdram_size || bytes > model->sdram_size - offset) {
+            return 0;
+        }
+        *value = 0;
+        for (size_t i = 0; i < bytes; ++i) {
+            *value |= (uint32_t)model->sdram[offset + i] << (i * 8u);
+        }
+        return 1;
+    }
+    if (!model->sd_interface) {
         return 0;
     }
     if (address >= 0x09200000u && address <= 0x0920001Cu && width == 32) {
@@ -137,6 +162,24 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
         return 1;
     }
     return 0;
+}
+
+int supercard_store_memory(SuperCardModel *model, uint32_t address,
+                           uint32_t width, uint32_t value) {
+    if (!model || model->mode != SUPERCARD_MODE_SDRAM || !model->write_access ||
+        address < 0x08000000u || address >= 0x0A000000u ||
+        (width != 8 && width != 16 && width != 32)) {
+        return 0;
+    }
+    size_t offset = address - 0x08000000u;
+    size_t bytes = width / 8u;
+    if (offset > model->sdram_size || bytes > model->sdram_size - offset) {
+        return 0;
+    }
+    for (size_t i = 0; i < bytes; ++i) {
+        model->sdram[offset + i] = (uint8_t)(value >> (i * 8u));
+    }
+    return 1;
 }
 
 static void queue_short_response(SuperCardModel *model, unsigned index,

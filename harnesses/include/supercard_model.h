@@ -46,6 +46,8 @@ typedef struct {
 
 void supercard_reset(SuperCardModel *model);
 int supercard_write(SuperCardModel *model, uint32_t address, uint16_t value);
+int supercard_store_memory(SuperCardModel *model, uint32_t address,
+                           uint32_t width, uint32_t value);
 int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
                    uint32_t *value);
 int supercard_sd_command_write(SuperCardModel *model, uint32_t address,
