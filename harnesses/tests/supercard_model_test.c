@@ -22,19 +22,22 @@ static void read_sd_port_sector(SuperCardModel *model, uint32_t port,
     uint32_t value = 0;
     assert(supercard_read(model, 0x09100000u, 16, &value));
     assert(value == 0); /* Source polls DAT0 until a block is ready. */
-    for (size_t word = 0; word < 130; ++word) {
-        uint32_t address = port + (uint32_t)(word % 8u) * 4u;
-        assert(supercard_read(model, address, 32, &value));
-        uint32_t want = 0;
-        if (word < 128) {
-            size_t offset = word * 4u;
-            want = (uint32_t)expected[offset] |
-                   ((uint32_t)expected[offset + 1u] << 8) |
-                   ((uint32_t)expected[offset + 2u] << 16) |
-                   ((uint32_t)expected[offset + 3u] << 24);
+    size_t payload_offset = 0;
+    for (size_t group = 0; group < 65; ++group) {
+        for (size_t lane = 0; lane < 8; ++lane) {
+            uint32_t address = port + (uint32_t)lane * 4u;
+            assert(supercard_read(model, address, 32, &value));
+            uint32_t want = 0;
+            if (lane & 1u) {
+                uint8_t low = payload_offset < 512u ? expected[payload_offset] : 0;
+                uint8_t high = payload_offset + 1u < 512u ? expected[payload_offset + 1u] : 0;
+                want = ((uint32_t)low << 16) | ((uint32_t)high << 24);
+                payload_offset += 2u;
+            }
+            assert(value == want);
         }
-        assert(value == want); /* Last 8 bytes are the source-read checksum. */
     }
+    assert(payload_offset == 520u);
 }
 
 static void write_serial_sector(SuperCardModel *model, uint32_t port,

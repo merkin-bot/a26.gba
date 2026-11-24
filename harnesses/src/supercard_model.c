@@ -14,6 +14,7 @@
 static int load_sd_data_block(SuperCardModel *model) {
     memset(model->sd_data_buffer, 0, sizeof(model->sd_data_buffer));
     model->sd_data_offset = 0;
+    model->sd_data_port_phase = 0;
     int ok = supercard_sd_read(model, model->sd_data_lba,
                                model->sd_data_buffer, 1);
     if (ok) {
@@ -63,6 +64,7 @@ void supercard_reset(SuperCardModel *model) {
     model->sd_data_token_delay = 0;
     model->sd_data_lba = 0;
     model->sd_data_offset = 0;
+    model->sd_data_port_phase = 0;
     model->sd_write_offset = 0;
     model->sd_write_lba = 0;
     model->sd_write_active = 0;
@@ -134,14 +136,33 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
         return 0;
     }
     if (is_sd_data_port(model, address) && width == 32) {
-        if (!model->sd_data_active || model->sd_data_offset + 4u > 520u) {
+        if (!model->sd_data_active) {
             return 0;
         }
-        *value = (uint32_t)model->sd_data_buffer[model->sd_data_offset] |
-                 ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 1u] << 8) |
-                 ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 2u] << 16) |
-                 ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 3u] << 24);
-        model->sd_data_offset += 4u;
+        if (model->board == SUPERCARD_BOARD_SD) {
+            /* Build769 SD assembly consumes the upper halfword from every
+             * other 32-bit transfer in each eight-register LDM group. */
+            unsigned phase = model->sd_data_port_phase;
+            model->sd_data_port_phase = (phase + 1u) & 7u;
+            *value = 0;
+            if (phase & 1u) {
+                if (model->sd_data_offset + 2u > sizeof(model->sd_data_buffer)) {
+                    return 0;
+                }
+                *value = ((uint32_t)model->sd_data_buffer[model->sd_data_offset] << 16) |
+                         ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 1u] << 24);
+                model->sd_data_offset += 2u;
+            }
+        } else {
+            if (model->sd_data_offset + 4u > sizeof(model->sd_data_buffer)) {
+                return 0;
+            }
+            *value = (uint32_t)model->sd_data_buffer[model->sd_data_offset] |
+                     ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 1u] << 8) |
+                     ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 2u] << 16) |
+                     ((uint32_t)model->sd_data_buffer[model->sd_data_offset + 3u] << 24);
+            model->sd_data_offset += 4u;
+        }
         if (model->sd_data_offset == 520u) {
             ++model->sd_data_lba;
             model->sd_data_token_pending = 1;

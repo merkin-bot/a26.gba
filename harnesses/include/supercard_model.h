@@ -40,6 +40,7 @@ typedef struct {
     uint8_t sd_data_buffer[520];
     uint32_t sd_data_lba;
     size_t sd_data_offset;
+    unsigned sd_data_port_phase;
     int sd_data_active;
     int sd_data_token_pending;
     unsigned sd_data_token_delay;

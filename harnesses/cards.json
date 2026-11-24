@@ -57,7 +57,7 @@
       "artifact": "SuperFW SD build",
       "source": "superfw/",
       "firmware_sha256": "89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf",
-      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; A26 runner models 0x09100000/0x0B100000 reads and serial writes, but matching selected-ROM run stops in kernel after 13 commands and 520 data-port values; SD launch and physical behavior unverified"
+      "status": "Build769 clean board build and two-boot native settings mGBA fixture passed; A26 runner models 0x09100000/0x0B100000 reads with source-described upper-halfword lane packing and serial writes; matching selected-ROM run reaches plugin pl_normal at 0x080062A2 with deterministic 2,000-frame hash C321C3B99B2E799D; physical behavior unverified"
     },
     {
       "id": "supercard-lite",
@@ -111,7 +111,7 @@
       "sd_data": "The conditional read path shares Lite's 0x09200000 block port; writes use the 0x09000000/0x0B000000 serial register path",
       "flash_difference": "rom_boot.S programs eight NOR map entries using three writes (0xA55A twice, then 0x100 | map value); Chis also assigns mode bit 3 to SRAM bank selection"
     },
-    "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Host tests cover SD read port windows, SD/Chis serial writes, and Chis NOR map register sequencing; clean matching Build769 selected-ROM runs reach 0x0800788A with matching hash E6AFE00D3895221D for Lite and Chis, while SD stops after early storage reads. Chis NOR backing/page mapping and SD launch still need implementation/investigation. No profile is hardware-qualified."
+    "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Host tests cover SD read port windows/lane packing, SD/Chis serial writes, and Chis NOR map register sequencing. Clean matching Build769 selected-ROM runs reach plugin code for all three boards: Lite/Chis at 0x0800788A with hash E6AFE00D3895221D; SD at pl_normal (0x080062A2) with hash C321C3B99B2E799D in two independent runs. Different kernel states are unsynchronized. Chis NOR backing/page mapping and SRAM banking remain unmodeled; no profile is hardware-qualified."
   },
   "verification": "profile inventory and launch test reuse are source-level only until recorded per-session results; do not infer hardware compatibility from mGBA"
 }
