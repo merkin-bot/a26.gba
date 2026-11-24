@@ -190,6 +190,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 - Direct devkitPro apt installer endpoint at `apt.devkitpro.org` returned HTTP 403 in this environment; use official Docker image or a host-specific installer.
 - IWRAM placement candidate moved `mainloop`, `do_screen`, and `tv_raster` into `.iwram`, changing `.text` 30,944→12,464 bytes and `.iwram` 0→18,752 bytes, but the plugin hash changed and speed was not measured. Reverted; no claim of improvement.
 - ARM hot-function candidate grew `mainloop` 17,968→27,996 bytes and preserved frame hash and cold-boot survival, but speed was not measured and the plugin hash changed. Reverted.
+- Profile scaffold attempted Timer0/1 plus frame counter but produced no cycle metric and was incomplete. Reverted; normal hash restored.
 - Minimal copied mGBA static-core runner crashes at `core->init(core)` even before ROM load. Retested through an EZ-FLASH-style CMake build; both scratch-linked variants crash, so the failure is in static-core platform setup, not BIOS or card hooks. Runner removed; host model remains passing.
 
 ### Design decisions
