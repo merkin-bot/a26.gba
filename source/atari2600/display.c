@@ -24,6 +24,7 @@
 #include "types.h"
 #include "config.h"
 #include "vmachine.h"
+#include "tia_audio.h"
 #include "address.h"
 #include "files.h"
 #include "colours.h"
@@ -177,7 +178,7 @@ int tv_on()
 /* Displays the 2600 screen display */
 void tv_display(void)
 {
-
+	tia_audio_refill();
 	if (!app_data.debug) {
 		put_image();
 	}

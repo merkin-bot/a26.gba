@@ -1,4 +1,5 @@
 #include "timer.h"
+#include "tia_audio.h"
 /*****************************************************************************
 
    This file is part of Virtual VCS, the Atari 2600 Emulator
@@ -165,6 +166,7 @@ void init_riot(void)
 void init_tia(void)
 {
 	int i;
+	tia_audio_init();
 	tiaWrite[CTRLPF]=0x00;
 	for(i = 0; i < 2; i++){
 		pl[i].col = 0xf2;

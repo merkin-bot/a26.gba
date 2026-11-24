@@ -1,4 +1,5 @@
 #include "timer.h"
+#include "tia_audio.h"
 /*****************************************************************************
 
    This file is part of Virtual VCS, the Atari 2600 Emulator
@@ -195,6 +196,14 @@ void decWrite ( ADDRESS a, BYTE b) {
 		break;
 	case PF2:
 		do_pfraster_change(0,2,b);
+		break;
+	case AUDC0:
+	case AUDC1:
+	case AUDF0:
+	case AUDF1:
+	case AUDV0:
+	case AUDV1:
+		tia_audio_write(a & 0x7f, b);
 		break;
 	case RESP0:
 		/* Ghost in pacman! */
