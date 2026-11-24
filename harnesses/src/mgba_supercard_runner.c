@@ -193,6 +193,7 @@ int main(int argc, char **argv) {
 
     core->reset(core);
     uint32_t start_frame = core->frameCounter(core);
+    struct GBA *gba = core->board;
     unsigned long event_frame[64];
     uint32_t event_mask[64];
     size_t event_count = 0;
@@ -234,6 +235,10 @@ int main(int argc, char **argv) {
         free(events);
     }
     const char *previous_region = NULL;
+    int trace_first_bios = getenv("A26_TRACE_FIRST_BIOS") != NULL;
+    int trace_pc_frames = getenv("A26_TRACE_PC_FRAMES") != NULL;
+    int pc_frame_window = 0;
+    int first_bios_traced = 0;
     for (unsigned long i = 0; i < frames; ++i) {
         uint32_t keys = 0;
         for (size_t event = 0; event < event_count; ++event) {
@@ -247,14 +252,91 @@ int main(int argc, char **argv) {
         int32_t trace_pc = -1;
         if (core->readRegister(core, "pc", &trace_pc)) {
             const char *region = pc_region((uint32_t)trace_pc);
+            if (trace_pc_frames && !pc_frame_window && i > frames / 2u &&
+                (uint32_t)trace_pc >= 0x03007E00u &&
+                (uint32_t)trace_pc < 0x03008000u) {
+                pc_frame_window = 1;
+            }
+            if (trace_pc_frames && pc_frame_window) {
+                int32_t trace_lr = 0, trace_sp = 0;
+                core->readRegister(core, "lr", &trace_lr);
+                core->readRegister(core, "sp", &trace_sp);
+                printf("pc_frame frame=%lu pc=0x%08" PRIX32
+                       " lr=0x%08" PRIX32 " sp=0x%08" PRIX32 "\n",
+                       i + 1u, (uint32_t)trace_pc, (uint32_t)trace_lr,
+                       (uint32_t)trace_sp);
+                if (region == pc_region(0x03000000u +
+                                         ((uint32_t)trace_pc & 0x7FFFu))) {
+                    uint32_t offset = (uint32_t)trace_pc & 0x7FFFu;
+                    if (offset <= 0x7FF0u) {
+                        fputs("pc_frame_iwram_words=", stdout);
+                        for (unsigned word = 0; word < 4; ++word) {
+                            uint32_t value = 0;
+                            for (unsigned byte = 0; byte < 4; ++byte) {
+                                value |= (uint32_t)((const uint8_t *)gba->memory.iwram)
+                                         [offset + word * 4u + byte]
+                                         << (byte * 8u);
+                            }
+                            printf("%s%08" PRIX32, word ? "," : "", value);
+                        }
+                        putchar('\n');
+                    }
+                }
+            }
             if (!previous_region || strcmp(region, previous_region) != 0) {
                 printf("pc_region frame=%lu region=%s pc=0x%08" PRIX32 "\n",
                        i + 1, region, (uint32_t)trace_pc);
                 previous_region = region;
             }
+            if (trace_first_bios && !first_bios_traced && i > frames / 2u &&
+                strcmp(region, "bios") == 0) {
+                int32_t trace_lr = 0, trace_sp = 0, trace_r0 = 0, trace_r1 = 0;
+                core->readRegister(core, "lr", &trace_lr);
+                core->readRegister(core, "sp", &trace_sp);
+                core->readRegister(core, "r0", &trace_r0);
+                core->readRegister(core, "r1", &trace_r1);
+                printf("first_bios frame=%lu pc=0x%08" PRIX32
+                       " lr=0x%08" PRIX32 " sp=0x%08" PRIX32
+                       " r0=0x%08" PRIX32 " r1=0x%08" PRIX32 "\n",
+                       i + 1, (uint32_t)trace_pc, (uint32_t)trace_lr,
+                       (uint32_t)trace_sp, (uint32_t)trace_r0,
+                       (uint32_t)trace_r1);
+                uint32_t stack_offset = (uint32_t)trace_sp & 0x7FFFu;
+                if ((uint32_t)trace_sp >= 0x03000000u &&
+                    (uint32_t)trace_sp < 0x04000000u && stack_offset >= 16u &&
+                    stack_offset <= 0x7FF0u) {
+                    fputs("first_bios_stack=", stdout);
+                    for (unsigned word = 0; word < 8; ++word) {
+                        uint32_t value = 0;
+                        for (unsigned byte = 0; byte < 4; ++byte) {
+                            value |= (uint32_t)((const uint8_t *)gba->memory.iwram)
+                                     [stack_offset - 16u + word * 4u + byte]
+                                     << (byte * 8u);
+                        }
+                        printf("%s%08" PRIX32, word ? "," : "", value);
+                    }
+                    putchar('\n');
+                }
+                for (unsigned step = 0; step < 24; ++step) {
+                    core->readRegister(core, "pc", &trace_pc);
+                    core->readRegister(core, "lr", &trace_lr);
+                    core->readRegister(core, "sp", &trace_sp);
+                    printf("first_bios_step=%u pc=0x%08" PRIX32
+                           " lr=0x%08" PRIX32 " sp=0x%08" PRIX32 "\n",
+                           step, (uint32_t)trace_pc, (uint32_t)trace_lr,
+                           (uint32_t)trace_sp);
+                    core->step(core);
+                }
+                first_bios_traced = 1;
+                break;
+            }
+            if (trace_pc_frames && pc_frame_window &&
+                strcmp(region, "bios") == 0) {
+                fputs("pc_frame_trace_stop=first_bios\n", stdout);
+                break;
+            }
         }
     }
-    struct GBA *gba = core->board;
     const uint8_t *ewram = (const uint8_t *)gba->memory.wram;
     const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
     if (getenv("A26_TRACE_SOFTRESET")) {
@@ -274,7 +356,7 @@ int main(int argc, char **argv) {
             uint32_t stack_offset = (uint32_t)trace_sp & 0x7FFFu;
             if ((uint32_t)trace_sp >= 0x03000000u &&
                 (uint32_t)trace_sp < 0x04000000u && stack_offset >= 16u &&
-                stack_offset <= 0x7FE0u) {
+                stack_offset <= 0x7FF0u) {
                 fputs(" stack=", stdout);
                 for (unsigned word = 0; word < 8; ++word) {
                     uint32_t value = 0;
@@ -356,6 +438,21 @@ int main(int argc, char **argv) {
     printf(" sdram_entry=");
     for (unsigned i = 0; i < 16; ++i) {
         printf("%02X", model.sdram[i]);
+    }
+    putchar('\n');
+    printf("reset_stack_write_trace total=%" PRIu32 " entries=%" PRIu32,
+           bus.reset_stack_trace_total, bus.reset_stack_trace_count);
+    uint32_t first_stack_write = bus.reset_stack_trace_total >=
+                                 SUPERCARD_RESET_TRACE_CAPACITY ?
+                                 bus.reset_stack_trace_total %
+                                     SUPERCARD_RESET_TRACE_CAPACITY : 0;
+    for (uint32_t i = 0; i < bus.reset_stack_trace_count; ++i) {
+        const SuperCardResetStackWrite *write =
+            &bus.reset_stack_trace[(first_stack_write + i) %
+                                   SUPERCARD_RESET_TRACE_CAPACITY];
+        printf(" [pc=%08" PRIX32 " addr=%08" PRIX32 " width=%u value=%08"
+               PRIX32 "]", write->pc, write->address, write->width,
+               write->value);
     }
     putchar('\n');
     printf("cmd_write_trace count=%" PRIu32 ":", bus.cmd_write_trace_count);

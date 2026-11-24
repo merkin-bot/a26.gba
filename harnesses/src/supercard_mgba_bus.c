@@ -13,6 +13,54 @@ static int is_lite_data_address(uint32_t address) {
     return address >= 0x09200000u && address <= 0x0920001Cu;
 }
 
+static void trace_reset_stack_write(struct ARMCore *cpu, uint32_t address,
+                                    uint8_t width, uint32_t value) {
+    if (!active_bus || address < 0x03000000u || address >= 0x04000000u ||
+        (address & 0x7FFFu) != 0x7FECu) {
+        return;
+    }
+    uint32_t index = active_bus->reset_stack_trace_total %
+                     SUPERCARD_RESET_TRACE_CAPACITY;
+    active_bus->reset_stack_trace[index] = (SuperCardResetStackWrite) {
+        .pc = cpu->gprs[ARM_PC],
+        .address = address,
+        .value = value,
+        .width = width,
+    };
+    ++active_bus->reset_stack_trace_total;
+    if (active_bus->reset_stack_trace_count < SUPERCARD_RESET_TRACE_CAPACITY) {
+        ++active_bus->reset_stack_trace_count;
+    }
+}
+
+static void trace_reset_stack_multiple(struct ARMCore *cpu, uint32_t address,
+                                       int mask,
+                                       enum LSMDirection direction) {
+    int offset = 4;
+    int registers = 0;
+    for (unsigned reg = 0; reg < 16; ++reg) {
+        registers += (mask >> reg) & 1;
+    }
+    if (direction & LSM_D) {
+        offset = -4;
+        address -= ((uint32_t)registers << 2) - 4u;
+    }
+    if (direction & LSM_B) {
+        address += (uint32_t)offset;
+    }
+    for (unsigned reg = 0; reg < 16; ++reg) {
+        if (!(mask & (1 << reg))) {
+            continue;
+        }
+        uint32_t value = cpu->gprs[reg];
+        if (reg == ARM_PC) {
+            value += WORD_SIZE_ARM;
+        }
+        trace_reset_stack_write(cpu, address, 32, value);
+        address += 4u;
+    }
+}
+
 static int is_sdram_multiple(struct ARMCore *cpu, uint32_t address,
                              int mask, enum LSMDirection direction) {
     (void)cpu;
@@ -60,6 +108,7 @@ static uint32_t supercard_store_multiple(struct ARMCore *cpu, uint32_t address,
                        is_lite_data_multiple(address, mask, direction))) {
         uint32_t next = active_bus->original_store_multiple(
             cpu, address, mask, direction, cycle_counter);
+        trace_reset_stack_multiple(cpu, address, mask, direction);
         uint32_t data_address = address;
         for (unsigned reg = 0; reg < 16; ++reg) {
             if (!(mask & (1 << reg))) {
@@ -75,8 +124,10 @@ static uint32_t supercard_store_multiple(struct ARMCore *cpu, uint32_t address,
         }
         return next;
     }
-    return active_bus->original_store_multiple(cpu, address, mask, direction,
-                                                cycle_counter);
+    uint32_t next = active_bus->original_store_multiple(
+        cpu, address, mask, direction, cycle_counter);
+    trace_reset_stack_multiple(cpu, address, mask, direction);
+    return next;
 }
 
 static uint32_t supercard_load32(struct ARMCore *cpu, uint32_t address,
@@ -135,6 +186,7 @@ static void supercard_store8(struct ARMCore *cpu, uint32_t address,
         return;
     }
     active_bus->original_store8(cpu, address, value, cycle_counter);
+    trace_reset_stack_write(cpu, address, 8, (uint8_t)value);
 }
 
 static void supercard_store16(struct ARMCore *cpu, uint32_t address,
@@ -165,6 +217,7 @@ static void supercard_store16(struct ARMCore *cpu, uint32_t address,
         return;
     }
     active_bus->original_store16(cpu, address, value, cycle_counter);
+    trace_reset_stack_write(cpu, address, 16, (uint16_t)value);
 }
 
 static void supercard_store32(struct ARMCore *cpu, uint32_t address,
@@ -180,6 +233,7 @@ static void supercard_store32(struct ARMCore *cpu, uint32_t address,
         return;
     }
     active_bus->original_store32(cpu, address, value, cycle_counter);
+    trace_reset_stack_write(cpu, address, 32, (uint32_t)value);
 }
 
 int supercard_mgba_bus_attach(SuperCardMGBABus *bus, struct mCore *core,

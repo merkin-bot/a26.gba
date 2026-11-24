@@ -21,6 +21,14 @@ typedef uint32_t (*SuperCardStoreMultiple)(struct ARMCore *, uint32_t, int,
                                           enum LSMDirection, int *);
 
 #define SUPERCARD_CMD_TRACE_CAPACITY 64u
+#define SUPERCARD_RESET_TRACE_CAPACITY 32u
+
+typedef struct {
+    uint32_t pc;
+    uint32_t address;
+    uint32_t value;
+    uint8_t width;
+} SuperCardResetStackWrite;
 
 typedef struct {
     struct mCore *core;
@@ -44,6 +52,9 @@ typedef struct {
     uint32_t last_cartridge_write;
     uint16_t cmd_write_trace[SUPERCARD_CMD_TRACE_CAPACITY];
     uint32_t cmd_write_trace_count;
+    SuperCardResetStackWrite reset_stack_trace[SUPERCARD_RESET_TRACE_CAPACITY];
+    uint32_t reset_stack_trace_count;
+    uint32_t reset_stack_trace_total;
 } SuperCardMGBABus;
 
 /* One attached GBA core per process is supported by this initial adapter. */
