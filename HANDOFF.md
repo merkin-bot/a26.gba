@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** 30 fps every-second-frame cadence set; StellaDS sound, Goomba menu, collision/raster optimizations pass cold-boot/frame tests.
+- **Doing now:** 30 fps pacing plus opcode-fetch, StellaDS sound, Goomba menu, collision/raster optimizations pass cold-boot/frame tests.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `d22b1ab`
+- **Last pushed commit:** `2933b7d`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
