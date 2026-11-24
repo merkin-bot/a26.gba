@@ -26,6 +26,8 @@ void supercard_reset(SuperCardModel *model);
 int supercard_write(SuperCardModel *model, uint32_t address, uint16_t value);
 int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
                    uint32_t *value);
+int supercard_sd_decode_command(const uint16_t *writes, size_t write_count,
+                               uint8_t command[6]);
 void supercard_set_payload(SuperCardModel *model, uint32_t offset,
                            const uint8_t *data, size_t size);
 int supercard_sd_read(SuperCardModel *model, uint32_t lba,

@@ -6,6 +6,20 @@
 #include <string.h>
 
 int main(void) {
+    const uint8_t cmd0[] = {0x40, 0x00, 0x00, 0x00, 0x00, 0x95};
+    uint16_t cmd_writes[48];
+    for (size_t byte = 0; byte < sizeof(cmd0); ++byte) {
+        uint16_t shifted = cmd0[byte];
+        for (size_t bit = 0; bit < 8; ++bit) {
+            cmd_writes[byte * 8 + bit] = shifted;
+            shifted <<= 1;
+        }
+    }
+    uint8_t decoded[6];
+    assert(supercard_sd_decode_command(cmd_writes, 48, decoded));
+    assert(memcmp(decoded, cmd0, sizeof(cmd0)) == 0);
+    assert(!supercard_sd_decode_command(cmd_writes, 47, decoded));
+
     uint8_t cart[32], sdram[65536];
     memset(cart, 0xCC, sizeof(cart));
     memset(sdram, 0, sizeof(sdram));

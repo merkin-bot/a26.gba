@@ -64,6 +64,19 @@ int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
     return 0;
 }
 
+int supercard_sd_decode_command(const uint16_t *writes, size_t write_count,
+                               uint8_t command[6]) {
+    if (!writes || !command || write_count != 48) {
+        return 0;
+    }
+    memset(command, 0, 6);
+    for (size_t bit = 0; bit < write_count; ++bit) {
+        command[bit / 8] = (uint8_t)((command[bit / 8] << 1) |
+                                    ((writes[bit] >> 7) & 1u));
+    }
+    return (command[0] & 0xC0u) == 0x40u;
+}
+
 void supercard_set_payload(SuperCardModel *model, uint32_t offset,
                            const uint8_t *data, size_t size) {
     if (!model->sdram || (!data && size) || model->mode != SUPERCARD_MODE_SDRAM ||
