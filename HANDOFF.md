@@ -5,7 +5,7 @@
 - **Branch:** `main`
 - **Last known commit:** `85f8141`
 - **Build:** `bash scripts/build-plugin.sh` completed after resume; baseline command `bash scripts/test-baseline.sh` completed.
-- **Recent work:** Corrected `scripts/capture-stella-reference.py` to crop Stella's rendered non-black bounds and scale to 240x160. Stella image SHA-256: `6c5acac517cdb5513b30af3cd6d89fd478d6cc178dbef79ed370d2d875ee5be2` (generated under `work/reference/`, ignored). mGBA fixture capture remains black with SHA-256 `47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e`; not comparable yet.
-- **Uncommitted:** `PROGRESS.md`, `scripts/capture-stella-reference.py`.
-- **Resume commands:** `bash scripts/capture-stella-reference.sh`; inspect `source/atari2600/fixture.S`, `scripts/build-fixture.sh`, then `bash scripts/capture-fixture.sh`.
+- **Recent work:** Corrected both screenshot scripts. Stella’s rendered bounds are mapped into the observed 160x90 plugin viewport at (35,25) on a 240x160 canvas. Stella image SHA-256: `f729700554bcf6027da47a7b062391522024e23a75f2b89018c0c15f5817bba2`. `capture-fixture.py` now reads mGBA’s F12 emulator PNG directly (previously it sampled the desktop top-left); mGBA image SHA-256: `829ba115435c124a40bcad650c6ec61ac2c8c747b813b8aa32fb525c5ff653c0`. Both frames are nonblank, but animation state alignment is not verified.
+- **Uncommitted:** `PROGRESS.md`, `scripts/capture-stella-reference.py`, `scripts/capture-fixture.py`.
+- **Resume commands:** `bash scripts/capture-stella-reference.sh`; run both capture scripts, then inspect the `do_screen()` frame boundary in `source/atari2600/vmachine.c` and establish an execution timing counter.
 - **Limits:** Stella/mGBA are desktop references only; real GBA/card speed, input feel, and audio sync need hardware qualification. Do not claim measured speed gains without a reliable metric.

@@ -124,11 +124,11 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Performance optimization with Stella desktop reference baseline.
-- **Exact step:** Corrected Stella capture to crop the rendered non-black display bounds and scale them to 240x160. The Stella image is now useful; the standalone fixture remains visually black, so fix/identify the plugin test setup before image comparison. Establish an execution timing counter before any optimization candidate.
-- **Files touched:** `PROGRESS.md`, `HANDOFF.md`, `scripts/capture-stella-reference.py`, and any measured optimization files.
-- **Uncommitted changes:** Stella capture correction and this handoff update.
+- **Exact step:** Fixed both frame captures: Stella visible bounds scale into the plugin’s 160x90 viewport on a 240x160 canvas; mGBA F12 PNG is read directly instead of sampling desktop coordinates. Both images are nonblank. Next establish an execution timing counter and align game start/state before comparing visuals or choosing a hot-path optimization.
+- **Files touched:** `AGENTS.md`, `HANDOFF.md`, `PROGRESS.md`, `scripts/capture-stella-reference.py`, `scripts/capture-fixture.py`, and any measured optimization files.
+- **Uncommitted changes:** capture changes and handoff update (checkpoint before further work).
 - **Branch:** main
-- **Resume command:** `bash scripts/capture-stella-reference.sh && bash scripts/capture-fixture.sh`; inspect fixture startup/render path in `source/atari2600/fixture.S` and `scripts/build-fixture.sh`.
+- **Resume command:** `bash scripts/capture-fixture.sh && bash scripts/capture-stella-reference.sh`; then inspect `source/atari2600/vmachine.c` frame boundary and reserve a hardware timer for cycle measurement.
 
 ### Next up (ordered)
 1. Make Stella-to-GBA scaled image capture repeatable and compare against plugin frame.
@@ -152,8 +152,8 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 | Date | Commit | Test ROM | Metric | Method | Result |
 |------|--------|----------|--------|--------|--------|
-| 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e`; image is black and not a valid visual comparison |
-| 2026-11-24 | pending | Flappy/Stella desktop | scaled screenshot SHA-256 | Stella + Xvfb, rendered bounds crop, nearest resize | `6c5acac517cdb5513b30af3cd6d89fd478d6cc178dbef79ed370d2d875ee5be2`; scaled to 240x160; full source screenshot is `work/reference/stella-full.png` |
+| 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `829ba115435c124a40bcad650c6ec61ac2c8c747b813b8aa32fb525c5ff653c0`; F12 PNG 240x160 now captured directly; startup/state alignment still unverified |
+| 2026-11-24 | pending | Flappy/Stella desktop | scaled screenshot SHA-256 | Stella + Xvfb, rendered bounds crop, nearest resize | `f729700554bcf6027da47a7b062391522024e23a75f2b89018c0c15f5817bba2`; mapped into 160x90 game viewport at (35,25) on 240x160 canvas; full source screenshot is `work/reference/stella-full.png` |
 | 2026-11-24 | placement-candidate | none/generated fixture | `.text`/`.iwram` layout | ELF size | Before: 30,944-byte `.text`; candidate: 12,464-byte `.text`, 18,752-byte `.iwram` |
 | 2026-11-24 | arm-hot-candidate | generated fixture | hot symbol size/frame hash | ELF nm + mGBA capture | `mainloop` 17,968→27,996 bytes; `do_screen` 284→496; `tv_raster` 260→380; frame hash unchanged `47fb...c15e`; reverted without timing proof |
 | 2026-11-24 | candidate-build | generated PogoShell fixture | SHA-256 | devkitARM build | `b82e459989bca244e46496fde488d71d8463f263594d26fd53c4a02f763bb277` |
@@ -233,4 +233,4 @@ Short dated entries. Trim old entries periodically.
 
 - 2026-11-24: Read AGENTS/PROGRESS; ingested and removed `a26.zip`; organized source/test/assets and reference repositories; created HANDOFF and devcontainer scripts; verified Docker devkitARM 16.1.0 reproduces archived SHA-256 `14d28e63...f4500`; installed stock mGBA 0.10.2/Xvfb. Next: implement native baseline checks and PogoShell/mGBA harness.
 - 2026-11-24: Added GPL-2.0-attributed StellaDS-adapted TIA audio state/divider/poly mixer and GBA Direct Sound scaffold. Host mixer tests and 3-second PogoShell/frame checks pass; hardware sound accuracy and performance remain unqualified.
-- 2026-11-24: Resumed at commit `85f8141`. `bash scripts/test-baseline.sh` and `bash scripts/build-plugin.sh` completed; corrected Stella capture to crop visible rendered bounds and output 240x160. Stella screenshot is nonblank, but mGBA standalone fixture capture is black, so no apples-to-apples comparison or performance improvement is claimed. Next inspect fixture launch/render path, then add a repeatable frame/timing baseline before editing hot paths.
+- 2026-11-24: Resumed at commit `85f8141`. `bash scripts/test-baseline.sh` and `bash scripts/build-plugin.sh` completed; corrected Stella capture to crop visible rendered bounds and output 240x160. Stella and mGBA frames are both nonblank at 240x160; Stella is placed into the observed plugin viewport. They show visibly different Flappy animation states, so state alignment and timing baseline are still needed. No speed improvement is claimed. Next establish a frame timing counter before editing hot paths.

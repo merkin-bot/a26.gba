@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from PIL import ImageGrab
+from PIL import Image, ImageGrab
 
 root = Path(__file__).resolve().parents[1]
 rom = root / "test-roms/flappy.a26"
@@ -31,7 +31,10 @@ try:
     if bounds is None:
         raise SystemExit("Stella frame is blank")
     tia = image.crop(bounds)
-    gba = tia.resize((240, 160))
+    # The GBA plugin presents the 160x90-ish game viewport inside a 240x160
+    # screen with menu/status margins. Match the measured fixture viewport.
+    gba = Image.new("RGB", (240, 160), (0, 0, 0))
+    gba.paste(tia.resize((160, 90)), (35, 25))
     gba.save(out / "stella-gba-240x160.png")
     print(out / "stella-gba-240x160.png")
 finally:
