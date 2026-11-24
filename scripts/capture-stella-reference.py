@@ -21,14 +21,16 @@ try:
     image = ImageGrab.grab().convert("RGB")
     (out / "stella-full.png").parent.mkdir(parents=True, exist_ok=True)
     image.save(out / "stella-full.png")
-    # Stella's active TIA viewport is expected to be 160x192 before GBA scaling.
+    # Stella letterboxes its active TIA image inside the Xvfb desktop. Find the
+    # rendered bounds instead of cropping the desktop by its aspect ratio.
     width, height = image.size
-    if width < 160 or height < 192:
-        raise SystemExit("Stella viewport not large enough")
-    # Center-crop the TIA area and scale by nearest-neighbor to GBA 240x160.
-    left = max(0, (width - 160) // 2)
-    top = max(0, (height - 192) // 2)
-    tia = image.crop((left, top, left + 160, top + 192))
+    if width < 240 or height < 160:
+        raise SystemExit("Stella display is smaller than GBA resolution")
+    mask = image.convert("L").point(lambda value: 255 if value > 8 else 0)
+    bounds = mask.getbbox()
+    if bounds is None:
+        raise SystemExit("Stella frame is blank")
+    tia = image.crop(bounds)
     gba = tia.resize((240, 160))
     gba.save(out / "stella-gba-240x160.png")
     print(out / "stella-gba-240x160.png")

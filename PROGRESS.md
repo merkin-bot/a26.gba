@@ -2,9 +2,9 @@
 
 Handoff document for any AI agent or human continuing this project. Read `AGENTS.md` first, then this file in full.
 
-**Last updated:** 2026-11-24 16:23 UTC by Copilot
+**Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** 2933b7d
+**Last pushed commit:** 85f8141
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -123,21 +123,19 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ## 6. Task board
 
 ### In progress
-- **Task:** Porting, audio, and menu implementation
-- **Exact step:** StellaDS-adapted TIA audio, Direct Sound ring, and expanded menu glyph coverage pass cold-boot/frame tests; next measure speed and qualify card/mGBA behavior.
-- **Files touched:** `AGENTS.md`, `PROGRESS.md`, `HANDOFF.md`, `.devcontainer/*`, `scripts/*`, `source/*`, `dist/*`, `test-roms/*`
-- **Uncommitted changes:** yes
+- **Task:** Performance optimization with Stella desktop reference baseline.
+- **Exact step:** Corrected Stella capture to crop the rendered non-black display bounds and scale them to 240x160. The Stella image is now useful; the standalone fixture remains visually black, so fix/identify the plugin test setup before image comparison. Establish an execution timing counter before any optimization candidate.
+- **Files touched:** `PROGRESS.md`, `HANDOFF.md`, `scripts/capture-stella-reference.py`, and any measured optimization files.
+- **Uncommitted changes:** Stella capture correction and this handoff update.
 - **Branch:** main
-- **Resume command:** `bash scripts/build-plugin.sh && bash scripts/run-mgba.sh source/atari2600/prototype.gba 5`
+- **Resume command:** `bash scripts/capture-stella-reference.sh && bash scripts/capture-fixture.sh`; inspect fixture startup/render path in `source/atari2600/fixture.S` and `scripts/build-fixture.sh`.
 
 ### Next up (ordered)
-1. Onboard and audit: organize canonical assets, map repo, reproducible Codespace build.
-2. Test harnesses: finish/verify mGBA SuperCard and EZ-Flash harnesses; headless run with screenshots/frame hashes.
-3. Baseline measurements (performance + screenshot/frame-hash), before any emulation changes.
-4. Performance: reach full speed (60 fps NTSC or documented frame-skip).
-5. Sound: TIA audio via Direct Sound and/or PSG.
-6. Menu/UI parity with Goomba (font first, then layout, navigation, options, save-state conventions).
-7. Compatibility and polish: bankswitching, PAL/NTSC, controllers, per-game settings, saves.
+1. Make Stella-to-GBA scaled image capture repeatable and compare against plugin frame.
+2. Establish runtime performance/frame cadence metrics suitable for optimization candidates.
+3. Profile and optimize CPU/TIA/raster hot paths while preserving input latency and emulated timing.
+4. Measure sound impact and confirm stable 30 fps pacing/frame skipping.
+5. Qualify changes on hardware when available; mGBA is only a smoke-test reference.
 
 ### Backlog
 - Headless screenshot/frame-hash capture
@@ -154,7 +152,8 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 | Date | Commit | Test ROM | Metric | Method | Result |
 |------|--------|----------|--------|--------|--------|
-| 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e` |
+| 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e`; image is black and not a valid visual comparison |
+| 2026-11-24 | pending | Flappy/Stella desktop | scaled screenshot SHA-256 | Stella + Xvfb, rendered bounds crop, nearest resize | `6c5acac517cdb5513b30af3cd6d89fd478d6cc178dbef79ed370d2d875ee5be2`; scaled to 240x160; full source screenshot is `work/reference/stella-full.png` |
 | 2026-11-24 | placement-candidate | none/generated fixture | `.text`/`.iwram` layout | ELF size | Before: 30,944-byte `.text`; candidate: 12,464-byte `.text`, 18,752-byte `.iwram` |
 | 2026-11-24 | arm-hot-candidate | generated fixture | hot symbol size/frame hash | ELF nm + mGBA capture | `mainloop` 17,968→27,996 bytes; `do_screen` 284→496; `tv_raster` 260→380; frame hash unchanged `47fb...c15e`; reverted without timing proof |
 | 2026-11-24 | candidate-build | generated PogoShell fixture | SHA-256 | devkitARM build | `b82e459989bca244e46496fde488d71d8463f263594d26fd53c4a02f763bb277` |
@@ -234,3 +233,4 @@ Short dated entries. Trim old entries periodically.
 
 - 2026-11-24: Read AGENTS/PROGRESS; ingested and removed `a26.zip`; organized source/test/assets and reference repositories; created HANDOFF and devcontainer scripts; verified Docker devkitARM 16.1.0 reproduces archived SHA-256 `14d28e63...f4500`; installed stock mGBA 0.10.2/Xvfb. Next: implement native baseline checks and PogoShell/mGBA harness.
 - 2026-11-24: Added GPL-2.0-attributed StellaDS-adapted TIA audio state/divider/poly mixer and GBA Direct Sound scaffold. Host mixer tests and 3-second PogoShell/frame checks pass; hardware sound accuracy and performance remain unqualified.
+- 2026-11-24: Resumed at commit `85f8141`. `bash scripts/test-baseline.sh` and `bash scripts/build-plugin.sh` completed; corrected Stella capture to crop visible rendered bounds and output 240x160. Stella screenshot is nonblank, but mGBA standalone fixture capture is black, so no apples-to-apples comparison or performance improvement is claimed. Next inspect fixture launch/render path, then add a repeatable frame/timing baseline before editing hot paths.
