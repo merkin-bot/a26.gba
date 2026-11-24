@@ -254,17 +254,39 @@ int main(int argc, char **argv) {
             }
         }
     }
+    struct GBA *gba = core->board;
+    const uint8_t *ewram = (const uint8_t *)gba->memory.wram;
+    const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
     if (getenv("A26_TRACE_SOFTRESET")) {
         for (unsigned step = 0; step < 24; ++step) {
             int32_t trace_pc = -1, trace_lr = 0, trace_r0 = 0, trace_r1 = 0;
+            int32_t trace_sp = 0;
             core->readRegister(core, "pc", &trace_pc);
             core->readRegister(core, "lr", &trace_lr);
             core->readRegister(core, "r0", &trace_r0);
             core->readRegister(core, "r1", &trace_r1);
+            core->readRegister(core, "sp", &trace_sp);
             printf("softreset_step=%u pc=0x%08" PRIX32 " lr=0x%08" PRIX32
-                   " r0=0x%08" PRIX32 " r1=0x%08" PRIX32 "\n",
+                   " sp=0x%08" PRIX32 " r0=0x%08" PRIX32
+                   " r1=0x%08" PRIX32,
                    step, (uint32_t)trace_pc, (uint32_t)trace_lr,
-                   (uint32_t)trace_r0, (uint32_t)trace_r1);
+                   (uint32_t)trace_sp, (uint32_t)trace_r0, (uint32_t)trace_r1);
+            uint32_t stack_offset = (uint32_t)trace_sp & 0x7FFFu;
+            if ((uint32_t)trace_sp >= 0x03000000u &&
+                (uint32_t)trace_sp < 0x04000000u && stack_offset >= 16u &&
+                stack_offset <= 0x7FE0u) {
+                fputs(" stack=", stdout);
+                for (unsigned word = 0; word < 8; ++word) {
+                    uint32_t value = 0;
+                    for (unsigned byte = 0; byte < 4; ++byte) {
+                        value |= (uint32_t)iwram[stack_offset - 16u +
+                                                word * 4u + byte]
+                                 << (byte * 8u);
+                    }
+                    printf("%s%08" PRIX32, word ? "," : "", value);
+                }
+            }
+            putchar('\n');
             core->step(core);
         }
     }
@@ -326,9 +348,6 @@ int main(int argc, char **argv) {
         printf("%02X", model.sdram[i]);
     }
     putchar('\n');
-    struct GBA *gba = core->board;
-    const uint8_t *ewram = (const uint8_t *)gba->memory.wram;
-    const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
     printf("reset_state iwram_softreset_flag=%u ewram_entry=",
            iwram[0x7FFAu]);
     for (unsigned i = 0; i < 16; ++i) {
