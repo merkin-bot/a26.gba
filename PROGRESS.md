@@ -123,8 +123,8 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ## 6. Task board
 
 ### In progress
-- **Task:** Repository organization and harness audit
-- **Exact step:** Original archive ingested and removed; canonical layout passes baseline; next implement card-I/O harness boundaries.
+- **Task:** Porting and mGBA harness
+- **Exact step:** Capture baseline and host SuperCard/SDRAM/SD model pass; next attach model to an mGBA memory interface and build Omega profile.
 - **Files touched:** `AGENTS.md`, `PROGRESS.md`, `HANDOFF.md`, `.devcontainer/*`, `scripts/*`, `source/*`, `dist/*`, `test-roms/*`
 - **Uncommitted changes:** yes
 - **Branch:** main
@@ -154,7 +154,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 | Date | Commit | Test ROM | Metric | Method | Result |
 |------|--------|----------|--------|--------|--------|
-| | | | | | |
+| 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e` |
 
 ---
 
@@ -168,6 +168,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | FAT32 virtual SD | `bash scripts/verify-harness.sh` | PASS | 64 MB FAT32, plugin and Flappy hashes verified |
 | PogoShell portable ABI | `bash scripts/test-baseline.sh` | PASS | Layout and argument-block assertions pass; no card I/O |
 | PogoShell cold-boot fixture | `bash scripts/run-card-fixture.sh 5` | PASS | Actual plugin fixture survived 5 seconds in stock mGBA; card I/O excluded |
+| SuperCard mode/SDRAM host model | `build/harness/supercard-model-test` | PASS | Magic/register mode and SDRAM payload copy pass strict C11 tests |
 | EZ-FLASH Omega card harness | `<TODO>` | PARTIAL | Omega source exists; kernel launch and card register fixture remain |
 | SuperFlash 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
 

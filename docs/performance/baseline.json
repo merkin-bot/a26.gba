@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-24",
+  "emulator": "Ubuntu package mGBA 0.10.2",
+  "fixture": "source/atari2600/fixture.gba",
+  "capture": "240x160 Xvfb frame",
+  "frame_sha256": "47fbde60709a27683035d7b385f06dd1447f68c6548272758e15a335cf3bc15e",
+  "limits": [
+    "No BIOS",
+    "No physical SuperCard/EZ/NOR/SD timing",
+    "No performance metric yet"
+  ]
+}
