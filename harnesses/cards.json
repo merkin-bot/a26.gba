@@ -1,6 +1,6 @@
 {
   "kernel_repository": "https://github.com/voluptuary/dssmm",
-  "kernel_repository_commit": "f6350776f07eba91ba2ffa34c6833d85f348f2a1",
+  "kernel_repository_commit": "published release tags listed per profile; untagged prior test snapshot f6350776f07eba91ba2ffa34c6833d85f348f2a1 is not current validation",
   "layers": [
     "mGBA GBA-system model",
     "DSSMM per-card firmware/kernel and cartridge behavior",
@@ -10,50 +10,62 @@
     {
       "id": "ezfomegade-rev-a-b",
       "card": "EZ-FLASH OMEGA Definitive Edition Rev. A/B",
-      "kernel": "DSSMM 8.4.0",
+      "kernel": "DSSMM v8.4.1",
+      "release_tag": "v8.4.1",
+      "source_commit": "a948b936c11bc984ca8a84d141dc1b7ea81751a6",
       "artifact": "ezkernelnew.bin",
       "source": "ezfomegade/",
-      "status": "stable release; physical launch and SD behavior still require the matching cartridge for this task"
+      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); physical launch and SD behavior unverified"
     },
     {
       "id": "ezfomega-original",
       "card": "EZ-FLASH OMEGA",
-      "kernel": "DSSMM 8.4.0 OMEGA Test 4",
+      "kernel": "DSSMM v8.4.1 OMEGA Test 5",
+      "release_tag": "v8.4.1-omega-test5",
+      "source_commit": "29bbb055b26968468cadf7358bdffd340209a355",
       "artifact": "ezkernel.bin",
       "source": "ezfomega/",
-      "status": "experimental; no physical validation claimed"
+      "status": "published pre-release, hardware-untested; harness fixture validation pending"
     },
     {
       "id": "ezfblue",
       "card": "EZ-FLASH OMEGA Definitive Edition B / BLUE",
-      "kernel": "DSSMM 8.4.1 BLUE Test 4",
+      "kernel": "DSSMM v8.4.1 BLUE Test 5",
+      "release_tag": "v8.4.1-blue-test5",
+      "source_commit": "9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278",
       "artifact": "ezbluekernel.bin",
       "source": "ezfblue/",
-      "status": "experimental; no physical validation claimed"
+      "status": "published pre-release, hardware-untested; harness fixture validation pending"
     },
     {
       "id": "supercard-chis",
       "card": "SuperChis / SuperChis Prime",
-      "kernel": "DSSMM SuperFW Build 667",
+      "kernel": "DSSMM SuperFW Build 769",
+      "release_tag": "superfw-build769",
+      "source_commit": "37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4",
       "artifact": "SuperFW Chis build",
       "source": "superfw/",
-      "status": "previous Chis Prime v1.0 smoke tests exist; Build 667 changes require physical qualification"
+      "status": "published release; only Chis has hardware test history; per-board fixture validation pending"
     },
     {
       "id": "supercard-sd",
       "card": "SuperCard SD (including miniSD/microSD shell variants where supported)",
-      "kernel": "DSSMM SuperFW Build 667",
+      "kernel": "DSSMM SuperFW Build 769",
+      "release_tag": "superfw-build769",
+      "source_commit": "37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4",
       "artifact": "SuperFW SD build",
       "source": "superfw/",
-      "status": "not physically validated"
+      "status": "published release; SD board hardware-untested; per-board fixture validation pending"
     },
     {
       "id": "supercard-lite",
       "card": "SuperCard Lite",
-      "kernel": "DSSMM SuperFW Build 667",
+      "kernel": "DSSMM SuperFW Build 769",
+      "release_tag": "superfw-build769",
+      "source_commit": "37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4",
       "artifact": "SuperFW Lite build",
       "source": "superfw/",
-      "status": "not physically validated"
+      "status": "published release; Lite board hardware-untested; per-board fixture validation pending"
     }
   ],
   "mGBA_upstream": {

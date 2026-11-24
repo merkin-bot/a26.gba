@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** 85f8141
+**Last pushed commit:** 76e9f4e
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -14,7 +14,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 - **Goal:** Atari 2600 emulator for the Game Boy Advance, running as a PogoShell plugin on EZ-FLASH Omega family and SuperCard family devices. Continues https://github.com/voluptuary/dssmm.
 - **Status:** Runs on unpublished SuperCard build 822, but slowly, with no sound, and menu parity with other PogoShell plugins (e.g. Goomba) is incomplete (different menu font). Existing source archive has a prepared GPLv3 source build, an experimental plugin binary, an open-source generated diagnostic, and runtime checks from stock mGBA 0.10.1.
-- **Current focus:** Repository cleanup and organization, while continuing the flashcard harness baseline.
+- **Current focus:** Harness-first validation against latest published DSSMM kernels; plugin optimization remains gated on harness qualification.
 
 ---
 
@@ -123,15 +123,15 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ## 6. Task board
 
 ### In progress
-- **Task:** Performance optimization with Stella desktop reference baseline.
-- **Exact step:** All three EZ DSSMM mGBA native launch suites pass five cases each. Next reuse/qualify DSSMM SuperFW Build667 for Chis, SD, and Lite, starting with per-board kernel builds and shared native menu/settings fixtures. These previews do not initialize the SD/card bus. Then implement only the uncovered full GBA/card/SD path. Actual mGBA is 0.10.2; DSSMM output metadata hardcodes 0.10.1.
-- **Files touched:** `AGENTS.md`, `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `harnesses/cards.json`, `harnesses/.gitignore`.
-- **Uncommitted changes:** None after commit `480c64e`; DSSMM clone and test/build outputs are ignored.
+- **Task:** Refresh kernel matrix and rerun reused DSSMM launch fixtures against current published release tags.
+- **Exact step:** Latest releases identified: DE `v8.4.1` (`a948b936c11bc984ca8a84d141dc1b7ea81751a6`), Original OMEGA `v8.4.1-omega-test5` (`29bbb055b26968468cadf7358bdffd340209a355`), BLUE `v8.4.1-blue-test5` (`9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278`), and SuperFW `superfw-build769` (`37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4`). DE v8.4.1 passed all five reused launch cases on mGBA 0.10.2; output JSON incorrectly identifies 0.10.1. Next run the Original OMEGA and BLUE release tags, then build/test each SuperFW board from Build769.
+- **Files touched:** `PROGRESS.md`, `HANDOFF.md`, `harnesses/cards.json`.
+- **Uncommitted changes:** None at start; DSSMM clone, fetched tags and outputs are ignored.
 - **Branch:** main
-- **Resume command:** `cd harnesses/third_party/dssmm && PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash ezfomegade/scripts/test-native-launch-mgba.sh` (repeat for `ezfomega` and `ezfblue`; wrapper is session-local).
+- **Resume command:** From `harnesses/third_party/dssmm`, checkout the exact tag for each EZ profile and run `PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash <profile>/scripts/test-native-launch-mgba.sh`; see `harnesses/cards.json` for tag-to-profile map.
 
 ### Next up (ordered)
-1. Reuse and qualify existing DSSMM mGBA fixtures for all six matching kernels: three EZ-FLASH profiles and SuperFW Chis/SD/Lite.
+1. Reuse and qualify existing DSSMM mGBA fixtures against exact published versions for all six matching kernels: three EZ-FLASH profiles and SuperFW Chis/SD/Lite.
 2. Implement only the missing mGBA hardware/card/SD layers needed to run the actual kernel and its FAT-based plugin/ROM loading path.
 3. Keep mGBA harness behavior separate from plugin workarounds; document hardware gaps.
 4. After harness verification, resume plugin timing/optimization with responsive input and stable 30 fps plus audio sync as targets.
@@ -241,3 +241,4 @@ Short dated entries. Trim old entries periodically.
 - 2026-11-24: Reused DSSMM native launch suites. `ezfomegade` and `ezfomega` each passed five mGBA launch scenarios (FAT alias, exFAT, long name, quick clean, quick addon), reaching mocked cartridge handoff. Actual runtime was mGBA 0.10.2, Xvfb, no BIOS; generated DSSMM JSON labels 0.10.1 incorrectly. BLUE first build hit stale `/work` dependencies; the nested `ezfblue/targets/blue/build-launch` directory was preserved/renamed and rerun is next. These tests do not validate physical SD/card protocols.
 - 2026-11-24: Owner reminded to include all SuperCard variants. Matrix already lists DSSMM SuperFW Build667 profiles for Chis/Chis Prime, SD, and Lite. SuperFW has existing native menu/settings/renderer tests, but its own `MGBA-TESTING.md` says these do not initialize physical SD/NOR/SDRAM. Next after BLUE: inspect per-board build/test switches and reuse those tests; record which one exercises kernel code versus presentation fixture, then implement missing emulated card bus only against source evidence.
 - 2026-11-24: DSSMM BLUE native mGBA launch suite passed all five cases after preserving its old `targets/blue/build-launch` output with stale `/work` dependency paths. FAT, exFAT, long name, quick-clean and quick-addon reached mocked page `0x400` handoff. All three EZ suites now pass; hardware/card SD remains unverified. Next cover SuperFW Build667 board builds and existing mGBA native menu/settings fixtures for Chis/SD/Lite.
+- 2026-11-24: Updated card matrix from release page tags and full commit IDs; prior results were explicitly demoted to older snapshot evidence. Checked out published DE `v8.4.1` and reran all five fixture scenarios (FAT-SFN, exFAT, long exFAT name, quick-clean, quick-addon). All report “all launch stages reached handoff,” source commit `a948b936...`, traces `d7ffaa...` (quick-addon `d7bfaa...`). Runtime was mGBA 0.10.2; generated metadata still says 0.10.1. Mock seams and lack of hardware qualification remain unchanged. Next: Original OMEGA Test 5.
