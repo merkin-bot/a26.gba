@@ -124,7 +124,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Porting and mGBA harness
-- **Exact step:** Capture baseline and host SuperCard/SDRAM/SD model pass; next attach model to an mGBA memory interface and build Omega profile.
+- **Exact step:** Baseline hash restored and IWRAM placement candidate rejected; next compare ARM/Thumb hot-loop code generation and then attach a verified mGBA memory interface.
 - **Files touched:** `AGENTS.md`, `PROGRESS.md`, `HANDOFF.md`, `.devcontainer/*`, `scripts/*`, `source/*`, `dist/*`, `test-roms/*`
 - **Uncommitted changes:** yes
 - **Branch:** main

@@ -1,7 +1,7 @@
 # Crash Recovery
 
-- **Doing now:** Porting/harness: baseline placement measured and IWRAM candidate rejected pending real speed evidence.
-- **Exact next command:** `bash scripts/run-card-fixture.sh 5`
+- **Doing now:** Porting: original hash restored; IWRAM placement candidate rejected; next ARM/Thumb hot-loop code comparison.
+- **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
 - **Last pushed commit:** `4fdc93d`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
