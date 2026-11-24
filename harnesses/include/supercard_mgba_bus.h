@@ -33,6 +33,9 @@ typedef struct {
 typedef struct {
     struct mCore *core;
     SuperCardModel *model;
+    uint32_t *original_rom;
+    size_t original_rom_size;
+    uint32_t original_rom_mask;
     SuperCardLoad16 original_load16;
     SuperCardLoad32 original_load32;
     SuperCardLoad8 original_load8;

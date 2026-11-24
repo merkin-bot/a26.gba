@@ -162,11 +162,6 @@ int main(int argc, char **argv) {
     mCoreInitConfig(core, NULL);
     config_initialized = 1;
 
-    if (!supercard_mgba_bus_attach(&bus, core, &model)) {
-        fputs("could not attach SuperCard memory hooks\n", stderr);
-        cleanup(core, &bus, &model, config_initialized);
-        return 1;
-    }
     if (!mCoreLoadFile(core, argv[1])) {
         fprintf(stderr, "mGBA could not load %s\n", argv[1]);
         cleanup(core, &bus, &model, config_initialized);
@@ -175,6 +170,11 @@ int main(int argc, char **argv) {
     if (!stage_kernel_in_sdram(argv[1], &model)) {
         fprintf(stderr, "could not stage kernel image into SuperCard SDRAM: %s\n",
                 argv[1]);
+        cleanup(core, &bus, &model, config_initialized);
+        return 1;
+    }
+    if (!supercard_mgba_bus_attach(&bus, core, &model)) {
+        fputs("could not attach SuperCard memory hooks\n", stderr);
         cleanup(core, &bus, &model, config_initialized);
         return 1;
     }
@@ -237,6 +237,8 @@ int main(int argc, char **argv) {
     const char *previous_region = NULL;
     int trace_first_bios = getenv("A26_TRACE_FIRST_BIOS") != NULL;
     int trace_pc_frames = getenv("A26_TRACE_PC_FRAMES") != NULL;
+    int trace_reset_tail = getenv("A26_TRACE_RESET_TAIL") != NULL;
+    int reset_tail_traced = 0;
     int pc_frame_window = 0;
     int first_bios_traced = 0;
     for (unsigned long i = 0; i < frames; ++i) {
@@ -252,6 +254,98 @@ int main(int argc, char **argv) {
         int32_t trace_pc = -1;
         if (core->readRegister(core, "pc", &trace_pc)) {
             const char *region = pc_region((uint32_t)trace_pc);
+            if (trace_reset_tail && !reset_tail_traced &&
+                (uint32_t)trace_pc == 0x03007E2Cu) {
+                fputs("reset_tail_trace_start\n", stdout);
+                const char *step_region = "";
+                int cartridge_trace = 0;
+                int copied_header_trace = 0;
+                for (unsigned step = 0; step < 250000; ++step) {
+                    core->readRegister(core, "pc", &trace_pc);
+                    uint32_t pc_value = (uint32_t)trace_pc;
+                    const char *current_region = pc_region(pc_value);
+                    if (strcmp(current_region, "cartridge") == 0) {
+                        cartridge_trace = 1;
+                    }
+                    if (cartridge_trace && pc_value >= 0x03800000u &&
+                        pc_value < 0x03800400u) {
+                        if (!copied_header_trace) {
+                            const uint8_t *iwram =
+                                (const uint8_t *)gba->memory.iwram;
+                            fputs("reset_tail_copied_header_words=", stdout);
+                            for (unsigned offset = 0x130u; offset <= 0x1A4u;
+                                 offset += 4u) {
+                                uint32_t value = (uint32_t)iwram[offset] |
+                                    ((uint32_t)iwram[offset + 1u] << 8) |
+                                    ((uint32_t)iwram[offset + 2u] << 16) |
+                                    ((uint32_t)iwram[offset + 3u] << 24);
+                                printf("%s%03X:%08" PRIX32,
+                                       offset == 0x130u ? "" : ",", offset,
+                                       value);
+                            }
+                            putchar('\n');
+                        }
+                        copied_header_trace = 1;
+                    }
+                    int32_t trace_lr = 0, trace_sp = 0, trace_r0 = 0;
+                    int32_t trace_r1 = 0, trace_r9 = 0, trace_r10 = 0;
+                    int32_t trace_r11 = 0;
+                    if (cartridge_trace || step % 10000u == 0 ||
+                        strcmp(current_region, step_region) != 0 ||
+                        pc_value == 0x03007E68u || pc_value == 0x03007EB8u ||
+                        pc_value == 0x0380018Cu || pc_value == 0xB0DC30B6u) {
+                        core->readRegister(core, "lr", &trace_lr);
+                        core->readRegister(core, "sp", &trace_sp);
+                        core->readRegister(core, "r0", &trace_r0);
+                        core->readRegister(core, "r1", &trace_r1);
+                    }
+                    if (step % 10000u == 0 ||
+                        strcmp(current_region, step_region) != 0 ||
+                        pc_value == 0x03007E68u || pc_value == 0x03007EB8u ||
+                        pc_value == 0x0380018Cu || pc_value == 0xB0DC30B6u) {
+                        int32_t trace_r9 = 0, trace_r10 = 0, trace_r11 = 0;
+                        core->readRegister(core, "r9", &trace_r9);
+                        core->readRegister(core, "r10", &trace_r10);
+                        core->readRegister(core, "r11", &trace_r11);
+                        printf("reset_tail_step=%u pc=%08" PRIX32
+                               " lr=%08" PRIX32 " sp=%08" PRIX32
+                               " r0=%08" PRIX32 " r1=%08" PRIX32
+                               " r9=%08" PRIX32 " r10=%08" PRIX32
+                               " r11=%08" PRIX32 "\n",
+                               step, pc_value, (uint32_t)trace_lr,
+                               (uint32_t)trace_sp, (uint32_t)trace_r0,
+                               (uint32_t)trace_r1, (uint32_t)trace_r9,
+                               (uint32_t)trace_r10, (uint32_t)trace_r11);
+                    }
+                    if (cartridge_trace &&
+                        (strcmp(current_region, "cartridge") == 0 ||
+                         copied_header_trace)) {
+                        int32_t trace_r2 = 0, trace_r3 = 0;
+                        core->readRegister(core, "r2", &trace_r2);
+                        core->readRegister(core, "r3", &trace_r3);
+                        printf("reset_tail_flow_step=%u pc=%08" PRIX32
+                               " lr=%08" PRIX32 " sp=%08" PRIX32
+                               " r0=%08" PRIX32 " r1=%08" PRIX32
+                               " r2=%08" PRIX32 " r3=%08" PRIX32 "\n",
+                               step, pc_value, (uint32_t)trace_lr,
+                               (uint32_t)trace_sp, (uint32_t)trace_r0,
+                               (uint32_t)trace_r1, (uint32_t)trace_r2,
+                               (uint32_t)trace_r3);
+                        fflush(stdout);
+                    }
+                    step_region = current_region;
+                    if (copied_header_trace &&
+                        !(pc_value >= 0x03800000u && pc_value < 0x03800400u)) {
+                        printf("reset_tail_copied_header_exit_step=%u pc=%08"
+                               PRIX32 " region=%s\n", step, pc_value,
+                               current_region);
+                        break;
+                    }
+                    core->step(core);
+                }
+                reset_tail_traced = 1;
+                break;
+            }
             if (trace_pc_frames && !pc_frame_window && i > frames / 2u &&
                 (uint32_t)trace_pc >= 0x03007E00u &&
                 (uint32_t)trace_pc < 0x03008000u) {

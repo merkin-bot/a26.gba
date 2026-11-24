@@ -2,8 +2,42 @@
 
 #include <mgba/core/core.h>
 #include <mgba/internal/arm/arm.h>
+#include <mgba/internal/gba/gba.h>
 
 static SuperCardMGBABus *active_bus;
+
+static void set_cartridge_fetch_map(SuperCardMGBABus *bus, uint32_t *rom,
+                                    size_t rom_size, uint32_t rom_mask) {
+    struct GBA *gba = bus->core->board;
+    uint32_t *old_rom = gba->memory.rom;
+    gba->memory.rom = rom;
+    gba->memory.romSize = rom_size;
+    gba->memory.romMask = rom_mask;
+    if (gba->cpu && gba->memory.activeRegion >= GBA_REGION_ROM0 &&
+        gba->memory.activeRegion <= GBA_REGION_ROM2_EX &&
+        (old_rom == gba->cpu->memory.activeRegion ||
+         gba->cpu->memory.activeRegion == bus->original_rom ||
+         gba->cpu->memory.activeRegion == (uint32_t *)bus->model->sdram)) {
+        gba->cpu->memory.activeRegion = gba->memory.rom;
+        gba->cpu->memory.activeMask = gba->memory.romMask &
+            -(gba->cpu->cpsr.t ? WORD_SIZE_THUMB : WORD_SIZE_ARM);
+    }
+}
+
+static void sync_cartridge_fetch_map(SuperCardMGBABus *bus) {
+    if (!bus || !bus->core || !bus->core->board || !bus->model) {
+        return;
+    }
+    if (bus->model->mode == SUPERCARD_MODE_SDRAM) {
+        set_cartridge_fetch_map(bus, (uint32_t *)bus->model->sdram,
+                                bus->model->sdram_size,
+                                (uint32_t)(bus->model->sdram_size - 1u));
+    } else {
+        set_cartridge_fetch_map(bus, bus->original_rom,
+                                bus->original_rom_size,
+                                bus->original_rom_mask);
+    }
+}
 
 static int is_sdram_address(uint32_t address) {
     return address >= 0x08000000u && address < 0x0A000000u;
@@ -193,6 +227,7 @@ static void supercard_store16(struct ARMCore *cpu, uint32_t address,
                               int16_t value, int *cycle_counter) {
     if (active_bus && address == 0x09FFFFFEu) {
         (void) supercard_write(active_bus->model, address, (uint16_t) value);
+        sync_cartridge_fetch_map(active_bus);
         ++active_bus->mode_register_writes;
         if ((uint16_t) value == 0xA55Au) {
             ++active_bus->mode_magic_writes;
@@ -238,12 +273,18 @@ static void supercard_store32(struct ARMCore *cpu, uint32_t address,
 
 int supercard_mgba_bus_attach(SuperCardMGBABus *bus, struct mCore *core,
                               SuperCardModel *model) {
-    if (!bus || !core || !core->cpu || !model || active_bus) {
+    if (!bus || !core || !core->cpu || !model || !model->sdram ||
+        !model->sdram_size ||
+        (model->sdram_size & (model->sdram_size - 1u)) != 0 || active_bus) {
         return 0;
     }
     struct ARMCore *cpu = core->cpu;
     bus->core = core;
     bus->model = model;
+    struct GBA *gba = core->board;
+    bus->original_rom = gba->memory.rom;
+    bus->original_rom_size = gba->memory.romSize;
+    bus->original_rom_mask = gba->memory.romMask;
     bus->original_load_multiple = cpu->memory.loadMultiple;
     bus->original_load32 = cpu->memory.load32;
     bus->original_load16 = cpu->memory.load16;
@@ -277,6 +318,9 @@ void supercard_mgba_bus_detach(SuperCardMGBABus *bus) {
         return;
     }
     struct ARMCore *cpu = bus->core->cpu;
+    set_cartridge_fetch_map(bus, bus->original_rom,
+                            bus->original_rom_size,
+                            bus->original_rom_mask);
     cpu->memory.loadMultiple = bus->original_load_multiple;
     cpu->memory.storeMultiple = bus->original_store_multiple;
     cpu->memory.load32 = bus->original_load32;
@@ -288,6 +332,9 @@ void supercard_mgba_bus_detach(SuperCardMGBABus *bus) {
     active_bus = NULL;
     bus->core = NULL;
     bus->model = NULL;
+    bus->original_rom = NULL;
+    bus->original_rom_size = 0;
+    bus->original_rom_mask = 0;
     bus->original_load16 = NULL;
     bus->original_load32 = NULL;
     bus->original_load_multiple = NULL;
