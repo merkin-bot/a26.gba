@@ -8,6 +8,14 @@ The harness has three independent layers:
 
 The six target profiles and exact DSSMM kernel release tags/artifacts are listed in `cards.json`. Kernels are maintained in [voluptuary/dssmm](https://github.com/voluptuary/dssmm); the earlier untagged audit snapshot `f6350776f07eba91ba2ffa34c6833d85f348f2a1` is not current release validation.
 
+## EZ-FLASH source boundary
+
+The exact-pinned EZ kernel sources share an SD sector transaction shape: halfword command writes through `0x09FE0000`, `0x08000000`, `0x08020000`, `0x08040000`, address/count at `0x09600000`/`0x09620000`/`0x09640000`, completion at `0x09FC0000`, status/data aperture `0x09E00000`, and control at `0x09400000`. Their FatFs glue chunks transfers by up to four sectors and DMA-copies through the data aperture. This is evidence of DSSMM's GBA bus traffic only. Physical decode, timing, response values, PSRAM/NOR/SRAM behavior, and save preservation are UNVERIFIED; no SuperCard SD protocol is reused here. DE and Original OMEGA use the shared page write; BLUE adds explicit OS/game mode in its page write and a flash-access preparation step. See [`docs/provenance/ezflash-source-audit.md`](../docs/provenance/ezflash-source-audit.md) for source locations, handoff behavior, and fixture limits.
+
+`ezflash-mgba-trace-smoke` exercises a **passive CPU bus trace hook**. It delegates every callback to mGBA unchanged and records selected ARM CPU accesses; it does not emulate any EZ card response or mapping. It does not currently observe GBA DMA channel transfers through `0x09E00000`, so sector payload transfer is outside this smoke test.
+
+The existing EZ launch fixtures pass five path/launch cases per release lane, but terminate at mocked storage and page/boot seams. They do not exercise the SD bus transcript or qualify a complete EZ card + SD image path. The next emulator task is a separate transcript-first EZ adapter; unknown effects remain explicit until sourced.
+
 ## Current SuperCard model boundary
 
 The SuperCard adapter uses SuperFW Build769 source in `rom_boot.S`, `src/supercard_driver.c`, `src/loader.c`, and `src/supercard_io.S`. The source uses `0x09FFFFFE` for all three board builds: mode bit 0 selects SDRAM versus firmware/flash, bit 1 enables the SD interface, and bit 2 controls SDRAM writes. The GBA boot stub copies 1 KiB from `0x08000000` to IWRAM and executes it; the plugin loader stages the plugin/game at `0x08000000` and launches in SDRAM mode. The mGBA adapter now switches CPU cartridge fetches between the original kernel ROM in firmware mode and model SDRAM in SDRAM mode. This common fetch mapping is source-supported for Build769, but only the Lite launch path has been run through the current A26 SD-image runner.

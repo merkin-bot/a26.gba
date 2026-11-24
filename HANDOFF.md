@@ -1,9 +1,9 @@
 # Crash Recovery
 
 - **Goal:** Finish a hardware-evidence-based mGBA harness for all six DSSMM card/kernel profiles before changing the A26 plugin. Model GBA hardware, matching card/kernel behavior, and SD storage as separate layers. Plugin fixes belong in the plugin; do not make the harness compensate for them.
-- **Current step:** `ce005a2` records the Chis Build769/CPLD mismatch; NOR/SRAM mapping remains unimplemented and UNVERIFIED. All three clean Build769 SuperCard kernels reach plugin code in synthetic mGBA (Lite/Chis `0x0800788A`, hash `E6AFE00D3895221D`; SD `pl_normal` at `0x080062A2`, hash `C321C3B99B2E799D`). **Active:** audit GBA-visible cartridge, save, SD-transfer, launch and return paths in the three exact-pinned EZ-FLASH kernels, and record the boundaries their reused launch fixtures mock. Do not reuse SuperCard hardware assumptions. Keep the GBA, card/kernel and SD layers separate; keep the plugin unchanged. Stella comparison remains unsynchronized. Input response, stable native time and audio sync remain priorities; target 30 rendered fps with frame drops allowed.
+- **Current step:** The three exact-pinned EZ source lanes are audited in `docs/provenance/ezflash-source-audit.md`; all five launch fixture cases passed per lane. Added `ezflash-mgba-trace-smoke`, a passive CPU callback trace that records the source-described GBA transcript and delegates every bus access to mGBA unchanged. It does not model the card or observe DMA payloads. The full repository baseline passes after correcting the manifest assertion and positional model initializers. **Active:** trace the actual mGBA GBA DMA path for EZ's `0x09E00000` source/destination without changing transfer behavior; retain UNVERIFIED physical SD response/timing/storage semantics. Keep card models separate and plugin unchanged. SuperCard Build769 plugin execution, Chis NOR/SRAM caveat, and Stella unsynchronized hash are in `PROGRESS.md`/`harnesses/cards.json`. Input response, stable game time and audio sync remain priorities; target 30 rendered fps with frame drops allowed.
 - **Known results:** Current EZ release tags each pass their five DSSMM launch fixture cases. SuperFW Build769 clean builds for Chis/SD/Lite each pass two native settings boots over fixture virtual SRAM; Chis also passes 12 menu scenes and four NOR-carousel scenes. These are not physical card or SD-bus qualification. Full details/hashes are in `PROGRESS.md` and `harnesses/cards.json`.
-- **Last pushed commit:** `cdef148` (`Advance handoff to EZ flash source audit`). Workspace was clean after push; the exact current audit step is being reconciled in this commit.
+- **Last pushed commit:** Updated by the current trace/audit change; see `PROGRESS.md` and `git log -5 --oneline` after push.
 - **Workspace:** `/workspaces/a26.gba`. mGBA clone at `harnesses/third_party/mgba` (commit `431935616c0e216d650b25b2ea0c0acccd359038`, MPL-2.0); DSSMM clone at `harnesses/third_party/dssmm`, currently detached at SuperFW `superfw-build769` (`37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4`). Clones and build outputs are git-ignored.
 
 ## Resume after Codespace restart
@@ -17,6 +17,7 @@
    cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner
    build/harness-cmake/supercard-model-test
    build/harness-cmake/mgba-core-smoke
+   build/harness-cmake/ezflash-mgba-trace-smoke
    bash scripts/verify-harness.sh
    ```
    Diagnostic usage: `A26_SUPERCARD_BOARD=lite|sd|chis build/harness-cmake/supercard-mgba-runner <kernel-gba> <frames> [sd-image [capture.ppm [key-events]]]`. Key events are comma-separated `frame:mask` values (A=1, Down=0x80). Recreate SD image with `bash scripts/verify-harness.sh`; current per-board results and the SD kernel stop point are in `PROGRESS.md`.

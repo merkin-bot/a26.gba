@@ -47,6 +47,23 @@ if(TARGET mgba)
   target_compile_definitions(mgba-core-smoke PRIVATE
     $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
   target_link_libraries(mgba-core-smoke PRIVATE supercard_mgba_bus)
+
+  add_library(ezflash_mgba_trace STATIC src/ezflash_mgba_trace.c)
+  target_include_directories(ezflash_mgba_trace PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(ezflash_mgba_trace PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(ezflash_mgba_trace PUBLIC mgba)
+
+  add_executable(ezflash-mgba-trace-smoke src/ezflash_mgba_trace_smoke.c)
+  target_include_directories(ezflash-mgba-trace-smoke PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(ezflash-mgba-trace-smoke PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(ezflash-mgba-trace-smoke PRIVATE ezflash_mgba_trace)
 endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/mgba_supercard_runner.c")

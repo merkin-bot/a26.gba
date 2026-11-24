@@ -31,14 +31,17 @@ def test_argument_words():
     packed = struct.pack("<4I", *ram)
     assert len(packed) == 16
 
-def test_fat_manifest():
+def test_card_profile_manifest():
     root = Path(__file__).resolve().parents[1]
     manifest = json.loads((root / "harnesses/cards.json").read_text())
-    assert manifest["cards"][0]["sd"] == "fat32"
-    assert manifest["cards"][1]["sd"] == "fat32"
+    assert len(manifest["profiles"]) == 6
+    assert "mGBA GBA-system model" in manifest["layers"]
+    assert "DSSMM per-card firmware/kernel and cartridge behavior" in manifest["layers"]
+    assert any("SD block image" in layer for layer in manifest["layers"])
+    assert len(manifest["existing_tests"]["ez_flash_native_launch"]) == 3
 
 if __name__ == "__main__":
     test_layout()
     test_argument_words()
-    test_fat_manifest()
-    print("PogoShell portable ABI: layout, argument block, and FAT32 manifest passed")
+    test_card_profile_manifest()
+    print("PogoShell portable ABI: layout, argument block, and six-profile manifest passed")

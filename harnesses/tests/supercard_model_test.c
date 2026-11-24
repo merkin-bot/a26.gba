@@ -74,10 +74,16 @@ int main(void) {
     uint8_t cart[32], sdram[65536];
     memset(cart, 0xCC, sizeof(cart));
     memset(sdram, 0, sizeof(sdram));
-    SuperCardModel model = {cart, sizeof(cart), sdram, sizeof(sdram), NULL,
-                            SUPERCARD_MODE_FIRMWARE, 0, 0, 0, 0, 0};
-    SuperCardModel second = {cart, sizeof(cart), sdram, sizeof(sdram), NULL,
-                             SUPERCARD_MODE_FIRMWARE, 0, 0, 0, 0, 0};
+    SuperCardModel model = {
+        .cart = cart, .cart_size = sizeof(cart),
+        .sdram = sdram, .sdram_size = sizeof(sdram),
+        .mode = SUPERCARD_MODE_FIRMWARE,
+    };
+    SuperCardModel second = {
+        .cart = cart, .cart_size = sizeof(cart),
+        .sdram = sdram, .sdram_size = sizeof(sdram),
+        .mode = SUPERCARD_MODE_FIRMWARE,
+    };
     supercard_reset(&model);
     assert(model.mode == SUPERCARD_MODE_FIRMWARE);
 

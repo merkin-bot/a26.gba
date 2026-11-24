@@ -15,7 +15,7 @@
       "source_commit": "a948b936c11bc984ca8a84d141dc1b7ea81751a6",
       "artifact": "ezkernelnew.bin",
       "source": "ezfomegade/",
-      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); physical launch and SD behavior unverified"
+      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); source audit records shared EZ SD transcript and DE assembly handoff; physical decode, timing, save and SD behavior unverified"
     },
     {
       "id": "ezfomega-original",
@@ -25,7 +25,7 @@
       "source_commit": "29bbb055b26968468cadf7358bdffd340209a355",
       "artifact": "ezkernel.bin",
       "source": "ezfomega/",
-      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); physical launch and SD behavior unverified"
+      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); source audit records shared EZ SD transcript and C plugin handoff; physical decode, timing, save and SD behavior unverified"
     },
     {
       "id": "ezfblue",
@@ -35,7 +35,7 @@
       "source_commit": "9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278",
       "artifact": "ezbluekernel.bin",
       "source": "ezfblue/",
-      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); release is hardware-untested and physical SD behavior unverified"
+      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2 (DSSMM JSON says 0.10.1); source audit records shared EZ SD transcript and BLUE mode-bit/assembly handoff; release is hardware-untested and physical decode, timing, save and SD behavior unverified"
     },
     {
       "id": "supercard-chis",
@@ -83,6 +83,14 @@
       "ezfblue/scripts/test-native-launch-mgba.sh"
     ],
     "coverage": "Real selected kernel launcher/path/metadata functions and UI execute in mGBA; save, FAT block transfer, patch, cartridge page/bank changes and physical boot effects are fixture boundaries/mocks. These are not full card+SD emulations."
+  },
+  "ezflash_source_audit": {
+    "source_document": "docs/provenance/ezflash-source-audit.md",
+    "sd_gba_bus_transcript": "All three pinned DSSMM lanes write command unlock values at 0x09FE0000/0x08000000/0x08020000/0x08040000, sector address/count at 0x09600000/0x09620000/0x09640000, command end at 0x09FC0000; control is 0x09400000, status/data aperture is 0x09E00000, DMA transfers data in groups up to four 512-byte sectors; writes set bit 15 in count",
+    "shared_kernel_memory_windows": "Source declares PSRAM 0x08800000, NOR 0x09000000, and save SRAM 0x0E000000; physical windows and behavior UNVERIFIED",
+    "lane_differences": "Original OMEGA performs plugin copy/decompression in C after common page selection; OMEGA DE uses DE_BootHandoff assembly; BLUE adds OS/game mode bit and Blue_PrepareFlashAccess and uses Blue_BootHandoff assembly",
+    "fixture_boundary": "Five-case native launch tests per lane exercise launcher/path/metadata to a fixture handoff marker; card bus, physical SD, PSRAM/NOR/SRAM and save effects are mocked or outside fixture scope",
+    "hardware_status": "UNVERIFIED: physical register decode, waitstates, response values/timing, SD media interoperability, page mapping, persistence and reset effects"
   },
   "superfw_build769_source_audit": {
     "common": {
