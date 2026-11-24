@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `9d32422` before the current SDRAM/framebuffer changes. Commit and push this step after recording its test results.
+**Last pushed commit:** `a905bba` (`Model SuperCard SDRAM and capture kernel UI`).
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -124,9 +124,9 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Complete the evidence-based SuperCard host model and proceed toward mGBA card/SD integration.
-- **Exact step:** Implemented SuperCard SDRAM mapping and seeded SDRAM with the loaded Lite Build769 kernel image, matching the source-described boot image and mode-switch behavior. Captured a valid DSSMM launcher screen (`240x160`, FNV64 `EA30B4C5E66F8D9B`); the earlier restart-required screen is cleared. Added frame-indexed key taps and verified navigation launcher → SD root → `/ROMS/`; listing shows `flappy.a26`. A launch tap caused more SD traffic (CMD25 appeared), but the final frame remained the selected `/ROMS/` listing (FNV64 `3661F7412A515991`), so plugin launch/ROM handoff is **not verified**. Next inspect the DSSMM browser/launch path and synthetic SD image/FAT reads to explain the no-op launch; do not modify harness/plugin to mask a mismatch. Physical card behavior remains UNVERIFIED.
+- **Exact step:** Implemented SuperCard SDRAM mapping and seeded SDRAM with the loaded Lite Build769 kernel image, matching the source-described boot image and mode-switch behavior. Captured a valid DSSMM launcher screen (`240x160`, FNV64 `EA30B4C5E66F8D9B`); the earlier restart-required screen is cleared. Added frame-indexed key taps and verified navigation launcher → SD root → `/ROMS/`; listing shows `flappy.a26`. A launch tap caused more SD traffic (CMD25 appeared), but the final frame remained the selected `/ROMS/` listing (FNV64 `3661F7412A515991`), so plugin launch/ROM handoff is **not verified**. **Next active task:** trace DSSMM browser selection to plugin invocation and audit the SD image paths/metadata against kernel expectations; reproduce the attempted sequence with an intermediate capture. Do not modify harness/plugin to mask a mismatch. Physical card behavior remains UNVERIFIED.
 - **Files touched:** `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `harnesses/include/supercard_mgba_bus.h`, `harnesses/include/supercard_model.h`, `harnesses/src/mgba_supercard_runner.c`, `harnesses/src/supercard_mgba_bus.c`, `harnesses/src/supercard_model.c`, and `harnesses/tests/supercard_model_test.c`.
-- **Uncommitted changes:** SDRAM mapping, SD image-backed LDM reads, framebuffer capture, and frame-indexed key injection. DSSMM/mGBA clones and generated outputs are ignored.
+- **Uncommitted changes:** None. Commit `a905bba` contains the SDRAM model, capture/input hooks, tests, and documentation. DSSMM/mGBA clones and generated outputs are ignored.
 - **Branch:** main
 - **Resume command:** `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner && build/harness-cmake/supercard-model-test && build/harness-cmake/mgba-core-smoke && bash scripts/build-plugin.sh && bash scripts/verify-harness.sh`. Reproduce Lite `/ROMS/` listing: `build/harness-cmake/supercard-mgba-runner harnesses/third_party/dssmm/superfw/build/release-builds/superfw-build769-verified/lite.gba 1830 work/a26-sd.img work/supercard-roms-folder.ppm 1700:0x1,1750:0x1`. Optional final argument is comma-separated `frame:mask` taps; mGBA key positions are A=0, B=1, Select=2, Start=3, Right=4, Left=5, Up=6, Down=7, R=8, L=9. For EZ fixtures use the tag in `harnesses/cards.json`; for SuperFW always `make clean` before switching boards.
 
