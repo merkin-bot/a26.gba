@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** Goomba-font menu integration complete; candidate StellaDS audio, PogoShell layout, and menu capture remain under baseline verification.
+- **Doing now:** StellaDS permission documented; TIA polynomial lookup/masked-counter optimization passes host and cold-boot tests.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `e3a0dbb`
+- **Last pushed commit:** `d9a5e10`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
