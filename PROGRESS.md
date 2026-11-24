@@ -51,6 +51,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 - Build plugin: `<TODO>`
 - Build plugin: `bash scripts/build-plugin.sh` (official `devkitpro/devkitarm:latest` Docker image)
 - Build standalone stock-mGBA fixture: `bash scripts/build-fixture.sh`
+- Build/verify FAT32 flashcard SD: `bash scripts/verify-harness.sh`
 - Build patched mGBA (with SuperCard/EZ-Flash harnesses): `<TODO>`
 - Run stock mGBA headlessly: `bash scripts/run-mgba.sh <gba-rom> <seconds>`
 - Run baseline: `bash scripts/test-baseline.sh`
@@ -101,6 +102,10 @@ Each fact needs a source or evidence. Separate verified from unverified.
 - A standalone `A26_FIXTURE` GBA image embeds `archive-inputs/flappy.a26` and survives 3 seconds under stock Ubuntu mGBA 0.10.2/Xvfb (source: `scripts/test-baseline.sh`).
 - Public PocketNES/GoombaColor source confirms PogoShell launch at `0x0203FBFC` and tail at `0x0203FBF8`, plus ROM filename parsing from `0x0203FC08` (source: public GPL/Github references; license verify per-file before reuse).
 - EZ-FLASH Omega kernel public metadata is Apache-2.0 (source: GitHub API); it is a kernel reference only, not evidence of physical cartridge behavior.
+- A 64 MB FAT32 SD image is verified with `a26.gba` under `SYSTEM/PLUG/` and `flappy.a26` under `ROMS/`; plugin and ROM hashes match source assets (source: `scripts/verify-harness.sh`).
+- DSSMM SuperFW source confirms portable PogoShell ABI argument layout and SuperCard cartridge-SDRAM/NOR/SD boundaries, but explicitly states stock mGBA cannot emulate full card I/O (source: `voluptuary/dssmm/superfw/docs/MGBA-TESTING.md`, Apache-2.0).
+- EZ-FLASH Omega Definitive kernel source is public and Apache-2.0; PogoShell detection is code-confirmed at `0x0203FBFC`/`0x0203FBF8` and filename parsing at `0x0203FC08` (source: `ez-flash/omega-de-kernel`).
+- SuperFlash build 822 kernel/register/SD implementation remains UNVERIFIED; no redistributable kernel or public register evidence was found.
 
 ### UNVERIFIED
 - PogoShell ABI details, return stub layout, and save memory behavior beyond the source's fixed argument block (how to verify: obtain PogoShell/plugin source or a real firmware experiment).
@@ -157,10 +162,14 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | Reproducible plugin build | `bash scripts/build-plugin.sh` | PASS | SHA-256 matches `archive-inputs/a26.gba` |
 | Stock mGBA standalone fixture | `bash scripts/test-baseline.sh` | PASS | Fixture survived 3 seconds under stock mGBA 0.10.2/Xvfb |
 | Stock mGBA plugin launch | `bash scripts/run-mgba.sh <plugin> <seconds>` | NOT VALID | Plugin rejected as incompatible because PogoShell ABI is absent |
-| PogoShell ABI harness | `<TODO>` | NOT STARTED | no patched harness found or built |
+| FAT32 virtual SD | `bash scripts/verify-harness.sh` | PASS | 64 MB FAT32, plugin and Flappy hashes verified |
+| PogoShell portable ABI | `bash scripts/test-baseline.sh` | PASS | Layout and argument-block assertions pass; no card I/O |
+| EZ-FLASH Omega card harness | `<TODO>` | PARTIAL | Omega source exists; kernel launch and card register fixture remain |
+| SuperFlash 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
 
 ### Known harness-vs-hardware differences
 - Stock mGBA cannot yet validate PogoShell ABI, firmware cartridge remapping, or physical Exit; `atari2600-test.json` uses a generated ROM and a return marker stub in stock SDL mGBA.
+- A virtual FAT32 SD proves file staging only; it does not emulate FPGA/NOR/controller/register behavior or real FAT latency.
 
 ---
 
@@ -181,6 +190,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 - Archive prepared source retains GPLv3; legacy upstream code is GNU GPL as stated in source/CREDITS without a numbered version in some files.
 - MikeDX/PocketStella/Stella GitHub metadata says GPL-2.0; verify license files before reuse. StellaDS metadata is NO_LICENSE and remains excluded pending verification. Flappy Bird metadata says BSD-2-Clause; verify upstream contents/license before use.
 - PocketNES and GoombaColor PogoShell ABI usage was studied from public sources; no code was copied into this repository.
+- EZ-FLASH Omega kernel is Apache-2.0, mGBA/MPL-2.0, and the relevant EZ-FLASH Air reference harness is Apache-2.0; no third-party implementation code was copied yet.
 
 ---
 

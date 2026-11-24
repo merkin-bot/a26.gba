@@ -8,3 +8,4 @@ archive-inputs/test-source/atari2600/prototype.*
 *.elf
 *.gba
 *.map
+work/

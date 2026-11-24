@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 bash scripts/build-plugin.sh
+python3 scripts/test-pogo-abi.py
 
 plugin="archive-inputs/test-source/atari2600/prototype.gba"
 plugin_hash=$(sha256sum "$plugin" | awk '{print $1}')

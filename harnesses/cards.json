@@ -1,0 +1,24 @@
+{
+  "cards": [
+    {
+      "name": "ez-flash-omega",
+      "status": "source-known-unverified-hardware",
+      "license": "Apache-2.0",
+      "kernel_source": "ez-flash/omega-de-kernel",
+      "pogo_signature": "0x0203FBFC",
+      "tail_signature": "0x0203FBF8",
+      "filename_argv": "0x0203FC08",
+      "sd": "fat32"
+    },
+    {
+      "name": "superflash-822",
+      "status": "blocked-needs-firmware-and-register-evidence",
+      "license": "UNVERIFIED",
+      "kernel_source": "none-redistributable",
+      "pogo_signature": "UNVERIFIED",
+      "tail_signature": "UNVERIFIED",
+      "filename_argv": "UNVERIFIED",
+      "sd": "fat32"
+    }
+  ]
+}

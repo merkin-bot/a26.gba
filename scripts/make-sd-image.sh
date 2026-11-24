@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+out="${1:-work/a26-sd.img}"
+size_mb="${2:-64}"
+mkdir -p "$(dirname "$out")"
+
+command -v mkfs.vfat >/dev/null
+command -v mcopy >/dev/null
+rm -f "$out"
+dd if=/dev/zero of="$out" bs=1M count="$size_mb" status=none
+mkfs.vfat -F 32 -n A26TEST "$out" >/dev/null
+export MTOOLS_SKIP_CHECK=1
+
+mmd -i "$out" "::SYSTEM"
+mmd -i "$out" "::SYSTEM/PLUG"
+mmd -i "$out" "::ROMS"
+mcopy -i "$out" archive-inputs/a26.gba "::SYSTEM/PLUG/a26.gba"
+mcopy -i "$out" archive-inputs/flappy.a26 "::ROMS/flappy.a26"
+
+echo "Created FAT32 SD image: $out"
