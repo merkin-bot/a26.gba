@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** Candidate build is StellaDS-audio, Goomba-font, and real PogoShell-layout enabled; harnesses run the newly compiled candidate.
+- **Doing now:** Goomba-font menu integration complete; candidate StellaDS audio, PogoShell layout, and menu capture remain under baseline verification.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `0ca9455`
+- **Last pushed commit:** `e3a0dbb`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
