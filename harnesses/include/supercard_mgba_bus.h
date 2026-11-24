@@ -11,10 +11,12 @@ struct mCore;
 typedef void (*SuperCardStore16)(struct ARMCore *, uint32_t, int16_t, int *);
 typedef void (*SuperCardStore8)(struct ARMCore *, uint32_t, int8_t, int *);
 typedef void (*SuperCardStore32)(struct ARMCore *, uint32_t, int32_t, int *);
+typedef uint32_t (*SuperCardLoad16)(struct ARMCore *, uint32_t, int *);
 
 typedef struct {
     struct mCore *core;
     SuperCardModel *model;
+    SuperCardLoad16 original_load16;
     SuperCardStore8 original_store8;
     SuperCardStore16 original_store16;
     SuperCardStore32 original_store32;
@@ -24,6 +26,8 @@ typedef struct {
     uint16_t last_mode_word;
     uint64_t sd_command_writes;
     uint64_t sd_data_writes;
+    uint64_t cartridge_writes;
+    uint32_t last_cartridge_write;
 } SuperCardMGBABus;
 
 /* One attached GBA core per process is supported by this initial adapter. */

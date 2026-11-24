@@ -4,6 +4,11 @@
 #include <string.h>
 
 #define SC_MODE_REG 0x09FFFFFEu
+#define SC_RDWR_COMMAND 0x09800000u
+#define SC_WRITE_REGISTER_8 0x09000000u
+#define SC_WRITE_REGISTER_A 0x0B000000u
+#define SC_READ_REGISTER_8 0x09100000u
+#define SC_READ_REGISTER_A 0x0B100000u
 #define SC_MAGIC 0xA55Au
 
 void supercard_reset(SuperCardModel *model) {
@@ -43,10 +48,19 @@ int supercard_write(SuperCardModel *model, uint32_t address, uint16_t value) {
 
 int supercard_read(SuperCardModel *model, uint32_t address, uint32_t width,
                    uint32_t *value) {
-    (void)model;
-    (void)address;
-    (void)width;
-    (void)value;
+    if (!model || !value || !model->sd_interface || width != 16) {
+        return 0;
+    }
+    /* DSSMM supercard_io.S polls CMD bit0 and DAT0 bit8 for idle-high. */
+    if (address == SC_RDWR_COMMAND) {
+        *value = 0x0001u;
+        return 1;
+    }
+    if (address == SC_WRITE_REGISTER_8 || address == SC_WRITE_REGISTER_A ||
+        address == SC_READ_REGISTER_8 || address == SC_READ_REGISTER_A) {
+        *value = 0x0100u;
+        return 1;
+    }
     return 0;
 }
 

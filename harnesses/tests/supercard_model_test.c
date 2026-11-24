@@ -29,6 +29,14 @@ int main(void) {
     assert(model.mode == SUPERCARD_MODE_SDRAM);
     assert(model.sd_interface);
     assert(model.write_access);
+    uint32_t line_value = 0;
+    assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+    assert(line_value == 0x0001u); /* CMD is documented idle-high. */
+    assert(supercard_read(&model, 0x09100000u, 16, &line_value));
+    assert(line_value == 0x0100u); /* DAT0 is documented idle-high. */
+    assert(supercard_read(&model, 0x09000000u, 16, &line_value));
+    assert(line_value == 0x0100u);
+    assert(!supercard_read(&model, 0x09800000u, 8, &line_value));
 
     const uint8_t payload[] = {1, 2, 3, 4};
     supercard_set_payload(&model, 4096, payload, sizeof(payload));

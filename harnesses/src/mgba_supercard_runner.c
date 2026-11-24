@@ -83,13 +83,27 @@ int main(int argc, char **argv) {
         core->runFrame(core);
     }
     uint32_t end_frame = core->frameCounter(core);
+    int32_t pc = -1, r0 = 0, r1 = 0, r2 = 0, r3 = 0, lr = 0;
+    int has_pc = core->readRegister(core, "pc", &pc);
+    core->readRegister(core, "r0", &r0);
+    core->readRegister(core, "r1", &r1);
+    core->readRegister(core, "r2", &r2);
+    core->readRegister(core, "r3", &r3);
+    core->readRegister(core, "lr", &lr);
     printf("mGBA platform=GBA requested_frames=%lu frame_counter_delta=%" PRIu32
+           " pc=%s0x%08" PRIX32 " r0=%08" PRIX32 " r1=%08" PRIX32
+           " r2=%08" PRIX32 " r3=%08" PRIX32 " lr=%08" PRIX32
            " mode_register_writes=%" PRIu64 " magic_writes=%" PRIu64
            " mode_words=%" PRIu64 " last_mode=0x%04X sd_command_writes=%" PRIu64
-           " sd_data_writes=%" PRIu64 " map=%s sd=%d write=%d\n",
-           frames, end_frame - start_frame, bus.mode_register_writes,
+           " sd_data_writes=%" PRIu64 " cartridge_writes=%" PRIu64
+           " last_cartridge_write=0x%08" PRIX32 " map=%s sd=%d write=%d\n",
+           frames, end_frame - start_frame, has_pc ? "" : "unavailable:",
+           has_pc ? (uint32_t) pc : 0, (uint32_t) r0, (uint32_t) r1,
+           (uint32_t) r2, (uint32_t) r3, (uint32_t) lr,
+           bus.mode_register_writes,
            bus.mode_magic_writes, bus.mode_value_writes, bus.last_mode_word,
            bus.sd_command_writes, bus.sd_data_writes,
+           bus.cartridge_writes, bus.last_cartridge_write,
            model.mode == SUPERCARD_MODE_SDRAM ? "sdram" : "firmware",
            model.sd_interface, model.write_access);
 

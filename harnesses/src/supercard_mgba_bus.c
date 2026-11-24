@@ -5,9 +5,22 @@
 
 static SuperCardMGBABus *active_bus;
 
+static uint32_t supercard_load16(struct ARMCore *cpu, uint32_t address,
+                                 int *cycle_counter) {
+    uint32_t value;
+    if (active_bus && supercard_read(active_bus->model, address, 16, &value)) {
+        return value;
+    }
+    return active_bus->original_load16(cpu, address, cycle_counter);
+}
+
 static void count_sd_write(uint32_t address) {
     if (!active_bus) {
         return;
+    }
+    if (address >= 0x08000000u && address < 0x0E000000u) {
+        ++active_bus->cartridge_writes;
+        active_bus->last_cartridge_write = address;
     }
     /* Addresses are from DSSMM SuperFW src/supercard_io.S, Build769. */
     if (address == 0x09800000u) {
@@ -56,15 +69,18 @@ int supercard_mgba_bus_attach(SuperCardMGBABus *bus, struct mCore *core,
     struct ARMCore *cpu = core->cpu;
     bus->core = core;
     bus->model = model;
+    bus->original_load16 = cpu->memory.load16;
     bus->original_store8 = cpu->memory.store8;
     bus->original_store16 = cpu->memory.store16;
     bus->original_store32 = cpu->memory.store32;
-    if (!bus->original_store8 || !bus->original_store16 || !bus->original_store32) {
+    if (!bus->original_load16 || !bus->original_store8 || !bus->original_store16 ||
+        !bus->original_store32) {
         bus->core = NULL;
         bus->model = NULL;
         return 0;
     }
     active_bus = bus;
+    cpu->memory.load16 = supercard_load16;
     cpu->memory.store8 = supercard_store8;
     cpu->memory.store16 = supercard_store16;
     cpu->memory.store32 = supercard_store32;
@@ -76,12 +92,14 @@ void supercard_mgba_bus_detach(SuperCardMGBABus *bus) {
         return;
     }
     struct ARMCore *cpu = bus->core->cpu;
+    cpu->memory.load16 = bus->original_load16;
     cpu->memory.store8 = bus->original_store8;
     cpu->memory.store16 = bus->original_store16;
     cpu->memory.store32 = bus->original_store32;
     active_bus = NULL;
     bus->core = NULL;
     bus->model = NULL;
+    bus->original_load16 = NULL;
     bus->original_store8 = NULL;
     bus->original_store16 = NULL;
     bus->original_store32 = NULL;
