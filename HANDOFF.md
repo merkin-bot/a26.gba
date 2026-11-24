@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** Candidate build is StellaDS-audio and Goomba-font enabled; harnesses run the newly compiled candidate hash.
+- **Doing now:** Candidate build is StellaDS-audio, Goomba-font, and real PogoShell-layout enabled; harnesses run the newly compiled candidate.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `8849d76`
+- **Last pushed commit:** `0ca9455`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
