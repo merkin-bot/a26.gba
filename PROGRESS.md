@@ -124,18 +124,18 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Performance optimization with Stella desktop reference baseline.
-- **Exact step:** Fixed both frame captures: Stella visible bounds scale into the plugin’s 160x90 viewport on a 240x160 canvas; mGBA F12 PNG is read directly instead of sampling desktop coordinates. Both images are nonblank. Next establish an execution timing counter and align game start/state before comparing visuals or choosing a hot-path optimization.
-- **Files touched:** `AGENTS.md`, `HANDOFF.md`, `PROGRESS.md`, `scripts/capture-stella-reference.py`, `scripts/capture-fixture.py`, and any measured optimization files.
-- **Uncommitted changes:** capture changes and handoff update (checkpoint before further work).
+- **Exact step:** Pause plugin optimization. Audit and implement the mGBA card harness against documented Omega/SuperCard evidence. Current CMake references missing `harnesses/src/mgba_supercard_runner.c`; the host SuperCard model uses an undocumented `0x09FFFFFE/0xA55A` protocol and is not hardware-verified. Do not model unverified register behavior as fact. Stella/mGBA capture fixes are committed; visual states are not yet synchronized.
+- **Files touched:** Harness implementation/docs plus `AGENTS.md`, `HANDOFF.md`, and `PROGRESS.md`.
+- **Uncommitted changes:** none at start of harness audit.
 - **Branch:** main
-- **Resume command:** `bash scripts/capture-fixture.sh && bash scripts/capture-stella-reference.sh`; then inspect `source/atari2600/vmachine.c` frame boundary and reserve a hardware timer for cycle measurement.
+- **Resume command:** `cmake -S harnesses -B build/harness-cmake -G Ninja` (expect missing runner source); repair target only after identifying its intended role and validating mGBA core integration.
 
 ### Next up (ordered)
-1. Make Stella-to-GBA scaled image capture repeatable and compare against plugin frame.
-2. Establish runtime performance/frame cadence metrics suitable for optimization candidates.
-3. Profile and optimize CPU/TIA/raster hot paths while preserving input latency and emulated timing.
-4. Measure sound impact and confirm stable 30 fps pacing/frame skipping.
-5. Qualify changes on hardware when available; mGBA is only a smoke-test reference.
+1. Finish a documented, hardware-evidence-based mGBA harness for EZ-FLASH Omega and SuperCard behavior.
+2. Verify PogoShell launch, ROM handoff, inputs, save/SD paths with reproducible headless traces.
+3. Keep mGBA harness behavior separate from plugin workarounds; document hardware gaps.
+4. After harness verification, resume plugin timing/optimization with responsive input and stable 30 fps plus audio sync as targets.
+5. Compare Stella and plugin output at synchronized game states; hardware qualification remains final authority.
 
 ### Backlog
 - Headless screenshot/frame-hash capture
@@ -233,4 +233,5 @@ Short dated entries. Trim old entries periodically.
 
 - 2026-11-24: Read AGENTS/PROGRESS; ingested and removed `a26.zip`; organized source/test/assets and reference repositories; created HANDOFF and devcontainer scripts; verified Docker devkitARM 16.1.0 reproduces archived SHA-256 `14d28e63...f4500`; installed stock mGBA 0.10.2/Xvfb. Next: implement native baseline checks and PogoShell/mGBA harness.
 - 2026-11-24: Added GPL-2.0-attributed StellaDS-adapted TIA audio state/divider/poly mixer and GBA Direct Sound scaffold. Host mixer tests and 3-second PogoShell/frame checks pass; hardware sound accuracy and performance remain unqualified.
-- 2026-11-24: Resumed at commit `85f8141`. `bash scripts/test-baseline.sh` and `bash scripts/build-plugin.sh` completed; corrected Stella capture to crop visible rendered bounds and output 240x160. Stella and mGBA frames are both nonblank at 240x160; Stella is placed into the observed plugin viewport. They show visibly different Flappy animation states, so state alignment and timing baseline are still needed. No speed improvement is claimed. Next establish a frame timing counter before editing hot paths.
+- 2026-11-24: Resumed at commit `85f8141`; baseline and plugin build completed. Corrected Stella and mGBA F12 image capture; both output nonblank 240x160 frames, but game states are not synchronized. No speed improvement claimed.
+- 2026-11-24: Owner clarified harness-first sequencing: finish and verify hardware-faithful mGBA harness before plugin optimizations; never change harness to compensate for plugin issues. Audit found CMake references absent `harnesses/src/mgba_supercard_runner.c`; the standalone host SuperCard model includes undocumented register values, therefore it is not a validated hardware model. Next remove unsupported claims and establish known-source mGBA baseline and hardware evidence inventory.
