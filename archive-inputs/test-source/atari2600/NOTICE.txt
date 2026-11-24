@@ -1,0 +1,9 @@
+Experimental DSSMM Atari2600 plugin, based on MikeDX/2600_gba
+Upstream commit: 2eb18dd8a5b832c939efe510b4e493ad4cf25437
+Virtual VCS/X2600: Alex Hornby, Daniel Boris and the x64 contributors.
+See CREDITS and the notices retained in each source file.
+Upstream C sources state the GNU GPL without a numbered version;
+DSSMM adapters/menu are GPL-3.0-or-later. GPLv3 text is in COPYING.
+No upstream prebuilt objects or commercial ROM payloads are used.
+Rebuild this exact prepared source with bash build.sh and devkitARM.
+Experimental: no sound; only generated diagnostics tested.

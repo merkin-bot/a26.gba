@@ -1,0 +1,10 @@
+{
+  "name": "a26.gba",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "containerEnv": {
+    "DEVKITPRO": "/opt/devkitpro",
+    "DEVKITARM": "/opt/devkitpro/devkitARM"
+  },
+  "remoteUser": "vscode"
+}

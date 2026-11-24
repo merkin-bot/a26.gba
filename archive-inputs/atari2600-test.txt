@@ -1,0 +1,22 @@
+EXPERIMENTAL Atari2600 plugin for SuperFW DSSMM
+
+Copy SYSTEM/PLUG/a26.gba from this folder to SYSTEM/PLUG/a26.gba on your SD card.
+Select an .a26 ROM normally. Build799 already recognizes extension-named plugins;
+no replacement firmware is needed. Remove any older a26.bin: .bin takes priority.
+
+L+R: open menu. D-pad: navigate/change. A: select. B: back/resume.
+Menu: Controller, Display, Other Settings, Help, Resume, Restart, Exit.
+Start resets the Atari console; Select operates its game-select switch.
+
+Supported input layouts: 2K, 4K, standard 8K F8 and 16K F6.
+Other banking variants are not supported. There is currently NO SOUND.
+This unfinished core is an experimental trial, not a compatibility promise.
+Only original generated diagnostics have been tested in mGBA; actual games,
+performance and physical-card Exit remain unqualified. No games are included.
+RIOT timer/WSYNC clock fixes and control ports have native ARM regression checks.
+If return is unavailable, the plugin displays a power-off message.
+
+Based on MikeDX/2600_gba and Virtual VCS/X2600 by Alex Hornby, Daniel Boris
+and contributors listed in CREDITS. DSSMM startup, loader and menu additions.
+Corresponding prepared source, notices, GPL text and build instructions are in
+atari2600-test-source.zip. No upstream prebuilt emulator objects were used.

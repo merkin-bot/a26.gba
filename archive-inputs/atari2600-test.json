@@ -1,0 +1,44 @@
+{
+  "upstream_commit": "2eb18dd8a5b832c939efe510b4e493ad4cf25437",
+  "purpose": "runtime input experiment",
+  "sha256": {
+    "diagnostic.a26": "d01da6830f59800530310d04bdaa796a999c38de5067a62e23c020a16e4c6b67",
+    "prototype.gba": "14d28e63ac2d930d8c1849e030a3ff0701e59bc6e940863d5de9884e6b5f4500"
+  },
+  "limits": "Experimental 2K/4K/F8/F6 input and L+R menu; audio, broad game compatibility, physical Exit remain pending.",
+  "hardware_test": "Experimental local trial only; no physical qualification.",
+  "assets": {
+    "SYSTEM/PLUG/a26.gba": "14d28e63ac2d930d8c1849e030a3ff0701e59bc6e940863d5de9884e6b5f4500",
+    "atari2600-test-source.zip": "150e5aa0dd3f1913e10a606abd43bc3da84f16758df7f2b3f2a23ef62ba16e86"
+  },
+  "raster_checks": {
+    "queue_boundary_cases": 28,
+    "wide_copy_sprite_cases": 3,
+    "runtime_sha256": "14d28e63ac2d930d8c1849e030a3ff0701e59bc6e940863d5de9884e6b5f4500",
+    "limits": "Pinned core arrays on ARM; overflowed display changes are dropped, not cycle-exact emulation."
+  },
+  "timing_checks": {
+    "timer_boundary_cases": 64,
+    "wsync_cases": 20,
+    "control_port_cases": 20,
+    "status": "bus-offset, underflow flag/read-clear and reset checks passed",
+    "runtime_sha256": "14d28e63ac2d930d8c1849e030a3ff0701e59bc6e940863d5de9884e6b5f4500",
+    "limits": "Linked ARM model; legacy instruction-level core is not a cycle-exact TIA/RIOT implementation."
+  },
+  "runtime_checks": {
+    "emulator": "stock SDL mGBA 0.10.1; private Xvfb; no BIOS",
+    "passed": [
+      "L alone leaves game running",
+      "L+R opens menu",
+      "A opens Controller",
+      "A toggles controller option",
+      "B returns to parent",
+      "D-pad selects Display",
+      "Left changes frame skip",
+      "B restores exact game frame",
+      "Restart returns to diagnostic",
+      "Exit reaches validated return marker"
+    ],
+    "limits": "Original generated 4K diagnostic only; Return marker substitutes physical firmware remapping; game compatibility and audio unqualified."
+  }
+}

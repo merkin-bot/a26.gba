@@ -54,11 +54,11 @@ Continue the work at **https://github.com/voluptuary/dssmm**: an **Atari 2600 em
 
 ## 4. Session protocol
 
-`PROGRESS.md` is the handoff contract. Any agent or human with zero prior context must be able to resume exactly where the last agent stopped, even if the Codespace crashed or closed mid-task.
+`PROGRESS.md` is the full handoff contract. `HANDOFF.md` is the short crash-recovery snapshot. Any agent or human with zero prior context must be able to resume exactly where the last agent stopped, even if the Codespace crashed or closed mid-task.
 
 ### At the start of every session
 
-1. Read `AGENTS.md` (this file) and `PROGRESS.md` in full.
+1. Read `AGENTS.md` (this file), `HANDOFF.md`, and `PROGRESS.md` in full.
 2. Run `git status` and `git log -5 --oneline`.
 3. Verify the environment still builds. If the Codespace was recreated, follow the setup steps in `PROGRESS.md` section 3.
 4. Reconcile any difference between what `PROGRESS.md` says and what the repo shows (uncommitted work, failed builds). Fix `PROGRESS.md` before proceeding.
