@@ -1,7 +1,7 @@
 # Crash Recovery
 
 - **Doing now:** Hardware faithful mGBA harness work for EZ-FLASH Omega and SuperCard. Do not resume plugin optimizations until the harness is verified; do not alter harness behavior to compensate for plugin problems.
-- **Exact next step:** Define a three-layer harness: GBA hardware; per-card firmware/controller/launch profile for three EZ-FLASH and three SuperCard variants; per-card SD block image with plugin and Atari ROM. Audit source/evidence for each profile before implementing. `harnesses/CMakeLists.txt` references missing runner source. Do not resume plugin tuning until harness is verified.
+- **Exact next step:** Reuse existing DSSMM mGBA kernel launch tests, finish recording EZ-DE/Original/BLUE run results, then identify uncovered GBA/card/SD paths. Six exact kernel profiles are in `harnesses/cards.json`. Full kernel/card/SD integration remains unimplemented. `harnesses/CMakeLists.txt` references missing runner source. Do not resume plugin tuning until harness is verified.
 - **Branch:** `main`
 - **Last known commit:** `85f8141`
 - **Build:** `bash scripts/build-plugin.sh` completed after resume; baseline command `bash scripts/test-baseline.sh` completed.

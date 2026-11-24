@@ -1,24 +1,73 @@
 {
-  "cards": [
+  "kernel_repository": "https://github.com/voluptuary/dssmm",
+  "kernel_repository_commit": "f6350776f07eba91ba2ffa34c6833d85f348f2a1",
+  "layers": [
+    "mGBA GBA-system model",
+    "DSSMM per-card firmware/kernel and cartridge behavior",
+    "per-card SD block image/filesystem containing kernel/plugin/Atari ROM"
+  ],
+  "profiles": [
     {
-      "name": "ez-flash-omega",
-      "status": "source-known-unverified-hardware",
-      "license": "Apache-2.0",
-      "kernel_source": "ez-flash/omega-de-kernel",
-      "pogo_signature": "0x0203FBFC",
-      "tail_signature": "0x0203FBF8",
-      "filename_argv": "0x0203FC08",
-      "sd": "fat32"
+      "id": "ezfomegade-rev-a-b",
+      "card": "EZ-FLASH OMEGA Definitive Edition Rev. A/B",
+      "kernel": "DSSMM 8.4.0",
+      "artifact": "ezkernelnew.bin",
+      "source": "ezfomegade/",
+      "status": "stable release; physical launch and SD behavior still require the matching cartridge for this task"
     },
     {
-      "name": "superflash-822",
-      "status": "blocked-needs-firmware-and-register-evidence",
-      "license": "UNVERIFIED",
-      "kernel_source": "none-redistributable",
-      "pogo_signature": "UNVERIFIED",
-      "tail_signature": "UNVERIFIED",
-      "filename_argv": "UNVERIFIED",
-      "sd": "fat32"
+      "id": "ezfomega-original",
+      "card": "EZ-FLASH OMEGA",
+      "kernel": "DSSMM 8.4.0 OMEGA Test 4",
+      "artifact": "ezkernel.bin",
+      "source": "ezfomega/",
+      "status": "experimental; no physical validation claimed"
+    },
+    {
+      "id": "ezfblue",
+      "card": "EZ-FLASH OMEGA Definitive Edition B / BLUE",
+      "kernel": "DSSMM 8.4.1 BLUE Test 4",
+      "artifact": "ezbluekernel.bin",
+      "source": "ezfblue/",
+      "status": "experimental; no physical validation claimed"
+    },
+    {
+      "id": "supercard-chis",
+      "card": "SuperChis / SuperChis Prime",
+      "kernel": "DSSMM SuperFW Build 667",
+      "artifact": "SuperFW Chis build",
+      "source": "superfw/",
+      "status": "previous Chis Prime v1.0 smoke tests exist; Build 667 changes require physical qualification"
+    },
+    {
+      "id": "supercard-sd",
+      "card": "SuperCard SD (including miniSD/microSD shell variants where supported)",
+      "kernel": "DSSMM SuperFW Build 667",
+      "artifact": "SuperFW SD build",
+      "source": "superfw/",
+      "status": "not physically validated"
+    },
+    {
+      "id": "supercard-lite",
+      "card": "SuperCard Lite",
+      "kernel": "DSSMM SuperFW Build 667",
+      "artifact": "SuperFW Lite build",
+      "source": "superfw/",
+      "status": "not physically validated"
     }
-  ]
+  ],
+  "mGBA_upstream": {
+    "url": "https://github.com/mgba-emu/mgba",
+    "commit": "431935616c0e216d650b25b2ea0c0acccd359038",
+    "license": "MPL-2.0"
+  },
+  "existing_tests": {
+    "ez_flash_native_launch": [
+      "ezfomegade/scripts/test-native-launch-mgba.sh",
+      "ezfomega/scripts/test-native-launch-mgba.sh",
+      "ezfblue/scripts/test-native-launch-mgba.sh"
+    ],
+    "coverage": "Real selected kernel launcher/path/metadata functions and UI execute in mGBA; save, FAT block transfer, patch, cartridge page/bank changes and physical boot effects are fixture boundaries/mocks. These are not full card+SD emulations."
+  },
+  "verification": "profile inventory and launch test reuse are source-level only until recorded per-session results; do not infer hardware compatibility from mGBA"
 }

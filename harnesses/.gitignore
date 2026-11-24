@@ -1,3 +1,5 @@
 third_party/mgba/
 build/
 third_party/superfw/
+third_party/dssmm/
+third_party/omega-de-kernel/
