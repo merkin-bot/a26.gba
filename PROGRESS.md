@@ -158,6 +158,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | 2026-11-24 | placement-candidate | none/generated fixture | `.text`/`.iwram` layout | ELF size | Before: 30,944-byte `.text`; candidate: 12,464-byte `.text`, 18,752-byte `.iwram` |
 | 2026-11-24 | arm-hot-candidate | generated fixture | hot symbol size/frame hash | ELF nm + mGBA capture | `mainloop` 17,968→27,996 bytes; `do_screen` 284→496; `tv_raster` 260→380; frame hash unchanged `47fb...c15e`; reverted without timing proof |
 | 2026-11-24 | candidate-build | generated PogoShell fixture | SHA-256 | devkitARM build | `b82e459989bca244e46496fde488d71d8463f263594d26fd53c4a02f763bb277` |
+| 2026-11-24 | real-hardware-layout-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `5e0e1f69b9770b7fc135870e9bf59d2509adbc45897a76d857da4dfc5ec5c759`; frame unchanged |
 | 2026-11-24 | audio/menu-candidate | generated fixture | ELF total/text/sbss + frame hash | devkitARM size + mGBA capture | Total 202,874→207,046 (+4,172); `.text` 30,944→32,344 (+1,400); `.sbss` 155,184→157,232 (+2,048); frame hash unchanged |
 
 ---
@@ -166,7 +167,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 | Test/harness | How to run | Status | Notes |
 |--------------|-----------|--------|-------|
-| Reproducible plugin build | `bash scripts/build-plugin.sh` | PASS | SHA-256 matches `dist/a26.gba` |
+| Reproducible plugin build | `bash scripts/build-plugin.sh` | PASS | Candidate SHA-256 recorded; `dist/a26.gba` is reference-only |
 | Stock mGBA standalone fixture | `bash scripts/test-baseline.sh` | PASS | Fixture survived 3 seconds under stock mGBA 0.10.2/Xvfb |
 | Stock mGBA plugin launch | `bash scripts/run-mgba.sh <plugin> <seconds>` | NOT VALID | Plugin rejected as incompatible because PogoShell ABI is absent |
 | FAT32 virtual SD | `bash scripts/verify-harness.sh` | PASS | 64 MB FAT32, plugin and Flappy hashes verified |
@@ -174,6 +175,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | PogoShell cold-boot fixture | `bash scripts/run-card-fixture.sh 5` | PASS | Actual plugin fixture survived 5 seconds in stock mGBA; card I/O excluded |
 | TIA audio host mixer | `build/tia-audio-test` | PASS | Volume-only, AUDF, and DIV3 smoke tests; no hardware/audio waveform qualification |
 | TIA audio/menu implementation | `bash scripts/run-card-fixture.sh 3 && bash scripts/capture-fixture.sh` | PASS | Cold boot and frame hash unchanged; ELF cost measured |
+| PogoShell real-layout helper | `build/pogo-layout-test` | PASS | Cartridge offset, table offset, and ABI block bounds |
 | SuperCard mode/SDRAM host model | `build/harness/supercard-model-test` | PASS | Magic/register mode and SDRAM payload copy pass strict C11 tests |
 | EZ-FLASH Omega card harness | `<TODO>` | PARTIAL | Omega source exists; kernel launch and card register fixture remain |
 | SuperCard 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
