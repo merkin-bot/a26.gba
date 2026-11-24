@@ -1,9 +1,9 @@
 # Crash Recovery
 
-- **Doing now:** StellaDS permission, GPL-2.0 policy, polynomial/collision lookup, and empty-queue raster optimizations pass cold-boot/frame tests.
+- **Doing now:** 30 fps every-second-frame cadence set; StellaDS sound, Goomba menu, collision/raster optimizations pass cold-boot/frame tests.
 - **Exact next command:** `bash scripts/test-baseline.sh`
 - **Branch:** `main`
-- **Last pushed commit:** `ffed2e4`
+- **Last pushed commit:** `d22b1ab`
 - **Build passes:** Normal plugin and standalone fixture both build; fixture survives 3 seconds in mGBA 0.10.2/Xvfb.
 - **Half-finished:**
   - Read AGENTS.md and template PROGRESS.md.
