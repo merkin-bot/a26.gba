@@ -26,8 +26,10 @@ typedef struct {
     uint32_t total_events;
     uint32_t last_status_value;
     uint32_t status_reads;
-    uint32_t data_aperture_cpu_reads;
-    uint32_t data_aperture_cpu_writes;
+    uint32_t data_aperture_reads;
+    uint32_t data_aperture_writes;
+    uint32_t dma_data_reads;
+    uint32_t dma_data_writes;
     uint32_t control_writes;
     uint32_t command_writes;
     uint32_t address_count_writes;

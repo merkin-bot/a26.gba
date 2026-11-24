@@ -1,14 +1,22 @@
 #include "ezflash_mgba_trace.h"
 
 #include <mgba/core/core.h>
+#include <mgba/internal/gba/gba.h>
 
 #include <string.h>
 
 static EZFlashMGBATrace *active_trace;
 
+static int data_aperture_address(uint32_t address) {
+    /* Source DMA starts at 0x09E00000; stop before the separately observed
+     * 0x09FC0000/0x09FE0000 command registers. This is a trace filter, not a
+     * claim about the card's physical decode width. */
+    return address >= 0x09E00000u && address < 0x09F00000u;
+}
+
 static int tracked_address(uint32_t address) {
     return address == 0x09FE0000u || address == 0x09FC0000u ||
-           address == 0x09400000u || address == 0x09E00000u ||
+           address == 0x09400000u || data_aperture_address(address) ||
            address == 0x09600000u || address == 0x09620000u ||
            address == 0x09640000u ||
            (address >= 0x08000000u && address <= 0x08040000u) ||
@@ -24,7 +32,7 @@ static void record_event(EZFlashMGBATrace *trace, uint32_t address,
     ++trace->total_events;
     if (is_write) {
         ++trace->tracked_writes;
-        if (address == 0x09E00000u) ++trace->data_aperture_cpu_writes;
+        if (data_aperture_address(address)) ++trace->data_aperture_writes;
         if (address == 0x09400000u) ++trace->control_writes;
         if (address == 0x09600000u || address == 0x09620000u ||
             address == 0x09640000u) ++trace->address_count_writes;
@@ -41,10 +49,12 @@ static void record_event(EZFlashMGBATrace *trace, uint32_t address,
         }
     } else {
         ++trace->tracked_reads;
-        if (address == 0x09E00000u) {
-            ++trace->status_reads;
-            trace->last_status_value = value;
-            ++trace->data_aperture_cpu_reads;
+        if (data_aperture_address(address)) {
+            ++trace->data_aperture_reads;
+            if (address == 0x09E00000u) {
+                ++trace->status_reads;
+                trace->last_status_value = value;
+            }
         }
         if (address >= 0x0E000000u && address < 0x0E010000u) {
             ++trace->save_window_accesses;
@@ -63,24 +73,35 @@ static void record_event(EZFlashMGBATrace *trace, uint32_t address,
     }
 }
 
+static void record_callback_access(struct ARMCore *cpu, uint32_t address,
+                                   uint32_t value, uint8_t width,
+                                   int is_write) {
+    record_event(active_trace, address, value, width, is_write);
+    struct GBA *gba = active_trace && active_trace->core
+        ? active_trace->core->board : NULL;
+    if (!gba || !gba->performingDMA || !data_aperture_address(address)) return;
+    if (is_write) ++active_trace->dma_data_writes;
+    else ++active_trace->dma_data_reads;
+}
+
 static uint32_t trace_load8(struct ARMCore *cpu, uint32_t address,
                             int *cycle_counter) {
     uint32_t value = active_trace->original_load8(cpu, address, cycle_counter);
-    record_event(active_trace, address, value, 8, 0);
+    record_callback_access(cpu, address, value, 8, 0);
     return value;
 }
 
 static uint32_t trace_load16(struct ARMCore *cpu, uint32_t address,
                              int *cycle_counter) {
     uint32_t value = active_trace->original_load16(cpu, address, cycle_counter);
-    record_event(active_trace, address, value, 16, 0);
+    record_callback_access(cpu, address, value, 16, 0);
     return value;
 }
 
 static uint32_t trace_load32(struct ARMCore *cpu, uint32_t address,
                              int *cycle_counter) {
     uint32_t value = active_trace->original_load32(cpu, address, cycle_counter);
-    record_event(active_trace, address, value, 32, 0);
+    record_callback_access(cpu, address, value, 32, 0);
     return value;
 }
 
@@ -96,7 +117,7 @@ static uint32_t trace_load_multiple(struct ARMCore *cpu, uint32_t address,
     if (direction & LSM_B) address += (uint32_t)offset;
     for (unsigned reg = 0; reg < 16; ++reg) {
         if (!(mask & (1 << reg))) continue;
-        record_event(active_trace, address, cpu->gprs[reg], 32, 0);
+        record_callback_access(cpu, address, cpu->gprs[reg], 32, 0);
         address += (uint32_t)offset;
     }
     return next;
@@ -105,19 +126,19 @@ static uint32_t trace_load_multiple(struct ARMCore *cpu, uint32_t address,
 static void trace_store8(struct ARMCore *cpu, uint32_t address, int8_t value,
                          int *cycle_counter) {
     active_trace->original_store8(cpu, address, value, cycle_counter);
-    record_event(active_trace, address, (uint8_t)value, 8, 1);
+    record_callback_access(cpu, address, (uint8_t)value, 8, 1);
 }
 
 static void trace_store16(struct ARMCore *cpu, uint32_t address, int16_t value,
                           int *cycle_counter) {
     active_trace->original_store16(cpu, address, value, cycle_counter);
-    record_event(active_trace, address, (uint16_t)value, 16, 1);
+    record_callback_access(cpu, address, (uint16_t)value, 16, 1);
 }
 
 static void trace_store32(struct ARMCore *cpu, uint32_t address, int32_t value,
                           int *cycle_counter) {
     active_trace->original_store32(cpu, address, value, cycle_counter);
-    record_event(active_trace, address, (uint32_t)value, 32, 1);
+    record_callback_access(cpu, address, (uint32_t)value, 32, 1);
 }
 
 static uint32_t trace_store_multiple(struct ARMCore *cpu, uint32_t address,
@@ -133,7 +154,7 @@ static uint32_t trace_store_multiple(struct ARMCore *cpu, uint32_t address,
         if (!(mask & (1 << reg))) continue;
         uint32_t value = cpu->gprs[reg];
         if (reg == ARM_PC) value += WORD_SIZE_ARM;
-        record_event(active_trace, address, value, 32, 1);
+        record_callback_access(cpu, address, value, 32, 1);
         address += (uint32_t)offset;
     }
     uint32_t next = active_trace->original_store_multiple(
