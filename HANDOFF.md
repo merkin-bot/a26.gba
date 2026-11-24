@@ -1,6 +1,6 @@
 # Crash Recovery
 
-- **Doing now:** Porting/harness: FAT32, PogoShell ABI, cold-boot, and host SuperCard mode/SDRAM/SD model pass; static mGBA adapter crash is blocked.
+- **Doing now:** Porting/harness: baseline placement measured and IWRAM candidate rejected pending real speed evidence.
 - **Exact next command:** `bash scripts/run-card-fixture.sh 5`
 - **Branch:** `main`
 - **Last pushed commit:** `4fdc93d`
