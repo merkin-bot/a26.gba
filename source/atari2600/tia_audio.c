@@ -18,23 +18,25 @@ typedef struct {
 } TiaTone;
 
 static TiaTone tone[2];
-static volatile uint32_t tia_fifo_ring[512] __attribute__((section(".sbss")));
-static uint16_t poly4[2];
-static uint16_t poly5[2];
+static volatile uint32_t tia_fifo_ring[128] __attribute__((section(".sbss")));
+static uint8_t poly4[2];
+static uint8_t poly5[2];
 static uint16_t poly9[2];
 
+static const uint8_t tia_poly4[16] = {
+    0,0,0,1,0,1,0,1,1,1,1,0,1,1,0,0
+};
+static const uint8_t tia_poly5[32] = {
+    0,0,1,0,0,1,1,1,0,1,1,1,1,0,1,0,
+    1,0,1,1,0,0,1,1,0,0,0,1,0,0,0,0
+};
+
 static unsigned poly4_bit(unsigned channel) {
-    static const uint8_t pattern[15] = {
-        0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0
-    };
-    return pattern[poly4[channel] % 15u];
+    return tia_poly4[poly4[channel] & 15u];
 }
 
 static unsigned poly5_bit(unsigned channel) {
-    static const uint8_t pattern[31] = {
-        0,0,1,0,0,1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,0,0,1,1,0,0,0,1,0,0,0
-    };
-    return pattern[poly5[channel] % 31u];
+    return tia_poly5[poly5[channel] & 31u];
 }
 
 static unsigned poly9_bit(unsigned channel) {
@@ -54,7 +56,7 @@ static void tia_audio_dma_setup(void) {
 
     *(volatile uint32_t *)0x040000bc = (uint32_t)(uintptr_t)tia_fifo_ring;
     *(volatile uint32_t *)0x040000c0 = 0x040000a0u;
-    *(volatile uint16_t *)0x040000c4 = 512;
+    *(volatile uint16_t *)0x040000c4 = 128;
     *(volatile uint16_t *)0x040000c6 = 0xb600;
 
     *(volatile uint16_t *)0x04000100 = (uint16_t)(0xffffu - 512u);
@@ -64,7 +66,7 @@ static void tia_audio_dma_setup(void) {
 
 void tia_audio_refill(void) {
     unsigned i;
-    for (i = 0; i < 512u; ++i) {
+    for (i = 0; i < 128u; ++i) {
         unsigned sample = channel_mix(&tone[0]) + channel_mix(&tone[1]);
         unsigned char value = direct_sample(sample);
         tia_fifo_ring[i] = value | ((uint32_t)value << 8) |
@@ -119,7 +121,7 @@ static unsigned channel_mix(TiaTone *t) {
     }
     t->divider = t->divider_max;
 
-    poly5[channel] = (poly5[channel] + 1u) % 31u;
+    poly5[channel] = (poly5[channel] + 1u) & 31u;
     unsigned clocked = 1;
     if ((t->control & 2u) == 0)
         clocked = 1;
@@ -140,7 +142,7 @@ static unsigned channel_mix(TiaTone *t) {
             return poly9_bit(channel) ? t->volume : 0;
         return poly5_bit(channel) ? t->volume : 0;
     }
-    poly4[channel] = (poly4[channel] + 1u) % 15u;
+    poly4[channel] = (poly4[channel] + 1u) & 15u;
     return poly4_bit(channel) ? t->volume : 0;
 }
 

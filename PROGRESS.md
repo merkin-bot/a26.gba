@@ -211,7 +211,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 - PocketNES and GoombaColor PogoShell ABI usage was studied from public sources; no code was copied into this repository.
 - EZ-FLASH Omega kernel is Apache-2.0, mGBA/MPL-2.0, and the relevant EZ-FLASH Air reference harness is Apache-2.0; no third-party implementation code was copied yet.
 - StellaDS TIA sound timing concepts are GPL-2.0 and attributed in `tia_audio.c`; the GBA Direct Sound adaptation is a derived implementation and remains an accuracy/performance candidate.
-- Permission received to use StellaDS code; integration will preserve attribution and adapt only concepts suitable for 16.78 MHz GBA, not DS hardware/buffering assumptions.
+- **Permission:** Owner authorization received to use any code at https://github.com/wavemotion-dave/StellaDS. Integration will preserve GPL-2.0 attribution and adapt only concepts suitable for 16.78 MHz GBA, not DS hardware/buffering assumptions.
 - Permission received to use the Goomba font; 86 compressed Goomba font tiles are retained for menu parity.
 
 ---
