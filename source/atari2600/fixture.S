@@ -5,4 +5,4 @@
 .align 2
 .global atari_diagnostic_rom
 atari_diagnostic_rom:
-  .incbin "../../flappy.a26"
+  .incbin "../../test-roms/flappy.a26"

@@ -23,7 +23,7 @@ Continue the work at **https://github.com/voluptuary/dssmm**: an **Atari 2600 em
 
 ### Starting point (as told by the repo owner)
 
-- `a26.zip` in the repo root contains the source code of work done so far, an open-source test game, and a text file with links to relevant repositories. **Unpack it first and read everything in it.**
+- The original `a26.zip` archive has been ingested. Canonical source, assets, provenance, and reference lists are under `source/`, `dist/`, `test-roms/`, `docs/provenance/`, and `reference/`.
 - The plugin currently **runs on SuperFlash build 822** (not yet publicly released), but:
   1. It runs **very slowly**.
   2. There is **no sound**.
@@ -32,7 +32,7 @@ Continue the work at **https://github.com/voluptuary/dssmm**: an **Atari 2600 em
 
 ### Objectives (priority order; refine after your initial audit)
 
-1. **Onboard and audit**: unpack `a26.zip`, map the repo, get a clean build in GitHub Codespaces, document the build/run process.
+1. **Onboard and audit**: map the organized repo, get a clean build in GitHub Codespaces, document the build/run process.
 2. **Test harnesses**: finish and verify mGBA harnesses that emulate the SuperCard and EZ-Flash (Omega) environments well enough to load PogoShell, launch the plugin from the shell, pass it a ROM, and exercise saves/SD behavior. Prefer a reproducible patch set or fork against upstream mGBA, plus scripts to build and run headlessly (screenshots, frame hashes, logs) so tests can run in Codespaces/CI.
 3. **Performance**: profile and speed up emulation to reach full speed (60 fps NTSC, or the best achievable with documented frame-skip) on real hardware. Measure before and after every change (cycles per scanline/frame via mGBA profiling, in-ROM timer counters, or similar). Examine ROM waitstates, code/data placement in IWRAM/EWRAM, ARM vs. Thumb choices, prefetch behavior, dispatch design, TIA rendering strategy, and DMA use.
 4. **Sound**: implement Atari TIA audio (2 channels: AUDC/AUDF/AUDV) via GBA Direct Sound (Timer + DMA FIFO) and/or PSG, with correct pitch and acceptable accuracy, without breaking video timing or the shell's expectations.
@@ -43,7 +43,7 @@ Continue the work at **https://github.com/voluptuary/dssmm**: an **Atari 2600 em
 
 ## 3. Working rules (non-negotiable)
 
-- **Never guess about hardware.** If the behavior of an EZ-Flash, SuperCard, SuperFlash, or PogoShell is unknown, say so, find evidence (source code, docs, existing plugins, repo links in the text file inside `a26.zip`), or design a safe experiment and record the result. Mark unverified assumptions as `UNVERIFIED` in `PROGRESS.md`.
+- **Never guess about hardware.** If the behavior of an EZ-Flash, SuperCard, SuperFlash, or PogoShell is unknown, say so, find evidence (source code, docs, existing plugins, repo links in `reference/repositories.txt`), or design a safe experiment and record the result. Mark unverified assumptions as `UNVERIFIED` in `PROGRESS.md`.
 - **Real hardware outranks mGBA.** mGBA is a test tool, not the truth. Where harness behavior and known hardware behavior differ, document it and do not tune the plugin to quirks that exist only in the harness.
 - **Respect licenses.** Check the license of every referenced repo before copying code. Do not mix incompatible licenses. Do not commit commercial ROMs or copyrighted BIOS files; use only the provided open-source test game and homebrew with clear licenses. Record licensing notes in `PROGRESS.md`.
 - **Small, verified steps.** Build, test, and commit after each meaningful change with a descriptive message. Do not leave the repo in a non-building state at the end of a task. Never rewrite history on shared branches.
@@ -93,7 +93,7 @@ Never commit: commercial ROMs, BIOS files, PogoShell/kernel binaries whose redis
 ## 6. First-session plan
 
 1. Check for `PROGRESS.md`. If none exists, create it from the template and commit immediately.
-2. Unpack `a26.zip`, read the link text file, and inventory the source, test game, and referenced repositories. Record what each is and its license.
+2. Inventory the canonical source, test ROM, provenance, and referenced repositories. Record what each is and its license.
 3. Set up the Codespaces environment, make it reproducible via `.devcontainer`, and get the plugin building. Document every command in `PROGRESS.md`.
 4. Build mGBA with the existing harnesses. Run the plugin (via PogoShell on the harness) with the open-source test game. Record exactly what works.
 5. Establish a **baseline performance measurement** and a baseline screenshot/frame-hash test before changing any emulation code.

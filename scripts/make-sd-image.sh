@@ -17,7 +17,7 @@ export MTOOLS_SKIP_CHECK=1
 mmd -i "$out" "::SYSTEM"
 mmd -i "$out" "::SYSTEM/PLUG"
 mmd -i "$out" "::ROMS"
-mcopy -i "$out" archive-inputs/a26.gba "::SYSTEM/PLUG/a26.gba"
-mcopy -i "$out" archive-inputs/flappy.a26 "::ROMS/flappy.a26"
+mcopy -i "$out" dist/a26.gba "::SYSTEM/PLUG/a26.gba"
+mcopy -i "$out" test-roms/flappy.a26 "::ROMS/flappy.a26"
 
 echo "Created FAT32 SD image: $out"

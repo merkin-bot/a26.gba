@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-rom="${1:-archive-inputs/flappy.a26}"
+rom="${1:-test-roms/flappy.a26}"
 seconds="${2:-5}"
 export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-dummy}"
 set +e

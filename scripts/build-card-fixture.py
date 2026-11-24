@@ -15,8 +15,8 @@ args = parser.parse_args()
 out = args.out.resolve()
 out.mkdir(parents=True, exist_ok=True)
 
-plugin = bytearray((ROOT / "archive-inputs/a26.gba").read_bytes())
-rom = (ROOT / "archive-inputs/flappy.a26").read_bytes()
+plugin = bytearray((ROOT / "dist/a26.gba").read_bytes())
+rom = (ROOT / "test-roms/flappy.a26").read_bytes()
 if len(rom) not in (2048, 4096, 8192, 16384):
     raise SystemExit("unsupported Atari ROM size")
 
@@ -68,7 +68,7 @@ fixture = out / "a26-card-fixture.gba"
 fixture.write_bytes(plugin)
 (out / "fixture.json").write_text(json.dumps({
     "purpose": "PogoShell ABI cold boot for stock mGBA",
-    "plugin_sha256": __import__("hashlib").sha256((ROOT / "archive-inputs/a26.gba").read_bytes()).hexdigest(),
+    "plugin_sha256": __import__("hashlib").sha256((ROOT / "dist/a26.gba").read_bytes()).hexdigest(),
     "rom_sha256": __import__("hashlib").sha256(rom).hexdigest(),
     "rom_offset": rom_offset,
     "limits": "Portable ABI and card launch state only; SuperCard/EZ card I/O not emulated."

@@ -1,11 +1,7 @@
 
-# Local build outputs
-prototype.elf
-prototype.gba
-prototype.map
-archive-inputs/test-source/atari2600/prototype.*
 # GBA build outputs
 *.elf
 *.gba
 *.map
 work/
+build/

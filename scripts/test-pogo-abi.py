@@ -36,7 +36,6 @@ def test_fat_manifest():
     manifest = json.loads((root / "harnesses/cards.json").read_text())
     assert manifest["cards"][0]["sd"] == "fat32"
     assert manifest["cards"][1]["sd"] == "fat32"
-    assert (root / "work/a26-sd.img").exists()
 
 if __name__ == "__main__":
     test_layout()

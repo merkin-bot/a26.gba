@@ -18,5 +18,5 @@ If return is unavailable, the plugin displays a power-off message.
 
 Based on MikeDX/2600_gba and Virtual VCS/X2600 by Alex Hornby, Daniel Boris
 and contributors listed in CREDITS. DSSMM startup, loader and menu additions.
-Corresponding prepared source, notices, GPL text and build instructions are in
-atari2600-test-source.zip. No upstream prebuilt emulator objects were used.
+Corresponding prepared source and notices are in source/atari2600.
+No upstream prebuilt emulator objects are used.
