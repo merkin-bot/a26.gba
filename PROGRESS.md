@@ -171,6 +171,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 | SuperCard mode/SDRAM host model | `build/harness/supercard-model-test` | PASS | Magic/register mode and SDRAM payload copy pass strict C11 tests |
 | EZ-FLASH Omega card harness | `<TODO>` | PARTIAL | Omega source exists; kernel launch and card register fixture remain |
 | SuperFlash 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
+| Minimal mGBA SuperCard runner | `build/harness/supercard-mgba-runner` | BLOCKED | Scratch static-core crashes at `core->init`; hook code not yet qualified |
 
 ### Known harness-vs-hardware differences
 - Stock mGBA cannot yet validate PogoShell ABI, firmware cartridge remapping, or physical Exit; `atari2600-test.json` uses a generated ROM and a return marker stub in stock SDL mGBA.
@@ -185,6 +186,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### Dead ends (do not repeat)
 - Direct devkitPro apt installer endpoint at `apt.devkitpro.org` returned HTTP 403 in this environment; use official Docker image or a host-specific installer.
+- Minimal copied mGBA static-core runner crashes at `core->init(core)` even before ROM load. Retested through an EZ-FLASH-style CMake build; both scratch-linked variants crash, so the failure is in static-core platform setup, not BIOS or card hooks. Runner removed; host model remains passing.
 
 ### Design decisions
 - Official `devkitpro/devkitarm:latest` Docker image is the default build path because it produced the exact archived plugin hash and avoids broken host bootstrap.
