@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `ce005a2` (`Document unresolved SuperChis mapping evidence`); workspace was clean after push.
+**Last pushed commit:** `cdef148` (`Advance handoff to EZ flash source audit`); workspace was clean after push.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -124,11 +124,11 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Complete the evidence-based SuperCard host model and proceed toward mGBA card/SD integration.
-- **Exact step:** `ce005a2` records the unresolved Chis firmware/HDL register mismatch; do not guess NOR/SRAM semantics. SuperCard Build769 Lite/SD/Chis selected-ROM runs all reach plugin code in synthetic mGBA, with hashes and physical limitations in `harnesses/cards.json`. **Active:** source-audit the three EZ-FLASH kernels (OMEGA DE Rev A/B, Original OMEGA, BLUE) for GBA-side cartridge, save and SD access boundaries; reuse their native launch fixture results without treating mocks as full card emulation. Record evidence per profile, including any matching source differences. No SuperCard protocol assumptions. Plugin remains untouched. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
+- **Exact step:** `ce005a2` records the unresolved Chis firmware/HDL register mismatch; do not guess NOR/SRAM semantics. SuperCard Build769 Lite/SD/Chis selected-ROM runs all reach plugin code in synthetic mGBA, with hashes and physical limitations in `harnesses/cards.json`. **Active:** source-audit the three exact-pinned EZ-FLASH kernels (OMEGA DE Rev A/B, Original OMEGA, BLUE) for GBA-visible cartridge, save, SD-transfer, launch and return paths. Reuse native launch fixtures only for the seams they execute; document their mocks. Keep the GBA, card and SD layers distinct; plugin remains untouched. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
 - **Files touched:** none for the active EZ source audit yet.
-- **Uncommitted changes:** none; Chis evidence and handoff are pushed in `ce005a2`.
+- **Uncommitted changes:** none; Chis evidence and current task handoff are pushed in `cdef148`.
 - **Branch:** main
-- **Resume command:** Inspect ignored pinned DSSMM source checkouts for `ezfomegade/`, `ezfomega/`, and `ezfblue/`; trace their GBA memory hooks, SD sector calls, kernel handoff and save paths. Compare source at the exact commits in `harnesses/cards.json`, then add concise evidence to `harnesses/README.md` and `cards.json`. Existing fixture commands and coverage are in section 8. Do not infer EZ registers from SuperCard.
+- **Resume command:** Inspect ignored pinned DSSMM source checkouts for `ezfomegade/`, `ezfomega/`, and `ezfblue/`; trace GBA cartridge reads/writes, SD sector calls, kernel handoff/return and save paths at the exact commits in `harnesses/cards.json`. Summarize source facts and unmodeled physical boundaries in `harnesses/README.md` and `cards.json`; rerun the reused launch fixtures if the audit changes their interpretation. Do not infer EZ registers from SuperCard.
 
 ### Next up (ordered)
 1. Audit EZ-FLASH Omega DE, Original Omega and BLUE kernels' own cartridge/SD/save paths and reuse existing launch fixtures; do not assume SuperCard protocol applies.
