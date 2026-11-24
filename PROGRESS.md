@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 16:23 UTC by Copilot
 **Current branch:** main
-**Last pushed commit:** a40bd54
+**Last pushed commit:** ef46bb9
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -123,8 +123,8 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 ## 6. Task board
 
 ### In progress
-- **Task:** Baseline and harness audit
-- **Exact step:** Normal plugin and standalone fixture builds pass; next replace stock fixture seam with a PogoShell/mGBA harness and capture hashes.
+- **Task:** Repository organization and harness audit
+- **Exact step:** Original archive ingested and removed; canonical layout passes baseline; next implement card-I/O harness boundaries.
 - **Files touched:** `AGENTS.md`, `PROGRESS.md`, `HANDOFF.md`, `.devcontainer/*`, `scripts/*`, `source/*`, `dist/*`, `test-roms/*`
 - **Uncommitted changes:** yes
 - **Branch:** main
