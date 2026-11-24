@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `e645456` (`Reconcile EZ source audit handoff`); verified EZ audit/trace work is pending commit and push.
+**Last pushed commit:** `98312d7` (`Add passive EZ-FLASH GBA bus trace`); handoff metadata is being synchronized before push.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
