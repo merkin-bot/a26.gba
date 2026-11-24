@@ -39,19 +39,22 @@ static void cleanup(struct mCore *core, SuperCardMGBABus *bus,
 
 int main(int argc, char **argv) {
     mLogSetDefaultLogger(&silent_logger);
-    if (argc < 2 || argc > 3) {
-        fprintf(stderr, "usage: %s <gba-image> [frames]\n", argv[0]);
+    if (argc < 2 || argc > 4) {
+        fprintf(stderr, "usage: %s <gba-image> [frames [sd-image]]\n", argv[0]);
         return 2;
     }
     char *end = NULL;
-    unsigned long frames = argc == 3 ? strtoul(argv[2], &end, 10) : 300;
-    if ((argc == 3 && (errno || !end || *end)) || frames == 0 || frames > 1000000) {
+    unsigned long frames = argc >= 3 ? strtoul(argv[2], &end, 10) : 300;
+    if ((argc >= 3 && (errno || !end || *end)) || frames == 0 || frames > 1000000) {
         fputs("frame count must be in 1..1000000\n", stderr);
         return 2;
     }
 
     SuperCardModel model = {0};
     supercard_reset(&model);
+    if (argc == 4) {
+        model.sd_path = argv[3];
+    }
 
     struct mCore *core = GBACoreCreate();
     SuperCardMGBABus bus = {0};
@@ -107,9 +110,18 @@ int main(int argc, char **argv) {
            model.mode == SUPERCARD_MODE_SDRAM ? "sdram" : "firmware",
            model.sd_interface, model.write_access);
     printf("sd_protocol decoded_commands=%" PRIu64 " last_command=%u"
-           " responses=%" PRIu64 " response_line_reads=%" PRIu64 "\n",
+           " responses=%" PRIu64 " response_line_reads=%" PRIu64
+           " data_port_reads=%" PRIu64 " argument=0x%08" PRIX32
+           " data_active=%d data_lba=%" PRIu32 " block_loads=%" PRIu64
+           " load_failures=%" PRIu64 " token_polls=%" PRIu64 " image=%s\n",
            model.sd_commands_decoded, model.sd_last_command,
-           model.sd_responses_issued, model.sd_response_bits_read);
+           model.sd_responses_issued, model.sd_response_bits_read,
+           bus.sd_data_reads, model.sd_last_argument, model.sd_data_active,
+           model.sd_data_lba, model.sd_data_blocks_loaded,
+           model.sd_data_load_failures, model.sd_data_token_polls,
+           model.sd_path ? model.sd_path : "(none)");
+    printf("sd_block_commands read=%" PRIu64 " stop=%" PRIu64 "\n",
+           model.sd_read_commands, model.sd_stop_commands);
     printf("cmd_write_trace count=%" PRIu32 ":", bus.cmd_write_trace_count);
     for (uint32_t i = 0; i < bus.cmd_write_trace_count; ++i) {
         printf(" %02X", bus.cmd_write_trace[i] & 0xFFu);

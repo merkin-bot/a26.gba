@@ -29,7 +29,19 @@ typedef struct {
     uint64_t sd_responses_issued;
     uint64_t sd_response_bits_read;
     uint8_t sd_last_command;
+    uint32_t sd_last_argument;
     int sd_application_command;
+    uint8_t sd_data_buffer[520];
+    uint32_t sd_data_lba;
+    size_t sd_data_offset;
+    int sd_data_active;
+    int sd_data_token_pending;
+    unsigned sd_data_token_delay;
+    uint64_t sd_data_blocks_loaded;
+    uint64_t sd_data_load_failures;
+    uint64_t sd_data_token_polls;
+    uint64_t sd_read_commands;
+    uint64_t sd_stop_commands;
 } SuperCardModel;
 
 void supercard_reset(SuperCardModel *model);

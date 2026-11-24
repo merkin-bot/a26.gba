@@ -112,6 +112,28 @@ int main(void) {
     assert(supercard_write(&model, 0x09FFFFFEu, 0x0007));
     assert(supercard_sd_read(&model, 0, read_block, 1));
     assert(memcmp(read_block, block, sizeof(block)) == 0);
+    const uint8_t cmd18[] = {0x52, 0, 0, 0, 0, 0};
+    for (size_t byte = 0; byte < sizeof(cmd18); ++byte) {
+        uint16_t shifted = cmd18[byte];
+        for (size_t bit = 0; bit < 8; ++bit) {
+            assert(supercard_sd_command_write(&model, 0x09800000u, 16, shifted));
+            shifted <<= 1;
+        }
+    }
+    assert(supercard_read(&model, 0x09100000u, 16, &line_value));
+    assert(line_value == 0); /* Data token is ready. */
+    for (size_t word = 0; word < 130; ++word) {
+        assert(supercard_read(&model, 0x09200000u, 32, &line_value));
+        uint32_t expected = 0;
+        if (word < 128) {
+            size_t offset = word * 4;
+            expected = (uint32_t)block[offset] |
+                       ((uint32_t)block[offset + 1] << 8) |
+                       ((uint32_t)block[offset + 2] << 16) |
+                       ((uint32_t)block[offset + 3] << 24);
+        }
+        assert(line_value == expected);
+    }
     read_block[0] ^= 0xFF;
     assert(supercard_sd_write(&model, 0, read_block, 1));
     assert(supercard_sd_read(&model, 0, read_block, 1));

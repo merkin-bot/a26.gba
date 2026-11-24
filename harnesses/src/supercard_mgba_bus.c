@@ -5,6 +5,43 @@
 
 static SuperCardMGBABus *active_bus;
 
+static uint32_t supercard_load_multiple(struct ARMCore *cpu, uint32_t address,
+                                        int mask, enum LSMDirection direction,
+                                        int *cycle_counter) {
+    if (active_bus && direction == LSM_IA && address >= 0x09200000u &&
+        address <= 0x0920001Cu) {
+        uint32_t next = active_bus->original_load_multiple(
+            cpu, address, mask, direction, cycle_counter);
+        uint32_t data_address = address;
+        for (unsigned reg = 0; reg < 16; ++reg) {
+            if (!(mask & (1 << reg))) {
+                continue;
+            }
+            uint32_t value;
+            if (supercard_read(active_bus->model, data_address, 32, &value)) {
+                cpu->gprs[reg] = value;
+                ++active_bus->sd_data_reads;
+            }
+            data_address += 4u;
+        }
+        return next;
+    }
+    return active_bus->original_load_multiple(cpu, address, mask, direction,
+                                               cycle_counter);
+}
+
+static uint32_t supercard_load32(struct ARMCore *cpu, uint32_t address,
+                                 int *cycle_counter) {
+    uint32_t value;
+    if (active_bus && supercard_read(active_bus->model, address, 32, &value)) {
+        if (address >= 0x09200000u && address <= 0x0920001Cu) {
+            ++active_bus->sd_data_reads;
+        }
+        return value;
+    }
+    return active_bus->original_load32(cpu, address, cycle_counter);
+}
+
 static uint32_t supercard_load16(struct ARMCore *cpu, uint32_t address,
                                  int *cycle_counter) {
     uint32_t value;
@@ -78,17 +115,22 @@ int supercard_mgba_bus_attach(SuperCardMGBABus *bus, struct mCore *core,
     struct ARMCore *cpu = core->cpu;
     bus->core = core;
     bus->model = model;
+    bus->original_load_multiple = cpu->memory.loadMultiple;
+    bus->original_load32 = cpu->memory.load32;
     bus->original_load16 = cpu->memory.load16;
     bus->original_store8 = cpu->memory.store8;
     bus->original_store16 = cpu->memory.store16;
     bus->original_store32 = cpu->memory.store32;
-    if (!bus->original_load16 || !bus->original_store8 || !bus->original_store16 ||
-        !bus->original_store32) {
+    if (!bus->original_load_multiple || !bus->original_load32 ||
+        !bus->original_load16 || !bus->original_store8 ||
+        !bus->original_store16 || !bus->original_store32) {
         bus->core = NULL;
         bus->model = NULL;
         return 0;
     }
     active_bus = bus;
+    cpu->memory.loadMultiple = supercard_load_multiple;
+    cpu->memory.load32 = supercard_load32;
     cpu->memory.load16 = supercard_load16;
     cpu->memory.store8 = supercard_store8;
     cpu->memory.store16 = supercard_store16;
@@ -101,6 +143,8 @@ void supercard_mgba_bus_detach(SuperCardMGBABus *bus) {
         return;
     }
     struct ARMCore *cpu = bus->core->cpu;
+    cpu->memory.loadMultiple = bus->original_load_multiple;
+    cpu->memory.load32 = bus->original_load32;
     cpu->memory.load16 = bus->original_load16;
     cpu->memory.store8 = bus->original_store8;
     cpu->memory.store16 = bus->original_store16;
@@ -109,6 +153,8 @@ void supercard_mgba_bus_detach(SuperCardMGBABus *bus) {
     bus->core = NULL;
     bus->model = NULL;
     bus->original_load16 = NULL;
+    bus->original_load32 = NULL;
+    bus->original_load_multiple = NULL;
     bus->original_store8 = NULL;
     bus->original_store16 = NULL;
     bus->original_store32 = NULL;

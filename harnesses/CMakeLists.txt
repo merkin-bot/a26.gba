@@ -28,6 +28,7 @@ target_include_directories(supercard_model PUBLIC include)
 
 add_executable(supercard-model-test tests/supercard_model_test.c)
 target_link_libraries(supercard-model-test PRIVATE supercard_model)
+target_compile_options(supercard-model-test PRIVATE -UNDEBUG)
 
 if(TARGET mgba)
   add_library(supercard_mgba_bus STATIC src/supercard_mgba_bus.c)
