@@ -52,6 +52,43 @@ int main(void) {
     assert(line_value == 0x0100u);
     assert(!supercard_read(&model, 0x09800000u, 8, &line_value));
 
+    for (size_t i = 0; i < 48; ++i) {
+        assert(supercard_sd_command_write(&model, 0x09800000u, 16, cmd_writes[i]));
+    }
+    assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+    assert(line_value == 1); /* CMD0 has no response; line stays idle-high. */
+
+    const uint8_t cmd8[] = {0x48, 0x00, 0x00, 0x01, 0xAA, 0x87};
+    for (size_t byte = 0; byte < sizeof(cmd8); ++byte) {
+        uint16_t shifted = cmd8[byte];
+        for (size_t bit = 0; bit < 8; ++bit) {
+            assert(supercard_sd_command_write(&model, 0x09800000u, 16, shifted));
+            shifted <<= 1;
+        }
+    }
+    assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+    assert(line_value == 0); /* Response start bit. */
+    uint32_t response_index = 0;
+    for (size_t bit = 0; bit < 7; ++bit) {
+        assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+        response_index = (response_index << 1) | line_value;
+    }
+    assert(response_index == 8); /* Seven-bit transmission/index prefix. */
+    uint32_t response_payload = 0;
+    for (size_t bit = 0; bit < 32; ++bit) {
+        assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+        response_payload = (response_payload << 1) | line_value;
+    }
+    assert(response_payload == 0x000001AAu);
+    for (size_t bit = 0; bit < 8; ++bit) {
+        assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+        assert(line_value == (bit == 7)); /* CRC placeholder and end bit. */
+    }
+    for (size_t bit = 0; bit < 16; ++bit) {
+        assert(supercard_read(&model, 0x09800000u, 16, &line_value));
+        assert(line_value == 1); /* Driver reads beyond the response; bus is idle. */
+    }
+
     const uint8_t payload[] = {1, 2, 3, 4};
     supercard_set_payload(&model, 4096, payload, sizeof(payload));
     assert(memcmp(sdram + 4096, payload, sizeof(payload)) == 0);

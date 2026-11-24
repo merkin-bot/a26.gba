@@ -106,6 +106,10 @@ int main(int argc, char **argv) {
            bus.cartridge_writes, bus.last_cartridge_write,
            model.mode == SUPERCARD_MODE_SDRAM ? "sdram" : "firmware",
            model.sd_interface, model.write_access);
+    printf("sd_protocol decoded_commands=%" PRIu64 " last_command=%u"
+           " responses=%" PRIu64 " response_line_reads=%" PRIu64 "\n",
+           model.sd_commands_decoded, model.sd_last_command,
+           model.sd_responses_issued, model.sd_response_bits_read);
     printf("cmd_write_trace count=%" PRIu32 ":", bus.cmd_write_trace_count);
     for (uint32_t i = 0; i < bus.cmd_write_trace_count; ++i) {
         printf(" %02X", bus.cmd_write_trace[i] & 0xFFu);
