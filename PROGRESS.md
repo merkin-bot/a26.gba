@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-24 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `fd41ebc` (`Record EZ trace commit in handoff`); DMA observer changes and handoff updates are in progress locally.
+**Last pushed commit:** `fafbd02` (`Trace EZ SD aperture DMA transfers`); full baseline and harness checks pass at this commit.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -126,7 +126,7 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 - **Task:** Complete evidence-based mGBA harness paths for all six DSSMM card/SD profiles before plugin changes.
 - **Exact step:** EZ source audit is recorded at `docs/provenance/ezflash-source-audit.md`, `harnesses/README.md`, and `harnesses/cards.json`. Re-ran five native launch cases from each exact EZ tag on mGBA 0.10.2; all 15 pass at mocked handoff markers. Passive `ezflash-mgba-trace-smoke` exercises real mGBA channel-3 four-word DMA reads and writes through the source data aperture. The trace reports each `GBA.performingDMA` callback; separate traced/untraced cores match transfer hashes plus DMA scheduling/wait-cycle fields, and detach restores callbacks. DMA source values still come from original mGBA cartridge behavior; no EZ card or SD image is emulated. Fixed the stale ABI manifest assertion and positional model initializers. Fresh checks passed: model/core/runner/trace CMake build and smoke; full `scripts/test-baseline.sh`; `scripts/verify-harness.sh`; JSON parse and `git diff --check`. **Active:** investigate whether a source-supported SD block-image connection is possible without inventing physical response/timing behavior; document the adapter boundary and evidence gap before implementing any synthetic card response. Physical response values, timing, PSRAM/NOR/SRAM mapping and SD media effects stay UNVERIFIED. Keep plugin unchanged. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
 - **Files touched:** EZ audit, matrix and README; passive trace adapter/smoke/CMake; stale manifest check; designated initializers in the SuperCard model test.
-- **Uncommitted changes:** DMA observer regression and synchronized handoff notes await final full-check run, commit, and push.
+- **Uncommitted changes:** none; latest DMA observer regression and handoff are committed locally and ready to push.
 - **Branch:** main
 - **Resume command:** Read `docs/provenance/ezflash-source-audit.md`; inspect the pinned DE/Original/BLUE SD driver and current mGBA bus callbacks. Establish a source-only adapter contract for block-image reads/writes, leaving undocumented physical response/timing UNVERIFIED. Existing regression command: `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`, run each smoke, then `bash scripts/test-baseline.sh` and `bash scripts/verify-harness.sh`. Do not infer responses from SuperCard.
 
