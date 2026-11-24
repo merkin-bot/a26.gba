@@ -1,7 +1,7 @@
 # Crash Recovery
 
 - **Doing now:** Hardware faithful mGBA harness work for EZ-FLASH Omega and SuperCard. Do not resume plugin optimizations until the harness is verified; do not alter harness behavior to compensate for plugin problems.
-- **Exact next step:** Finish BLUE native launch suite, then inspect/build/reuse SuperFW Chis, SD, and Lite tests. DE and Original OMEGA each passed five launch cases; BLUE first case reached mocked handoff. These fixtures stop before real card/SD operations. All six matching kernels are in `harnesses/cards.json`. Full kernel/card/SD integration remains unimplemented. `harnesses/CMakeLists.txt` references missing runner source. Do not resume plugin tuning until harness is verified.
+- **Exact next step:** Reuse/build SuperFW Build667 board variants `chis`, `sd`, and `lite`, then run suitable existing mGBA native menu/settings fixtures. All three EZ native launch suites passed five cases each; they stop at mocked card handoff, so full SD/card I/O remains unverified. All six matching kernels are in `harnesses/cards.json`. Full kernel/card/SD integration remains unimplemented. `harnesses/CMakeLists.txt` references missing runner source. Do not resume plugin tuning until harness is verified.
 - **Branch:** `main`
 - **Last known commit:** `3c71a24` (pushed to origin/main)
 - **Build:** `bash scripts/build-plugin.sh` and `bash scripts/test-baseline.sh` completed during resume. Actual host mGBA is 0.10.2.

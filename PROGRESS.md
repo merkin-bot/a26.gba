@@ -124,9 +124,9 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Performance optimization with Stella desktop reference baseline.
-- **Exact step:** DE and Original OMEGA DSSMM native mGBA launch suites pass all five cases each; BLUE suite is running after moving its stale nested target build directory. All traces stop at mocked card handoff and do not verify full SD/card I/O. Actual mGBA runtime is 0.10.2; DSSMM generated JSON hardcodes stale 0.10.1. Next check SuperFW Chis/SD/Lite build and native mGBA preview coverage, then design only the uncovered GBA/card/SD layer.
+- **Exact step:** All three EZ DSSMM mGBA native launch suites pass five cases each. Next reuse/qualify DSSMM SuperFW Build667 for Chis, SD, and Lite, starting with per-board kernel builds and shared native menu/settings fixtures. These previews do not initialize the SD/card bus. Then implement only the uncovered full GBA/card/SD path. Actual mGBA is 0.10.2; DSSMM output metadata hardcodes 0.10.1.
 - **Files touched:** `AGENTS.md`, `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `harnesses/cards.json`, `harnesses/.gitignore`.
-- **Uncommitted changes:** None after commit `3c71a24`; test outputs and DSSMM clone are ignored.
+- **Uncommitted changes:** None after commit `480c64e`; DSSMM clone and test/build outputs are ignored.
 - **Branch:** main
 - **Resume command:** `cd harnesses/third_party/dssmm && PATH=/tmp/a26-make-container:$PATH MGBA_BIN=/usr/games/mgba bash ezfomegade/scripts/test-native-launch-mgba.sh` (repeat for `ezfomega` and `ezfblue`; wrapper is session-local).
 
@@ -240,3 +240,4 @@ Short dated entries. Trim old entries periodically.
 
 - 2026-11-24: Reused DSSMM native launch suites. `ezfomegade` and `ezfomega` each passed five mGBA launch scenarios (FAT alias, exFAT, long name, quick clean, quick addon), reaching mocked cartridge handoff. Actual runtime was mGBA 0.10.2, Xvfb, no BIOS; generated DSSMM JSON labels 0.10.1 incorrectly. BLUE first build hit stale `/work` dependencies; the nested `ezfblue/targets/blue/build-launch` directory was preserved/renamed and rerun is next. These tests do not validate physical SD/card protocols.
 - 2026-11-24: Owner reminded to include all SuperCard variants. Matrix already lists DSSMM SuperFW Build667 profiles for Chis/Chis Prime, SD, and Lite. SuperFW has existing native menu/settings/renderer tests, but its own `MGBA-TESTING.md` says these do not initialize physical SD/NOR/SDRAM. Next after BLUE: inspect per-board build/test switches and reuse those tests; record which one exercises kernel code versus presentation fixture, then implement missing emulated card bus only against source evidence.
+- 2026-11-24: DSSMM BLUE native mGBA launch suite passed all five cases after preserving its old `targets/blue/build-launch` output with stale `/work` dependency paths. FAT, exFAT, long name, quick-clean and quick-addon reached mocked page `0x400` handoff. All three EZ suites now pass; hardware/card SD remains unverified. Next cover SuperFW Build667 board builds and existing mGBA native menu/settings fixtures for Chis/SD/Lite.
