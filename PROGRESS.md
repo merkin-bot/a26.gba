@@ -2,9 +2,9 @@
 
 Handoff document for any AI agent or human continuing this project. Read `AGENTS.md` first, then this file in full.
 
-**Last updated:** 2026-11-24 UTC by Codex
+**Last updated:** 2026-11-25 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `fafbd02` (`Trace EZ SD aperture DMA transfers`); full baseline and harness checks pass at this commit.
+**Last pushed commit:** `878d746` (`Sync handoff to DMA trace checkpoint`); working tree clean at session start.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -34,12 +34,13 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 - Devcontainer: `.devcontainer/devcontainer.json`
 - Setup script: `.devcontainer/setup.sh`
 - Base image: `mcr.microsoft.com/devcontainers/base:ubuntu-24.04`
+- Docker: `ghcr.io/devcontainers/features/docker-in-docker:4` (added 2026-11-25; requires a Codespace container rebuild)
 
 ### 3.2 Toolchain
 - devkitPro / devkitARM version: Docker `devkitpro/devkitarm:latest`, compiler `arm-none-eabi-gcc (devkitARM) 16.1.0`; exact image digest not pinned
-- Install method: `.devcontainer/setup.sh` calls the devkitPro pacman installer, then `dkp-pacman -Sy gba-dev libgba`
+- Install method: `.devcontainer/setup.sh` installs host build/test packages, waits for the Docker daemon, and pulls `devkitpro/devkitarm:latest`; plugin/fixture scripts build inside that official image. The devcontainer setup currently fails fast if Docker is missing/unavailable.
 - Environment variables: `DEVKITPRO=/opt/devkitpro`, `DEVKITARM=/opt/devkitpro/devkitARM`, PATH additions: `$DEVKITARM/bin:$DEVKITPRO/tools/bin`
-- apt packages: build-essential, cmake, ninja-build, SDL2/Qt/OpenGL, PNG/ZIP/ZLIB, FFmpeg, ELF/edit, plus devkitPro `gba-dev`
+- apt packages include build-essential, CMake/Ninja, SDL2/Qt/OpenGL, PNG/ZIP/ZLIB, FFmpeg, ELF/edit, `mgba-sdl`, Xvfb/xdotool/xauth, Stella, dosfstools and mtools.
 
 ### 3.3 Repo contents and third-party assets
 - The original archive was ingested and removed; assets are organized under `dist/`, `test-roms/`, `source/`, `docs/provenance/`, and `reference/`
@@ -48,16 +49,15 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 - Open-source test game: `test-roms/flappy.a26`, source/license: archive-provenance `JetSetIlly/Atari2600-Flappy-Bird` BSD-2-Clause
 
 ### 3.4 Build and test commands
-- Build plugin: `<TODO>`
-- Build plugin: `bash scripts/build-plugin.sh` (official `devkitpro/devkitarm:latest` Docker image)
+- Build plugin: `bash scripts/build-plugin.sh` (official `devkitpro/devkitarm:latest` Docker image; requires Docker-in-Docker after rebuilding the Codespace)
 - Build standalone stock-mGBA fixture: `bash scripts/build-fixture.sh`
 - Build/verify FAT32 flashcard SD: `bash scripts/verify-harness.sh`
-- Build patched mGBA (with SuperCard/EZ-Flash harnesses): `<TODO>`
+- Build mGBA harness targets: `cmake -S harnesses -B build/harness-cmake -G Ninja && cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`
 - Run stock mGBA headlessly: `bash scripts/run-mgba.sh <gba-rom> <seconds>`
 - Run baseline: `bash scripts/test-baseline.sh`
 
 ### 3.5 Codespaces limitations hit
-- No USB passthrough to real hardware, storage limits, idle timeout, etc.: <TODO, add as discovered, with workarounds>
+- No USB passthrough to real hardware. The live nested Codespace denied `dockerd` iptables operations; Docker-in-Docker was added to `.devcontainer/devcontainer.json` but still needs validation after **Rebuild Container**. A manually installed `docker.io` daemon is not a working workaround in a restricted nested container.
 - apt devkitPro installer URL was blocked with HTTP 403/Cloudflare; official Docker image `devkitpro/devkitarm:latest` is the verified fallback.
 
 ---
@@ -124,11 +124,11 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Complete evidence-based mGBA harness paths for all six DSSMM card/SD profiles before plugin changes.
-- **Exact step:** EZ source audit is recorded at `docs/provenance/ezflash-source-audit.md`, `harnesses/README.md`, and `harnesses/cards.json`. Re-ran five native launch cases from each exact EZ tag on mGBA 0.10.2; all 15 pass at mocked handoff markers. Passive `ezflash-mgba-trace-smoke` exercises real mGBA channel-3 four-word DMA reads and writes through the source data aperture. The trace reports each `GBA.performingDMA` callback; separate traced/untraced cores match transfer hashes plus DMA scheduling/wait-cycle fields, and detach restores callbacks. DMA source values still come from original mGBA cartridge behavior; no EZ card or SD image is emulated. Fixed the stale ABI manifest assertion and positional model initializers. Fresh checks passed: model/core/runner/trace CMake build and smoke; full `scripts/test-baseline.sh`; `scripts/verify-harness.sh`; JSON parse and `git diff --check`. **Active:** investigate whether a source-supported SD block-image connection is possible without inventing physical response/timing behavior; document the adapter boundary and evidence gap before implementing any synthetic card response. Physical response values, timing, PSRAM/NOR/SRAM mapping and SD media effects stay UNVERIFIED. Keep plugin unchanged. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
-- **Files touched:** EZ audit, matrix and README; passive trace adapter/smoke/CMake; stale manifest check; designated initializers in the SuperCard model test.
-- **Uncommitted changes:** none; latest DMA observer regression and handoff are committed locally and ready to push.
+- **Exact step:** Fixed `.devcontainer/devcontainer.json` by adding the Docker-in-Docker feature; expanded `.devcontainer/setup.sh` to install/verify `mgba-sdl`, Xvfb/xdotool/xauth, Stella, dosfstools and mtools, and to wait for a working Docker daemon before pulling devkitARM. Rebuilt both source clones at their pinned commits and rebuilt CMake harness targets. `supercard-model-test`, `mgba-core-smoke`, and `ezflash-mgba-trace-smoke` pass. Installed the missing apt packages in the live container with sudo; the tools now resolve. However, this running Codespace cannot start nested Docker (`dockerd` fails to create iptables NAT rules with permission denied), so the new Docker-in-Docker feature must be validated after **Rebuild Container**. `scripts/verify-harness.sh` now reaches plugin staging but fails because ignored `source/atari2600/prototype.gba` was lost and plugin rebuilding still needs Docker. Earlier EZ/SuperCard baseline results remain as recorded; no plugin build has been repeated this session. The EZ audit also documents a synthetic SD-image adapter boundary: source register/command contract plus independently corroborated 2 KiB aperture, with ready status/latency and physical effects explicitly UNVERIFIED. Added the DinD feature and host dependencies, corrected the stale setup/toolchain description, and checked JSON/shell syntax plus `git diff --check`; CMake rebuild and all three harness smokes pass. The container must now be rebuilt by the owner before plugin/FAT/baseline checks can be rerun. **Active:** ready for Codespace rebuild/restart. After the corrected devcontainer loads, rerun setup and the full baseline to regenerate ignored artifacts; then continue EZ synthetic SD-image coverage and only afterward resume the Atari emulator task sequence. The status/latency policy must remain explicit and configurable, never treated as physical evidence. Plugin remains unchanged. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
+- **Files touched:** `.devcontainer/devcontainer.json`, `.devcontainer/setup.sh`, `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `docs/provenance/ezflash-source-audit.md`; current session also restored ignored mGBA/DSSMM clones and installed live apt packages.
+- **Uncommitted changes:** current-session documentation and devcontainer fixes are uncommitted; generated outputs and third-party clones remain ignored.
 - **Branch:** main
-- **Resume command:** Read `docs/provenance/ezflash-source-audit.md`; inspect the pinned DE/Original/BLUE SD driver and current mGBA bus callbacks. Establish a source-only adapter contract for block-image reads/writes, leaving undocumented physical response/timing UNVERIFIED. Existing regression command: `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`, run each smoke, then `bash scripts/test-baseline.sh` and `bash scripts/verify-harness.sh`. Do not infer responses from SuperCard.
+- **Resume command:** First **Rebuild Container** to activate Docker-in-Docker, then run `bash .devcontainer/setup.sh`; rebuild `prototype.gba` and run `bash scripts/test-baseline.sh`. Continue by implementing/testing the separately documented EZ SD image seam using explicit synthetic status/latency settings. CMake regression command: `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`, then run each smoke and the FAT verifier. Do not infer physical response/timing values from DSSMM source or SuperCard behavior.
 
 ### Next up (ordered)
 1. Establish whether an EZ SD block-image adapter can be connected to the source-described transcript while leaving undocumented physical response/timing explicit; otherwise record the adapter boundary and evidence needed.
@@ -285,3 +285,5 @@ Short dated entries. Trim old entries periodically.
 - 2026-11-24: Audited EZ DE, Original OMEGA and BLUE at commits `a948b936`, `29bbb055`, and `9bc24e0`. Re-ran all five native launch cases at each exact commit; 15/15 reached fixture handoff. Recorded source SD command/control writes, status/data aperture, 4-sector batching, PSRAM/NOR/save windows and lane-specific reset/plugin handoff in `docs/provenance/ezflash-source-audit.md`; all physical decode/response/timing/storage effects remain UNVERIFIED. Added passive `ezflash_mgba_trace` wrapping mGBA 8/16/32-bit and LDM/STM callbacks; it records selected accesses and forwards them unchanged. Smoke passes; it does not trace GBA DMA transfers or emulate the EZ card.
 - 2026-11-24: Extended the passive EZ trace smoke through mGBA's scheduled channel-3 DMA service in both directions. Four-word transfers through the software data-aperture range are observed; traced/untraced transfer hashes and DMA scheduling/wait-cycle values match, and callback restoration passes. This verifies the GBA observer seam only; data still comes from mGBA's original cartridge behavior and there is no EZ card or SD-image response model. Full baseline and harness checks are now being rerun.
 - 2026-11-24: `scripts/test-baseline.sh` exposed an obsolete `cards[]` assertion in `scripts/test-pogo-abi.py` and positional `SuperCardModel` initializers rejected by `-Wmissing-field-initializers -Werror`. Replaced the assertion with six-profile/layer checks and converted the initializers to designated form. Full baseline passes: plugin build, ABI/manifest check, 64 MB FAT32 image hashes, strict host model build/test, and standalone fixture under stock mGBA 0.10.2 for 3 seconds. Plugin source was not changed. `scripts/verify-harness.sh`, mGBA core smoke, EZ trace smoke, SuperCard model and JSON/diff checks also pass.
+- 2026-11-25: Reconciled recreated Codespace against `HEAD=878d746` (same as `origin/main`, clean start; graceful prior stop). Restored ignored source clones at mGBA `431935616c0e216d650b25b2ea0c0acccd359038` and DSSMM SuperFW `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4`. Rebuilt harness CMake targets; SuperCard model, mGBA core, and EZ passive-DMA trace smokes pass. The live image lacked Docker, mGBA, Xvfb/xdotool, Stella and FAT tools; installed test/image packages with sudo. `scripts/verify-harness.sh` is blocked because ignored `source/atari2600/prototype.gba` was lost; plugin build needs Docker. Installing `docker.io` and manually starting `dockerd` also failed: restricted nested container denied iptables NAT setup. Added Docker-in-Docker feature and full host test tools to `.devcontainer`; must use **Rebuild Container** before validating that change. Documented this recovery in `HANDOFF.md`.
+- 2026-11-25: Added synthetic EZ SD-image adapter boundary and evidence limits to EZ provenance/README. The pinned source documents guest bus transactions and the poll condition; an independent CC BY-SA community reverse-engineering page corroborates register addresses and the 2 KiB data aperture. No status/latency model is implemented yet; any deterministic status/latency remains synthetic and physical behavior `UNVERIFIED`.

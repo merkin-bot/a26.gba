@@ -1,6 +1,11 @@
 {
   "name": "a26.gba",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {
+      "moby": true
+    }
+  },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "containerEnv": {
     "DEVKITPRO": "/opt/devkitpro",
