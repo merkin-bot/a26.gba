@@ -53,6 +53,20 @@ Acceptance target and engineering rules are defined in AGENTS.md. Do not optimiz
 
 ## 4. Latest checks and environment state
 
+The current Ubuntu 24.04.5 host has the documented Ubuntu dependencies installed and the pinned ignored mGBA/DSSMM checkouts restored. The official bootstrap URL `https://apt.devkitpro.org/install-devkitpro-pacman` returned HTTP 403. The official devkitPro pacman GitHub release notes point Debian/Ubuntu users back to that same bootstrap script; the Linux/macOS release asset is an installer package, not documented as an Ubuntu bootstrap alternative. No devkitARM or `gbafix` was installed, so do not infer plugin build status or hash.
+
+Current host checks:
+
+- PASS: `python3 scripts/test-pogo-abi.py`
+- PASS: `cmake -S harnesses -B build/harness-cmake -G Ninja`
+- PASS: `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`
+- PASS: `build/harness-cmake/supercard-model-test`
+- PASS: `build/harness-cmake/mgba-core-smoke`
+- PASS: `build/harness-cmake/ezflash-mgba-trace-smoke`
+- BLOCKED by absent devkitARM/general-tools: `bash scripts/build-plugin.sh`, `bash scripts/build-fixture.sh`, `bash scripts/test-baseline.sh`; each exits with the workspace prerequisite message.
+- BLOCKED because the plugin binary cannot be generated: `bash scripts/verify-harness.sh` (`source/atari2600/prototype.gba: No such file or directory`).
+- Tool check: `arm-none-eabi-gcc --version` reports command not found.
+
 The following code checks last ran at `800fa94`; `fdaedc6` changed documentation only:
 
 - `cmake -S harnesses -B build/harness-cmake -G Ninja`
@@ -73,6 +87,8 @@ Follow the hardware fidelity, evidence, measurement, build, mGBA, board-switchin
 
 ## 6. Session record
 
+- 2026-11-25: Session kickoff: read AGENTS.md, HANDOFF.md, PROGRESS.md, and WORKSPACE.md in order; clean `main` matches `origin/main` at `1ec9fde`. Current host is Ubuntu 24.04.5, but devkitARM/gbafix and the documented baseline tools are absent. Workspace qualification started; see follow-up entry for install/build outcome.
+- 2026-11-25: Installed the documented Ubuntu host dependencies with apt and restored mGBA `431935616c0e216d650b25b2ea0c0acccd359038` plus DSSMM `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4` as ignored checkouts. CMake harness targets and three host smoke executables plus PogoShell ABI check pass. Plugin/full baseline remains blocked because official devkitPro Debian bootstrap returns HTTP 403; official GitHub release notes refer Debian users to the same script and do not document an Ubuntu alternative. No plugin optimization or hardware claim was made.
 - 2026-11-25: Removed the failed devcontainer/Docker-in-Docker path. Build scripts use host devkitARM; `WORKSPACE.md` describes fresh unrestricted Codespaces setup. Host-side model/core/EZ trace smokes and ABI check pass. Plugin/FAT/full-baseline checks await a new workspace with devkitARM installed.
 - 2026-11-25: Owner clarified the final quality bar: accurate native Atari speed, smooth frame pacing and synchronized sound comparable in feel to established GBC/NES/SMS emulators. Hardware-faithful harnesses must never be changed to accommodate the emulator. Owner authorizes GitHub repository code use under GPL-2.0 without separate permission requests.
 - 2026-11-25: Consolidated cold-start roles across AGENTS.md, HANDOFF.md, PROGRESS.md, and WORKSPACE.md. No code or harness behavior changed.
