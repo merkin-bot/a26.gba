@@ -54,6 +54,16 @@ Three cold replays per candidate confirm a small, repeatable change in this mGBA
 
 The linked `.iwram`, `.bss`, and `.data` end at `0x03007A3C`; initial IWRAM stack top is `0x03007F00`, leaving 1,220 bytes before the change. A new runner diagnostic samples the GBA SP after every GBA frame once Atari code is active. Both builds reached a lowest sampled SP of `0x03007DC8`, leaving 908 bytes above static data in this replay. This is sampled stack use, not a proof of the absolute worst-case IRQ/call-chain stack requirement. Given the small gain and remaining uncertainty, retain the placement only provisionally and revisit if later code needs IWRAM. Physical hardware timing remains unmeasured.
 
+## Rejected ARM-mode and EWRAM loop experiments
+
+The baseline `mainloop()` is Thumb code in IWRAM. Applying GCC's per-function `target("arm")` while keeping the loop in IWRAM failed to link: `.data` was placed at `0x03009274`, outside the 32 KiB IWRAM region. Moving that ARM-mode loop to EWRAM linked as plugin SHA-256 `20df99c5a99dc68c630abf98459330ff8f789b7aa14cf7a804763a80dd671f10`; its `.ewram` code was 27,856 bytes. Two 3,200-frame Chis runs each reached only 35 Atari display calls (34–35 rendered) and produced the same different framebuffer hash `cbce2ec7429bd3c67e26a244909d3708f46496bec6161b4e63c4cbf8209c69f2`; the Thumb/IWRAM comparison reached 41 calls and hash `3F6510F57242D0B5`. Active WAITCNT remained `0x4000`, and no SD load failures occurred. The ARM/EWRAM candidate is rejected and its source change was reverted.
+
+Source audit at pinned upstream revisions found no faster loop to transplant from the classic GBA project: `MikeDX/2600_gba` commit `2eb18dd8a5b832c939efe510b4e493ad4cf25437` has the same switch-driven C loop. `PocketStella` commit `1e299b9e6c3197f6ad63a5a06eaf4db1c981bc43` builds a separate ARM 6502 assembly source which is absent from that checkout, so its checked-in object is not a suitable source basis. `StellaDS` commit `50dbad2f068364f6c3892f379ac4212803784607` is GPL-2 and targets DS ARM9; its `M6502Low` uses a local PC and direct page-fetch fast paths, worth studying as a future architectural port but not a drop-in GBA implementation. These references are listed in `reference/repositories.txt`; no code was copied in these experiments.
+
+## Compiler level: `-O3` versus `-O2`
+
+The build script now selects `-O3` by default and permits `A26_OPT_LEVEL=2` for exact comparison; other accepted levels are 0, 1, and `s`. The O2 plugin was `5d60fbe81de5d066edd3166c6c9ce3f15a3649dd507636cac2a11f9e523a3bc1`; the O3 plugin was `dc487cf29dce0785cedf1ac0f892d84f29e8e48ca3baf1ff254bace98ac744f3`. Three fixed-TV-counter replays averaged 3,025 mGBA frames at O2 and 2,989 at O3 (~1.2% fewer). All six captures matched byte-for-byte (PPM SHA-256 `c11fdf92de4b7fb70c1e23f6635b4c7527b2bcb995410443663c9126d8b20080`); all runs reached TV counter 41, rendered 40 frames, and had zero SD load failures. The lowest sampled SP was `0x03007DC8` at O2 and `0x03007DD0` at O3. O3 increases linked IWRAM by 24 bytes, leaving the same safe margin measured above. This is a reproducible but modest mGBA-only gain, not evidence of physical GBA performance.
+
 ## Interpretation and limits
 
 - The probe shows emulated Atari clock and frame-counter progression, not physical output cadence or real input latency.

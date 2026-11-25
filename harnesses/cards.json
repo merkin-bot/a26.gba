@@ -177,14 +177,15 @@
     "first_launch_frame_2200": "Build769 SD/Lite/Chis each reached cartridge-mapped PocketNES code. Each read 716 SD commands/1432 blocks, wrote 13 commands/blocks, had zero model load failures, and produced identical 240x160 framebuffer FNV64 C8F4325206720D24. Byte-identical PPM SHA-256 8595aa48e864a9f3f83fbb7b768b953ca791b7f023049ae37d65da1266ce2fb4; screen is PocketNES/Slydog startup splash.",
     "save_observation": "Repeated 3,000-frame runs created SYSTEM/SAVER/snailmaze.sav (131072 bytes) on SD/Lite/Chis. Each extracted save SHA-256 is b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260. Final PC samples are in kernel EWRAM and the three PPM captures are byte-identical (SHA-256 5bb42bf22a46219a8777518c103dc924b03faf2f75786899b0fcdd30ce4c79dc). This is modeled save-file creation/readback and return to kernel code; save semantics and physical persistence are not proven.",
     "remaining": "Reach and capture the Snail Maze title/game screen with a reproducible input sequence; validate save semantics beyond byte-identical file creation/readback. All mGBA/storage-model evidence only; physical behavior UNVERIFIED.",
-    "shared_image_note": "The six-profile exFAT run restores pristine image SHA-256 b237c4c14f0091e88e4c5e535e7bdda7ce490f372de7c72db6fac9339b82d6c7 before every profile. Existing SD/Lite/Chis save/return observations came from separate FAT32 images and remain separate evidence."
+    "shared_image_note": "The latest six-profile exFAT run used O3 plugin SHA-256 dc487cf29dce0785cedf1ac0f892d84f29e8e48ca3baf1ff254bace98ac744f3 and restored pristine image SHA-256 2593e5da1a8ff6c8a52210ea108a844a7d597168c2772870b12119f75c6f4aa9 before every profile. Existing SD/Lite/Chis save/return observations came from separate FAT32 images and remain separate evidence."
   },
   "shared_image_test": {
     "script": "scripts/verify-six-profile-image.sh",
     "filesystem": "exFAT",
     "image_size_bytes": 4294967296,
     "cluster_size_bytes": 32768,
-    "pristine_sha256": "b237c4c14f0091e88e4c5e535e7bdda7ce490f372de7c72db6fac9339b82d6c7",
+    "pristine_sha256": "2593e5da1a8ff6c8a52210ea108a844a7d597168c2772870b12119f75c6f4aa9",
+    "plugin_sha256": "dc487cf29dce0785cedf1ac0f892d84f29e8e48ca3baf1ff254bace98ac744f3",
     "layout": [
       "SYSTEM/PLUG/a26.gba",
       "SYSTEM/PLUG/nes.gba",
@@ -195,7 +196,7 @@
     "kernel_on_image": false,
     "theme_style_payload_on_image": false,
     "method": "Copy the byte-identical pristine image to the run path before each matching profile; fsck.exfat -n before and after each run; profile kernels are supplied directly to their matching runners.",
-    "result": "All six matching source-kernel/model runs completed 3,200 GBA frames with zero reported SD/image load failures. The three SuperCard profiles reached cartridge-mapped code. The EZ runs completed the kernel/storage scenario but the final capture was a kernel save-error dialog; this result does not establish EZ PocketNES or Atari plugin handoff. The shared-image filesystem and storage-path check passes at the synthetic model boundary.",
+    "result": "Verified 2026-11-25 with plugin SHA-256 dc487cf29dce0785cedf1ac0f892d84f29e8e48ca3baf1ff254bace98ac744f3: all six matching source-kernel/model runs restored this same pristine exFAT image, completed 3,200 GBA frames, and had zero reported SD/image load failures; before/after fsck.exfat -n passed. SuperCard SD/Lite/Chis reached cartridge-mapped code. EZ runs ended at the kernel save-error dialog, so EZ PocketNES and Atari plugin handoff remain UNVERIFIED in this shared-image scenario. This validates filesystem and storage paths at the synthetic model boundary only.",
     "physical_status": "UNVERIFIED: no physical card or GBA timing evidence"
   }
 }

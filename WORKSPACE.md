@@ -42,6 +42,8 @@ Run from the repository root:
 
 The baseline builds the plugin, checks the PogoShell ABI, creates the virtual FAT image, builds standalone and card-handoff fixtures, and boots them under stock mGBA/Xvfb. Some checks repeat; the baseline is the broad initial verification.
 
+`scripts/build-plugin.sh` accepts `A26_OPT_LEVEL=0|1|2|3|s`; it defaults to `3`, which was measured about 1.2% faster in the current Chis mGBA fixed-state replay while preserving identical capture output. `A26_OPT_LEVEL=2 bash scripts/build-plugin.sh` reproduces the prior compiler setting. Performance claims still require the repeatable Atari replay and valid hardware evidence for GBA claims.
+
 For SuperCard diagnostics, use the matching DSSMM kernel from the pinned source and follow `harnesses/README.md` plus `PROGRESS.md`. Run `make clean` before switching SuperFW `BOARD` among `chis`, `sd`, and `lite` because generated intermediate names overlap. Mark card behavior `UNVERIFIED` where evidence is absent.
 
 ### Build and run the three EZ release-lane mGBA paths
