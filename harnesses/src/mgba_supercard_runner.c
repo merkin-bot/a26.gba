@@ -461,14 +461,14 @@ int main(int argc, char **argv) {
             atari_trace_interval = 1ul;
         }
     }
-    unsigned atari_pc_offset = env_offset("A26_ATARI_PC_OFFSET", 0x5688u);
-    unsigned atari_clk_offset = env_offset("A26_ATARI_CLK_OFFSET", 0x567Cu);
-    unsigned atari_clkcount_offset = env_offset("A26_ATARI_CLKCOUNT_OFFSET", 0x54FCu);
-    unsigned atari_tv_counter_offset = env_offset("A26_ATARI_TV_COUNTER_OFFSET", 0x550Cu);
-    unsigned atari_ebeamy_offset = env_offset("A26_ATARI_EBEAMY_OFFSET", 0x6094u);
-    unsigned atari_hbeam_offset = env_offset("A26_ATARI_HBEAM_OFFSET", 0x5D60u);
-    unsigned atari_vbeam_offset = env_offset("A26_ATARI_VBEAM_OFFSET", 0x5D6Cu);
-    unsigned atari_pace_offset = env_offset("A26_ATARI_PACE_OFFSET", 0x7348u);
+    unsigned atari_pc_offset = env_offset("A26_ATARI_PC_OFFSET", 0x5D90u);
+    unsigned atari_clk_offset = env_offset("A26_ATARI_CLK_OFFSET", 0x5D84u);
+    unsigned atari_clkcount_offset = env_offset("A26_ATARI_CLKCOUNT_OFFSET", 0x5BFCu);
+    unsigned atari_tv_counter_offset = env_offset("A26_ATARI_TV_COUNTER_OFFSET", 0x5C0Cu);
+    unsigned atari_ebeamy_offset = env_offset("A26_ATARI_EBEAMY_OFFSET", 0x679Cu);
+    unsigned atari_hbeam_offset = env_offset("A26_ATARI_HBEAM_OFFSET", 0x6468u);
+    unsigned atari_vbeam_offset = env_offset("A26_ATARI_VBEAM_OFFSET", 0x6474u);
+    unsigned atari_pace_offset = env_offset("A26_ATARI_PACE_OFFSET", 0x7A50u);
     unsigned long stop_atari_tv_counter = 0;
     const char *stop_tv_text = getenv("A26_STOP_ATARI_TV_COUNTER");
     if (stop_tv_text && *stop_tv_text) {
