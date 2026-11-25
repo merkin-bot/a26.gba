@@ -26,4 +26,21 @@ if [[ -n "${KERNEL_GBA:-}" ]]; then
   mcopy -i "$out" "$KERNEL_GBA" "::SYSTEM/KERNELS/KERNEL.GBA"
 fi
 
+if [[ -n "${CONTROL_PLUGIN_GBA:-}" || -n "${CONTROL_PLUGIN_EXT:-}" ||
+      -n "${CONTROL_ROM:-}" || -n "${CONTROL_ROM_NAME:-}" ]]; then
+  : "${CONTROL_PLUGIN_GBA:?set CONTROL_PLUGIN_GBA}"
+  : "${CONTROL_PLUGIN_EXT:?set CONTROL_PLUGIN_EXT, for example nes}"
+  : "${CONTROL_ROM:?set CONTROL_ROM}"
+  : "${CONTROL_ROM_NAME:?set CONTROL_ROM_NAME, for example snailmaze.nes}"
+  if [[ ! "$CONTROL_PLUGIN_EXT" =~ ^[A-Za-z0-9_-]{1,16}$ ||
+        "$CONTROL_ROM_NAME" == */* || "$CONTROL_ROM_NAME" == *..* ||
+        "$CONTROL_ROM_NAME" != *.* ]]; then
+    echo "invalid control plugin extension or ROM filename" >&2
+    exit 2
+  fi
+  ext_lower="${CONTROL_PLUGIN_EXT,,}"
+  mcopy -i "$out" "$CONTROL_PLUGIN_GBA" "::SYSTEM/PLUG/${ext_lower}.gba"
+  mcopy -i "$out" "$CONTROL_ROM" "::ROMS/${CONTROL_ROM_NAME}"
+fi
+
 echo "Created FAT32 SD image: $out"

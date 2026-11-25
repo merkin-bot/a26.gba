@@ -1,62 +1,29 @@
-# Build the workspace in a fresh Codespace
+# Build the workspace offline from a repository checkout
 
-Use a regular Ubuntu 24.04 Codespace with the unrestricted host environment. This repository does not use a devcontainer or Docker. The previous Docker-in-Docker setup could not start inside the restricted Codespace (dockerd was denied iptables/NAT access), so `.devcontainer/` has been removed. Run these commands in the Codespace terminal; sudo is required for system packages and devkitPro.
+The primary setup path is repository-only after checkout: it restores exact-pinned mGBA, DSSMM, PocketNES, and devkitARM inputs from `vendor/offline/`. It makes no network requests. On a minimal Ubuntu 24.04 host, install the required packages from the repository's local `.deb` archive, then build and run the baseline:
 
-## 1. Install host tools
+    scripts/install-offline-host-tools.sh
+    python3 scripts/setup-offline-workspace.py
+    source work/offline/devkitpro/devkitarm.sh
+    bash scripts/offline-baseline.sh
 
-    sudo apt-get update
-    sudo apt-get install -y build-essential cmake ninja-build pkg-config curl git unzip zip python3 python3-pil python3-unicorn lcov libepoxy-dev libgl1-mesa-dev libsdl2-dev libqt5opengl5-dev qtbase5-dev libpng-dev libzip-dev zlib1g-dev libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev libedit-dev libelf-dev mgba-sdl xvfb xdotool xauth stella dosfstools mtools skopeo umoci
+`offline-baseline.sh` performs source restore, local libgba/Maxmod builds, plugin and fixture builds, PogoShell ABI check, FAT image check, stock and in-tree mGBA boots, all model/bus tests, the SuperCard mGBA runner build, the pinned SuperFW source/fixture suite, and all three EZ source-kernel/native-fixture/image lanes. It uses only repository inputs after host packages are available. Set `OFFLINE_SKIP_EXTENDED=1` only when tracing the core baseline under `strace`, because LeakSanitizer cannot run under ptrace; run the full command without that variable for the required checks.
 
-These provide build tools, Python, stock mGBA, Xvfb, Stella, and FAT image tools. Codespaces does not provide USB access to physical cards.
+## Platform baseline and scope
 
-## 2. Install devkitARM without Docker
+A repository cannot boot a computer or supply its kernel/libc. The supported base is x86_64 Ubuntu 24.04 with apt/dpkg, sudo, a shell, and libc/kernel already present. `scripts/install-offline-host-tools.sh` uses only `vendor/offline/packages`, disables outside sources for that command, and passes `--no-download`; it includes GCC/CMake/Ninja, Python, Unicorn/lcov, FAT tools, mGBA, Stella, Xvfb, xdotool, and Pillow. The repository therefore supplies the full workspace software after the OS checkout, but is not a self-contained operating system.
 
-Use the [official devkitPro pacman instructions](https://devkitpro.org/wiki/devkitPro_pacman) and Debian/Ubuntu bootstrap. Review the installer before running it:
+Do not use an external apt source, `pip`, upstream `git clone`, or a container image pull for offline qualification. Generated binaries, SD images, and build directories stay ignored. Physical cards are unavailable in the standard Codespaces environment.
 
-    curl -fsSLo /tmp/install-devkitpro-pacman https://apt.devkitpro.org/install-devkitpro-pacman
-    less /tmp/install-devkitpro-pacman
-    chmod +x /tmp/install-devkitpro-pacman
-    sudo /tmp/install-devkitpro-pacman
-    sudo /opt/devkitpro/pacman/bin/dkp-pacman -Sy --needed gba-dev
-    source /etc/profile.d/devkit-env.sh
+## Offline bundle contents
 
-The official installer provides the `devkit-env.sh` profile used to set `DEVKITPRO`, `DEVKITARM`, and tool paths in new login shells. If the profile is not present, inspect the installed files under `/etc/profile.d/` and set those variables to the installed devkitPro paths; do not hardcode a guessed compiler location.
+`vendor/offline/README.md` records the exact revisions, licenses/provenance, image digest, and SHA-256 values. The setup script verifies the manifest before restoring ignored checkouts and `work/offline/devkitpro/`; it builds pinned libgba and Maxmod from their local source bundles. The devkitARM archive is extracted from the official immutable devkitPro image and includes GCC 16.1.0 and `gbafix`; no image runtime is used. See the bundle README before updating any input.
 
-Verify the tools:
+## Desktop Stella
 
-    arm-none-eabi-gcc --version
-    arm-none-eabi-as --version
-    command -v gbafix
-    command -v cmake ninja cc python3 /usr/games/mgba xvfb-run xdotool stella mkfs.vfat mcopy fsck.fat
+Stella, stock mGBA, Xvfb, xdotool, and Python Pillow are in the repository's offline Ubuntu package set. After `scripts/install-offline-host-tools.sh`, `scripts/capture-stella-reference.sh` can produce the documented native Atari comparison without contacting external services. See the Stella section for the crop and scaling method. Stella remains a visual diagnostic, not GBA timing evidence.
 
-If the official bootstrap URL returns HTTP 403, autonomously follow the current installation alternatives linked from devkitPro's Linux instructions; do not restore Docker-in-Docker or substitute an unrelated ARM compiler. The prior restricted Codespace received HTTP 403, so confirm access in the new unrestricted Codespace. Historical builds used devkitARM GCC 16.1.0 from `devkitpro/devkitarm:latest`. The pacman package may be newer; record compiler version and plugin hash in `PROGRESS.md`. Claim exact archived hash reproduction only if the result matches.
-
-### Official toolchain image fallback when the Debian bootstrap is blocked
-
-The official devkitPro GitHub release notes route Debian/Ubuntu users to the bootstrap URL above. If that URL is blocked by HTTP 403, a reproducible fallback is to extract the official devkitPro Linux image into the host filesystem. This uses `skopeo` and `umoci` to download and unpack the immutable image; it does not run Docker or a container. Pin the image digest below rather than `latest`:
-
-    skopeo inspect docker://docker.io/devkitpro/devkitarm:20260610
-    skopeo copy docker://docker.io/devkitpro/devkitarm@sha256:116afba8df8453961de2936ffab20dd441edf4d682856c1ec8b0e53d7ed0bbf5 oci:/tmp/devkitarm-oci:qualified
-    sudo umoci unpack --image /tmp/devkitarm-oci:qualified /tmp/devkitarm-rootfs
-    sudo mkdir -p /opt/devkitpro
-    sudo cp -a /tmp/devkitarm-rootfs/rootfs/opt/devkitpro/. /opt/devkitpro/
-    source /opt/devkitpro/devkitarm.sh
-
-The pinned image reports devkitARM GCC 16.1.0 and includes `gbafix`. Verify `arm-none-eabi-gcc --version`, `arm-none-eabi-as --version`, `command -v gbafix`, and the plugin build. `gbafix --help` is not a valid presence check on this release: it returns status 255. The copied toolchain runs as host binaries; do not add the image or its extracted files to Git.
-
-## 3. Restore ignored source checkouts
-
-Clones and build output are intentionally ignored. Run from the repository root:
-
-    mkdir -p harnesses/third_party
-    if [ ! -d harnesses/third_party/mgba/.git ]; then git clone https://github.com/mgba-emu/mgba harnesses/third_party/mgba; fi
-    git -C harnesses/third_party/mgba checkout 431935616c0e216d650b25b2ea0c0acccd359038
-    if [ ! -d harnesses/third_party/dssmm/.git ]; then git clone https://github.com/voluptuary/dssmm harnesses/third_party/dssmm; fi
-    git -C harnesses/third_party/dssmm checkout 37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4
-
-mGBA is MPL-2.0; DSSMM SuperFW is Apache-2.0. Do not commit these ignored clones, proprietary kernel/BIOS files, generated ROMs, or SD images.
-
-## 4. Build and check
+## Build and check
 
 Run from the repository root:
 
@@ -73,7 +40,7 @@ Run from the repository root:
     build/harness-cmake/ezflash-sd-model-test
     build/harness-cmake/ezflash-mgba-sd-smoke
 
-The baseline builds the plugin, checks the PogoShell ABI, creates the virtual FAT image, builds a standalone fixture, and runs it under stock mGBA/Xvfb. Some checks repeat; the baseline is the broad initial verification.
+The baseline builds the plugin, checks the PogoShell ABI, creates the virtual FAT image, builds standalone and card-handoff fixtures, and boots them under stock mGBA/Xvfb. Some checks repeat; the baseline is the broad initial verification.
 
 For SuperCard diagnostics, use the matching DSSMM kernel from the pinned source and follow `harnesses/README.md` plus `PROGRESS.md`. Run `make clean` before switching SuperFW `BOARD` among `chis`, `sd`, and `lite` because generated intermediate names overlap. Mark card behavior `UNVERIFIED` where evidence is absent.
 
@@ -87,7 +54,7 @@ It runs the three existing five-case native launch suites at their matching tags
 
 Use the three exact source tags recorded in `harnesses/cards.json`. These commands build source kernels into the ignored DSSMM checkout; no binary is committed. `make clean` avoids stale objects when moving among lane snapshots:
 
-    source /opt/devkitpro/devkitarm.sh
+    source work/offline/devkitpro/devkitarm.sh
     git -C harnesses/third_party/dssmm checkout v8.4.1
     make -C harnesses/third_party/dssmm/ezfomegade clean
     make -C harnesses/third_party/dssmm/ezfomegade -j2
@@ -110,19 +77,21 @@ Outputs are `ezfomegade/ezfomegade.gba`, `ezfomega/ezfomega.gba`, and `ezfblue/t
     fsck.fat -n work/ez-omega-sd.img
     fsck.fat -n work/ez-blue-sd.img
 
-`scripts/make-sd-image.sh` creates `SYSTEM/PLUG`, `SYSTEM/SAVER`, `SYSTEM/KERNELS`, and `ROMS`, then copies the plugin, test ROM, and optional exact profile kernel. `KERNEL_GBA` places that kernel at `SYSTEM/KERNELS/KERNEL.GBA`; the runner separately uses it as its cartridge input. `ezflash-mgba-runner` reports sector command/read/write totals and a 240x160 framebuffer hash; optional comma-separated events accept a one-frame `frame:mask` tap or inclusive `first-last:mask` held range (GBA button bitmasks). With `A26_EZ_TRACE_PC=1`, per-frame output includes guest PC and last SD LBA/count/direction. `A26_EZ_TRACE_EWRAM=<aligned address>` prints two adjacent words for temporary source-instrumentation diagnosis. The model uses synthetic ready status zero and no card latency, while its callbacks invoke mGBA upstream callbacks to retain GBA-side access costs. A successful run only means the matching kernel executed its UI and storage code through this model. Check `PROGRESS.md` for current handoff limits; these runs do not prove physical card behavior or a real-time GBA timing result. After building, return the ignored DSSMM checkout to its pinned commit with `git -C harnesses/third_party/dssmm checkout 37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4`.
+`scripts/make-sd-image.sh` creates `SYSTEM/PLUG`, `SYSTEM/SAVER`, `SYSTEM/KERNELS`, and `ROMS`, then copies the Atari plugin/test ROM and optional exact profile kernel. `KERNEL_GBA` places that kernel at `SYSTEM/KERNELS/KERNEL.GBA`; the runner separately uses it as its cartridge input. To add a known-working PogoShell control plugin and a ROM, set all four variables: `CONTROL_PLUGIN_GBA`, `CONTROL_PLUGIN_EXT` (for example `nes`), `CONTROL_ROM`, and `CONTROL_ROM_NAME` (for example `snailmaze.nes`). These are staged as `SYSTEM/PLUG/nes.gba` and `ROMS/snailmaze.nes`; the control files remain local/ignored. `ezflash-mgba-runner` reports sector command/read/write totals and a 240x160 framebuffer hash; optional comma-separated events accept a one-frame `frame:mask` tap or inclusive `first-last:mask` held range (GBA button bitmasks). With `A26_EZ_TRACE_PC=1`, per-frame output includes guest PC and last SD LBA/count/direction. `A26_EZ_TRACE_EWRAM=<aligned address>` prints two adjacent words for temporary source-instrumentation diagnosis. The model uses synthetic ready status zero and no card latency, while its callbacks invoke mGBA upstream callbacks to retain GBA-side access costs. A successful run only means the matching kernel executed its UI and storage code through this model. Check `PROGRESS.md` for current handoff limits; these runs do not prove physical card behavior or a real-time GBA timing result.
+
+To qualify a newer kernel without changing the pinned source bundle, copy it into ignored `work/kernels/` and set the profile override when running `scripts/verify-ezflash-mgba.sh`: `EZ_DE_KERNEL_GBA=work/kernels/de.gba`, `EZ_OMEGA_KERNEL_GBA=work/kernels/omega.gba`, and/or `EZ_BLUE_KERNEL_GBA=work/kernels/blue.gba`. Set `EZFLASH_PROFILE` to `ezfomegade`, `ezfomega`, or `ezfblue` to run just that lane's five native fixture cases and image test. The script still runs native fixtures against pinned source revisions, then uses the supplied binary for a fresh SD image and mGBA run. Record its upstream version, board/card revision, source URL or archive provenance, SHA-256, and test result in `harnesses/cards.json`; new kernels require requalification and do not inherit old evidence. For SuperCard profiles, pass the new kernel directly as the first argument to `supercard-mgba-runner` and as `KERNEL_GBA` when building the matching image. The source bundle can be advanced separately by updating the pinned commit and hash manifest.
 
 The DSSMM SuperFW validation scripts use Unicorn and `lcov`. Ubuntu's `python3-unicorn` package is installed for the system Python; Codespaces may put another Python first on `PATH`. Run the complete SuperFW suite with:
 
     export PATH=/usr/bin:$PATH
     export ASAN_OPTIONS=detect_stack_use_after_return=0
-    source /opt/devkitpro/devkitarm.sh
+    source work/offline/devkitpro/devkitarm.sh
     export CC=gcc
     bash harnesses/third_party/dssmm/superfw/scripts/verify.sh
 
 The system Python path makes Unicorn available. ASan's default fake stack is incompatible with the test's GCC nested-function trampoline, so the setting disables stack-use-after-return instrumentation for that fixture only. The `CC=gcc` override is for the final host C/ASan coverage tests; SuperFW firmware Makefiles explicitly select `arm-none-eabi-gcc`. Do not apply either workaround to the GBA/card model or firmware build flags.
 
-## 5. Desktop Stella accuracy and performance references
+## Stella accuracy and performance references
 
 Stella is a desktop diagnostic and visual reference. Its timing and host CPU use are not GBA performance evidence. Use the same open-source ROM and synchronize game state/input before comparing a frame; note TV standard, Stella version, and frame or event used. The Atari logical image is 160x190, while the TIA playfield spans 40x192 bits/scanlines. Preserve the complete playfield when choosing vertical crop/sampling; each playfield bit covers four Atari pixels. CRT overscan typically masks about 10–12 Atari pixels on each side. The capture defaults to a 12-pixel crop per side and accepts a per-ROM crop override, including zero. Inspect each game before cropping because scores and gameplay can use those edges. Do not shrink the entire Stella desktop window. `scripts/capture-stella-reference.sh` runs Stella with software video under Xvfb, takes a native snapshot, reduces Stella's doubled horizontal sampling to 160 Atari pixels, selects a centered 160x192 TIA viewport, applies the chosen horizontal crop, then maps it with nearest-neighbor sampling to exactly 240x160 pixels:
 
@@ -132,7 +101,7 @@ The capture disables VSync and audio for headless operation. It samples shortly 
 
 For host-only speed diagnostics, run the same ROM in Stella at normal speed (`-speed 1`) or maximum-speed mode (`-turbo 1`) and record the Stella version, ROM hash, duration, and host load. These measurements help compare desktop reference runs and diagnose game-state progression; do not use them to claim GBA frame rate or native Atari timing. Use real GBA hardware or a validated hardware timing method for those claims.
 
-## 6. Additional Atari homebrew test ROMs
+## Additional Atari homebrew test ROMs
 
 The optional catalog at `https://github.com/retrobrews/atari2600-games` was checked at commit `0e16f397027ebb5d3be204c90efff169419ba5f8`. Its ROMs use `.bin`, so stage an individual game with the plugin's expected `.a26` extension:
 
@@ -142,10 +111,35 @@ The optional catalog at `https://github.com/retrobrews/atari2600-games` was chec
 
 This copies `flappy_the_duck.bin` to ignored `work/test-roms/flappy_the_duck.a26` and prints its SHA-256. Read the matching `.txt` before use. The repository README says redistribution is approved only on the RetroBrew site/project; individual game rights vary. Do not commit or redistribute these ROMs without the rights holder's permission. See `docs/provenance/atari2600-homebrew-roms.md`.
 
-## 7. Recovery notes
+## PocketNES control plugin and NES homebrew
+
+Restore the pinned local-only reference checkouts and build PocketNES with the host devkitARM toolchain:
+
+    python3 scripts/setup-offline-workspace.py
+    source work/offline/devkitpro/devkitarm.sh
+    make -C work/PocketNES -j2
+    mkdir -p work/pocketnes-control
+    cp work/PocketNES/pocketnes.gba work/pocketnes-control/nes.gba
+
+
+The PocketNES repository has no top-level license file; build locally and do not redistribute its output from this workspace. RetroBrew's catalog README limits ROM distribution approval to its own site/project. Inspect `snailmaze.txt` or the chosen game's metadata and keep ROMs under ignored `work/`. See `docs/provenance/pocketnes-control.md` for checked hashes and the currently passing Chis launch result. To build a control image:
+
+    KERNEL_GBA=harnesses/third_party/dssmm/superfw/build/chis/superfw.fw CONTROL_PLUGIN_GBA=work/pocketnes-control/nes.gba CONTROL_PLUGIN_EXT=nes CONTROL_ROM=work/retrobrews-nes-games/snailmaze.nes CONTROL_ROM_NAME=snailmaze.nes bash scripts/make-sd-image.sh work/chis-pocketnes-sd.img 64
+    fsck.fat -n work/chis-pocketnes-sd.img
+
+For the source-linked Chis Pogo plugin loader/FatFs/ABI control fixture (requires the pinned DSSMM Chis `firmware.ewram.elf`, devkitARM, and system Python Unicorn):
+
+    mkdir -p work/pocketnes-control
+    cp work/PocketNES/pocketnes.gba work/pocketnes-control/nes.gba
+    source work/offline/devkitpro/devkitarm.sh
+    PATH=/usr/bin:$PATH python3 harnesses/third_party/dssmm/superfw/scripts/test-native-plugins-arm.py --pack work/pocketnes-control --extension nes --game-bytes 40976
+
+The fixture uses generated same-size game bytes; use the full Chis mGBA kernel/image runner for an actual SD ROM launch. The synthetic EZ DE control now reaches the PocketNES/Snail Maze screen; `docs/provenance/pocketnes-control.md` records its 2,500-frame result and adapter limits. Repeat with the matching Original OMEGA and BLUE kernels before treating the EZ lanes as qualified. Physical card behavior remains UNVERIFIED.
+
+## Recovery notes
 
 - Regenerate ignored `source/atari2600/prototype.gba` with `bash scripts/build-plugin.sh`.
 - Regenerate `work/a26-sd.img` and related artifacts with `bash scripts/verify-harness.sh`.
-- If CMake cannot find mGBA, restore the ignored clone at the pinned commit before changing CMake.
+- If CMake cannot find mGBA, run `python3 scripts/setup-offline-workspace.py`; it restores the pinned source from the repository bundle.
 - `scripts/build-plugin.sh`, `scripts/build-fixture.sh`, and `scripts/build-card-fixture.py` call host devkitARM directly; none require Docker.
 - `HANDOFF.md` has the short checkpoint. `PROGRESS.md` has current harness status, evidence, test results, and next task.

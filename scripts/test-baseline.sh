@@ -15,15 +15,13 @@ build/harness/supercard-model-test
 plugin="source/atari2600/prototype.gba"
 plugin_hash=$(sha256sum "$plugin" | awk '{print $1}')
 
-if [[ ! -x /usr/games/mgba ]]; then
-  echo "stock mGBA unavailable; install mgba-sdl" >&2
-  exit 1
-fi
-
-plugin_launch="not-run-plugin-requires-PogoShell"
 bash scripts/build-fixture.sh
+cmake -S harnesses -B build/harness-cmake -G Ninja
+cmake --build build/harness-cmake --target mgba-core-smoke -j2
+build/harness-cmake/mgba-core-smoke
 bash scripts/run-mgba.sh source/atari2600/fixture.gba 3
+bash scripts/run-card-fixture.sh 3
 
 echo "Plugin SHA-256: $plugin_hash"
-echo "Stock mGBA plugin launch: skipped (PogoShell ABI absent)"
-echo "Stock mGBA standalone fixture launch: survived 3 seconds"
+echo "mGBA GBA core bus smoke and standalone/card fixture boots: passed"
+echo "Plugin launch: skipped (PogoShell ABI absent)"

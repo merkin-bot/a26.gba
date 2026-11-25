@@ -1,5 +1,7 @@
 #include "ezflash_sd_model.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define EZ_COMMAND_END 0x09FC0000u
@@ -29,6 +31,13 @@ static int start_command(EZFlashSDModel *model) {
     if (!model->command_active) {
         model->failed = 1;
         ++model->failures;
+    }
+    if (getenv("A26_EZ_TRACE_SD")) {
+        fprintf(stderr,
+                "ez_sd_command index=%llu op=%s lba=%u blocks=%u control=%u active=%u failed=%u\n",
+                (unsigned long long)model->commands,
+                model->write_command ? "write" : "read", model->sector,
+                count, model->control, model->command_active, model->failed);
     }
     if (model->command_active && model->write_command &&
         model->buffer_offset == model->buffer_bytes) {

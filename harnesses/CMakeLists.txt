@@ -36,6 +36,18 @@ add_executable(ezflash-sd-model-test tests/ezflash_sd_model_test.c)
 target_link_libraries(ezflash-sd-model-test PRIVATE ezflash_sd_model)
 target_compile_options(ezflash-sd-model-test PRIVATE -UNDEBUG)
 
+add_library(ezflash_psram_model STATIC src/ezflash_psram_model.c)
+target_include_directories(ezflash_psram_model PUBLIC include)
+add_executable(ezflash-psram-model-test tests/ezflash_psram_model_test.c)
+target_link_libraries(ezflash-psram-model-test PRIVATE ezflash_psram_model)
+target_compile_options(ezflash-psram-model-test PRIVATE -UNDEBUG)
+
+add_library(ezflash_nor_model STATIC src/ezflash_nor_model.c)
+target_include_directories(ezflash_nor_model PUBLIC include)
+add_executable(ezflash-nor-model-test tests/ezflash_nor_model_test.c)
+target_link_libraries(ezflash-nor-model-test PRIVATE ezflash_nor_model)
+target_compile_options(ezflash-nor-model-test PRIVATE -UNDEBUG)
+
 if(TARGET mgba)
   add_library(supercard_mgba_bus STATIC src/supercard_mgba_bus.c)
   target_include_directories(supercard_mgba_bus PUBLIC
@@ -70,7 +82,7 @@ if(TARGET mgba)
     ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
   target_compile_definitions(ezflash_mgba_sd PRIVATE
     $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
-  target_link_libraries(ezflash_mgba_sd PUBLIC ezflash_sd_model mgba)
+  target_link_libraries(ezflash_mgba_sd PUBLIC ezflash_sd_model ezflash_psram_model ezflash_nor_model mgba)
 
   add_executable(ezflash-mgba-sd-smoke src/ezflash_mgba_sd_smoke.c)
   target_include_directories(ezflash-mgba-sd-smoke PRIVATE

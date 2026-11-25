@@ -14,7 +14,7 @@ The current plugin runs on an unpublished SuperCard Build 822 trial but is repor
 2. Complete reliable mGBA harness paths for the six card/kernel/storage profiles in `harnesses/cards.json`. Reuse DSSMM fixtures and avoid duplicate launcher tests. Clearly distinguish GBA hardware, card/kernel, and SD/block storage layers; identify mocks and mark unknown card behavior `UNVERIFIED`.
 3. Only after the harness gate, measure and improve input response and Atari game-time accuracy. Measure before and after every emulation change. Inspect CPU/TIA scheduling, ROM waitstates, IWRAM/EWRAM placement, ARM/Thumb, prefetch, dispatch, rendering, and DMA. Desktop timing is not GBA evidence.
 4. Implement and validate TIA audio through GBA Direct Sound and/or PSG, synchronized with the emulated clock without breaking video timing or shell behavior.
-5. Compare menu behavior/font/layout/options/save-state conventions with Goomba where feasible; document exact comparisons and gaps.
+5. Compare menu behavior/font/layout/options/save-state conventions with PocketNES and Goomba where feasible; document exact comparisons and gaps. PocketNES is the primary interaction/style reference: keep its familiar menu structure, visual treatment, font, and hotkeys, adapting labels and controls to Atari 2600 options. Do not claim parity until each behavior has been compared.
 6. Expand cartridge bankswitching, PAL/NTSC, controls, per-game settings, save support, and polish after the above is stable.
 
 ## Non-negotiable engineering rules
@@ -40,4 +40,4 @@ At each session start, verify repository state against the handoff and correct s
 
 - Canonical plugin source: `source/atari2600/`; prepared binary/reference artifacts: `dist/`; open-source test ROM: `test-roms/`.
 - Harness profiles/evidence: `harnesses/cards.json`, `harnesses/README.md`, and `docs/provenance/`.
-- Generated binaries, SD images, BIOS/kernel binaries, and third-party clones/build outputs are not committed.
+- Generated plugin/kernel binaries, SD images, BIOS files, ROMs, and build outputs are not committed. Exact-pinned source snapshots and licensed offline bootstrap inputs may live under `vendor/offline/`; document their upstream revision, license/provenance, hashes, and purpose. Never add proprietary firmware or copyrighted ROMs to these bundles.

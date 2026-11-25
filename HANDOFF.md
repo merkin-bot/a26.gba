@@ -13,5 +13,6 @@ On a cold start, saying “Read AGENTS.md” is sufficient. Follow the instructi
 - Build environment and exact commands: `WORKSPACE.md`.
 - Card profiles and harness evidence: `harnesses/cards.json`, `harnesses/README.md`, `docs/provenance/`.
 - Latest commit and verified/unverified results: run `git log`; see `PROGRESS.md`.
+- Offline workspace cleanup and full baseline passed on 2026-11-25; next commit the current reviewed changes, then resume SuperCard harness qualification. Full offline commands and kernel overrides are in `WORKSPACE.md`.
 
 This file is intentionally a short recovery index. Project requirements belong in `AGENTS.md`; detailed current state and evidence belong in `PROGRESS.md`; environment setup belongs in `WORKSPACE.md`.

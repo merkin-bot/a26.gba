@@ -39,6 +39,9 @@ int main(int argc, char **argv) {
     mLogSetDefaultLogger(&(struct mLogger){.log = quiet_log});
     struct mCore *core = GBACoreCreate();
     EZFlashSDModel model = {0};
+    EZFlashPSRAMModel psram = {0};
+    EZFlashNORModel nor = {0};
+    EZFlashNORModel nor_s98 = {0};
     EZFlashMGBASD adapter = {0};
     mColor *video = NULL;
     int config_ready = 0;
@@ -54,13 +57,27 @@ int main(int argc, char **argv) {
         fprintf(stderr, "could not open raw SD image %s\n", argv[3]);
         goto cleanup;
     }
+    if (!ezflash_psram_model_init(&psram)) {
+        fputs("could not allocate synthetic EZ PSRAM\n", stderr);
+        goto cleanup;
+    }
+    if (!ezflash_nor_model_init(&nor, argv[1])) {
+        fputs("could not initialize source-shaped synthetic S71 NOR\n", stderr);
+        goto cleanup;
+    }
+    if (!ezflash_nor_model_init_window(&nor_s98, EZFLASH_S98_NOR_BASE,
+                                       0x20000u, NULL, 0xFFFFu)) {
+        fputs("could not initialize source-shaped synthetic S98 NOR\n", stderr);
+        goto cleanup;
+    }
     unsigned width = 0, height = 0;
     core->baseVideoSize(core, &width, &height);
     if (!width || !height || !(video = calloc((size_t)width * height, sizeof(*video))))
         goto cleanup;
     core->setVideoBuffer(core, video, width);
     core->reset(core);
-    if (!ezflash_mgba_sd_attach(&adapter, core, &model)) goto cleanup;
+    if (!ezflash_mgba_sd_attach(&adapter, core, &model, &psram, &nor,
+                                &nor_s98)) goto cleanup;
     KeyEvent key_events[64];
     size_t key_count = 0;
     if (argc == 6) {
@@ -180,6 +197,11 @@ int main(int argc, char **argv) {
            " pc=0x%08" PRIX32 " commands=%" PRIu64 " blocks_read=%" PRIu64
            " blocks_written=%" PRIu64 " failures=%" PRIu64
            " synthetic_reads=%" PRIu64 " synthetic_writes=%" PRIu64
+           " psram_reads=%" PRIu64 " psram_writes=%" PRIu64
+           " nor_reads=%" PRIu64 " nor_writes=%" PRIu64
+           " nor_s98_reads=%" PRIu64 " nor_s98_writes=%" PRIu64
+           " nor_erases=%" PRIu64 " nor_program_words=%" PRIu64
+           " nor_s98_erases=%" PRIu64 " nor_s98_program_words=%" PRIu64
            " delegated_reads=%" PRIu64 " delegated_writes=%" PRIu64
            " framebuffer=%ux%u fnv64=%016" PRIX64 " capture=%s"
            " ie=0x%04X if=0x%04X ime=0x%04X dispstat=0x%04X vcount=%u"
@@ -188,6 +210,11 @@ int main(int argc, char **argv) {
            argv[1], frames, core->frameCounter(core) - frame_start, pc,
            model.commands, model.blocks_read, model.blocks_written, model.failures,
            adapter.synthetic_reads, adapter.synthetic_writes,
+           adapter.psram_reads, adapter.psram_writes,
+           adapter.nor_reads, adapter.nor_writes,
+           adapter.nor_s98_reads, adapter.nor_s98_writes,
+           nor.erase_commands, nor.program_words,
+           nor_s98.erase_commands, nor_s98.program_words,
            adapter.delegated_reads, adapter.delegated_writes,
            video_width, video_height, video_hash, argc >= 5 ? argv[4] : "(none)",
            gba->memory.io[GBA_REG_IE / 2u], gba->memory.io[GBA_REG_IF / 2u],
@@ -195,6 +222,12 @@ int main(int argc, char **argv) {
            gba->memory.io[GBA_REG_VCOUNT / 2u], gba->memory.io[GBA_REG_KEYCNT / 2u],
            gba->keysActive, gba->cpu->halted,
            argv[3]);
+    if (getenv("A26_EZ_TRACE_REGS")) {
+        fprintf(stderr, "final_cpu cpsr=0x%08" PRIX32, gba->cpu->cpsr.packed);
+        for (unsigned reg = 0; reg < 16; ++reg)
+            fprintf(stderr, " r%u=0x%08" PRIX32, reg, gba->cpu->gprs[reg]);
+        fputc('\n', stderr);
+    }
     const char *trace_word = getenv("A26_EZ_TRACE_EWRAM");
     if (trace_word) {
         char *address_end = NULL;
@@ -213,6 +246,9 @@ int main(int argc, char **argv) {
 cleanup:
     if (adapter.core) ezflash_mgba_sd_detach(&adapter);
     if (model.image) ezflash_sd_model_close(&model);
+    ezflash_psram_model_deinit(&psram);
+    ezflash_nor_model_deinit(&nor);
+    ezflash_nor_model_deinit(&nor_s98);
     free(video);
     if (core) {
         if (config_ready) mCoreConfigDeinit(&core->config);

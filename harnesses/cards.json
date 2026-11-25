@@ -15,7 +15,7 @@
       "source_commit": "a948b936c11bc984ca8a84d141dc1b7ea81751a6",
       "artifact": "ezkernelnew.bin",
       "source": "ezfomegade/",
-      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2; source-built pinned DE kernel ran 300 frames against a separate fresh FAT image, reading 154 sectors and writing 30 with zero model failures; 240x160 menu hash 3DB0B0392899E8FC; final sampled PC 0x000001F8 (mGBA BIOS), so plugin handoff/return is not established; physical behavior UNVERIFIED"
+      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2; separate fresh DE kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 803 blocks read, 216 written, zero synthetic failures, and framebuffer FNV64 ABA1E9FDDE9F1C85; source-shaped SD/PSRAM/S71 only; physical behavior and shell return UNVERIFIED"
     },
     {
       "id": "ezfomega-original",
@@ -25,7 +25,7 @@
       "source_commit": "29bbb055b26968468cadf7358bdffd340209a355",
       "artifact": "ezkernel.bin",
       "source": "ezfomega/",
-      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2; source-built pinned Original OMEGA kernel ran 300 frames against a separate fresh FAT image, reading 100 sectors and writing 30 with zero model failures; 240x160 menu hash 3DB0B0392899E8FC; final sampled PC 0x000001F8 (mGBA BIOS), so plugin handoff/return is not established; physical behavior UNVERIFIED"
+      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2; separate fresh Original OMEGA kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 751 blocks read, 224 written, zero synthetic failures, and framebuffer FNV64 ABA1E9FDDE9F1C85; source-shaped SD/PSRAM/S71 only; physical behavior and shell return UNVERIFIED"
     },
     {
       "id": "ezfblue",
@@ -35,7 +35,7 @@
       "source_commit": "9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278",
       "artifact": "ezbluekernel.bin",
       "source": "ezfblue/",
-      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2; source-built pinned BLUE kernel ran 300 frames against a separate fresh FAT image, reading 154 sectors and writing 30 with zero model failures; 240x160 menu hash 3DB0B0392899E8FC; final sampled PC 0x000001F8 (mGBA BIOS), so plugin handoff/return is not established; physical behavior UNVERIFIED"
+      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2; separate fresh BLUE kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 802 blocks read, 216 written, zero synthetic failures, and framebuffer FNV64 3BDA64DE762CE6D0; source-shaped SD/PSRAM/S98 only; physical behavior and shell return UNVERIFIED"
     },
     {
       "id": "supercard-chis",
@@ -87,21 +87,21 @@
       "ezfomega": "v8.4.1-omega-test5",
       "ezfblue": "v8.4.1-blue-test5"
     },
-    "coverage": "Native launch fixtures execute selected launcher/path/metadata functions and UI in mGBA but mock save/storage and boot/page effects. Separately, ezflash-mgba-runner runs each source-built kernel against a matching synthetic FAT image through the GBA SD bus callbacks; it reaches the initial menu/storage activity but has not established plugin selection/handoff or shell return. These remain synthetic software paths, not physical-card qualification."
+    "coverage": "Native launch fixtures execute selected launcher/path/metadata functions and UI in mGBA but mock save/storage and boot/page effects. Separately, source-built DE, Original OMEGA, and BLUE mGBA runs reach PocketNES/Snail Maze through distinct synthetic SD, PSRAM, and source-specific S71/S98 NOR models. SuperCard source-shaped runners cover all three board/kernel/storage paths; Chis also has an end-to-end PocketNES control result. All are software-model results, not physical-card qualification."
   },
   "ezflash_source_audit": {
     "source_document": "docs/provenance/ezflash-source-audit.md",
     "sd_gba_bus_transcript": "All three pinned DSSMM lanes write command unlock values at 0x09FE0000/0x08000000/0x08020000/0x08040000, sector address/count at 0x09600000/0x09620000/0x09640000, command end at 0x09FC0000; control is 0x09400000, status/data aperture is 0x09E00000, DMA transfers data in groups up to four 512-byte sectors; writes set bit 15 in count",
-    "shared_kernel_memory_windows": "Source declares PSRAM 0x08800000, NOR 0x09000000, and save SRAM 0x0E000000; physical windows and behavior UNVERIFIED",
+    "shared_kernel_memory_windows": "Source declares PSRAM aperture 0x08800000, S98 flash window 0x09000000, S71 NOR base 0x08000000, and save SRAM 0x0E000000; physical mapping and behavior UNVERIFIED",
     "lane_differences": "Original OMEGA performs plugin copy/decompression in C after common page selection; OMEGA DE uses DE_BootHandoff assembly; BLUE adds OS/game mode bit and Blue_PrepareFlashAccess and uses Blue_BootHandoff assembly",
     "fixture_boundary": "Five-case native launch tests per lane exercise launcher/path/metadata to a fixture handoff marker; card bus, physical SD, PSRAM/NOR/SRAM and save effects are mocked or outside fixture scope",
     "hardware_status": "UNVERIFIED: physical register decode, waitstates, response values/timing, SD media interoperability, page mapping, persistence and reset effects"
   },
   "ezflash_synthetic_model": {
-    "source": "harnesses/src/ezflash_sd_model.c plus harnesses/src/ezflash_mgba_sd.c",
+    "source": "harnesses/src/ezflash_sd_model.c, ezflash_psram_model.c, ezflash_nor_model.c, and harnesses/src/ezflash_mgba_sd.c",
     "policy": "Configured status value other than 0xEEE1 (default 0), no synthetic wait cycles, max four 512-byte sectors per command",
-    "tested": "Host test covers 2-sector read, data byte order, kernel pre-command write payload, sector writeback, and out-of-image rejection",
-    "scope": "Synthetic status zero and no card latency. Physical behavior UNVERIFIED"
+    "tested": "Host tests cover SD reads/writes and image bounds; PSRAM page mapping; S71 0x2202 ID/erase/program; S98 128 KiB erase/program; mGBA SD DMA, LDM/STM and ROM backing mirror/restoration",
+    "scope": "Source-shaped transactions only: status zero, no card latency, zero-initialized PSRAM, distinct S71/S98 flash backing. Physical chip identity/behavior and bus timing UNVERIFIED"
   },
   "ezflash_mgba_runner": {
     "source_kernel_builds": {
@@ -110,7 +110,7 @@
       "ezfblue": "tag v8.4.1-blue-test5, commit 9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278, SHA-256 5ee5019f3eff4ff10d37a5600cd4b8fd2ef5e1b0e6ac09acfce40fdafaae13a7"
     },
     "fresh_300_frame_runs": "DE read 154/write 30/0 failures; Original OMEGA read 100/write 30/0 failures; BLUE read 154/write 30/0 failures. All rendered 240x160 framebuffer FNV64 3DB0B0392899E8FC. Images contain the corresponding matching kernel, plugin, ROM, and source-expected `SYSTEM/SAVER` directory. Post-run image SHA-256: DE 987710fa439bde2705f1cfcee29db1f220ac12fa857888e43ee8622449fcb543, OMEGA e90174c81821a37280d617f1b2cc8f271323dfd4aeea346208adfdc42038d2af, BLUE 08dceda731a1690c35c2eea73f84ef57242396773590983748860cc43fb60289",
-    "handoff_limit": "PC 0x000001F8 is an mGBA HLE BIOS wait point while frameCounter advances. Controlled input opens the SD browser and /ROMS; selecting staged flappy.a26 through EZ DE reaches generic File error framebuffer FNV64 797715054E71B915. Owner identifies the early Atari plugin as targeting SuperFW Chis, so this EZ selection is off-target for plugin qualification; its cause is unresolved and is not evidence of an invalid ROM, plugin defect, or SD-model defect. It does not reach plugin/game payload LBAs mapped by mshowfat; EZ plugin handoff and shell return remain unestablished",
+    "handoff_limit": "Controlled fresh DE, Original OMEGA, and BLUE runs each completed 2,500 GBA frames with PocketNES/Snail Maze and zero synthetic SD failures. DE: 803 blocks read/216 written, FNV64 ABA1E9FDDE9F1C85; Original OMEGA: 751/224, same hash; BLUE: 802/216, FNV64 3BDA64DE762CE6D0. Source-specific NOR models are S71 for DE/OMEGA and S98 for BLUE. mGBA instruction fetch bypasses bus callbacks, so selected PSRAM plugin pages (DE/OMEGA 0x0200, BLUE 0x0400 plus mode bit) are mirrored into GBAMemory.rom at source-observed page commit. Physical behavior, real timing, shell return, and persistence remain UNVERIFIED.",
     "scope": "Source-built kernel + synthetic raw FAT image under mGBA only; no physical card, physical timing, or proof of end-user launch"
   },
   "superfw_build769_source_audit": {
@@ -142,5 +142,25 @@
     },
     "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Each current 2,000-frame run used the matching Build769 firmware and a separately created fresh 64 MiB FAT32 image containing KERNEL.GBA plus identical plugin/ROM file hashes. Host tests cover SD read port windows/lane packing, SD/Chis serial writes, and the Build769 Chis NOR-map transcript. With the kernel file in the image: SD reported 1 model block, 0 failures, FNV64 30C994B7E348742D; Lite reported 60 model blocks/3,900 data-port reads/0 failures, FNV64 357015EFA2DF90AB; Chis reported 60 model blocks/3,900 data-port reads/0 failures, same FNV64. First traced EWRAM execution is frame 47 on each. These fixed-total-frame hashes are not synchronized game-state comparisons. Separate image SHA-256: SD 8a4d3861e263f698340a661e1c38bfc87fce1c5597633b71baf03e442e61f3b2, Lite 041a776efe8fe91299808a4f00aecd2f3db9a882f9e66b6712e85006f143a53d, Chis af231ad09991c9ef925e2c2acf1bb4161208b49bf7222cba3bc020fd1825842f. Chis NOR/SRAM mappings remain unmodeled because Build769 expectations conflict with pinned CPLD source; board-revision equivalence is UNVERIFIED. Physical card behavior/timing remains UNVERIFIED."
   },
-  "verification": "Current session ran the EZ launch fixtures at their release tags, all three source-built EZ kernels against separate synthetic FAT images, and all three Build769 SuperFW mGBA paths with separate images containing the kernel/plugin/ROM. These results qualify only the recorded source/fixture behavior; EZ plugin handoff/return remains unestablished, Chis NOR/SRAM remains unmodeled, and no physical card compatibility, real GBA timing, synchronized Atari correctness, or audio is inferred from mGBA."
+  "verification": "Current session ran the EZ launch fixtures at their release tags, all three source-built EZ kernels against separate synthetic FAT images, and all three Build769 SuperFW mGBA paths with separate images containing the kernel/plugin/ROM. These results qualify only the recorded source/fixture behavior; EZ plugin handoff/return remains unestablished, Chis NOR/SRAM remains unmodeled, and no physical card compatibility, real GBA timing, synchronized Atari correctness, or audio is inferred from mGBA.",
+  "kernel_update": {
+    "local_staging_directory": "work/kernels/ (ignored)",
+    "image_builder_variable": "KERNEL_GBA=/path/to/kernel.gba",
+    "ezflash_binary_overrides": {
+      "ezfomegade": "EZ_DE_KERNEL_GBA",
+      "ezfomega": "EZ_OMEGA_KERNEL_GBA",
+      "ezfblue": "EZ_BLUE_KERNEL_GBA"
+    },
+    "qualify_command": "EZFLASH_PROFILE=<ezfomegade|ezfomega|ezfblue> <profile override>=work/kernels/<new-kernel>.gba scripts/verify-ezflash-mgba.sh",
+    "supercard_runner": "Pass the new kernel as argument 1 to supercard-mgba-runner and set the same path as KERNEL_GBA when creating its image.",
+    "provenance_required": [
+      "kernel release/version",
+      "source URL or archive origin",
+      "SHA-256",
+      "card model/revision",
+      "matching source commit if available",
+      "qualification results"
+    ],
+    "evidence_policy": "Every kernel update requires a fresh profile-specific qualification; prior evidence does not transfer."
+  }
 }
