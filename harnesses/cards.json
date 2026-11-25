@@ -110,7 +110,7 @@
       "ezfblue": "tag v8.4.1-blue-test5, commit 9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278, SHA-256 5ee5019f3eff4ff10d37a5600cd4b8fd2ef5e1b0e6ac09acfce40fdafaae13a7"
     },
     "fresh_300_frame_runs": "DE read 154/write 30/0 failures; Original OMEGA read 100/write 30/0 failures; BLUE read 154/write 30/0 failures. All rendered 240x160 framebuffer FNV64 3DB0B0392899E8FC. Images contain the corresponding matching kernel, plugin, and ROM. Post-run image SHA-256: DE 3c0e8b428484a301daebf9040c467b0e3b705d07ed6ba460c497b484eec92735, OMEGA b9132f9b8f4fb668e1712a068312c3e2bbe7725856ee36fd16c6e03ce2d9386, BLUE 5ef5520b7ece59ff3589bd63a2acda16b38c917e38513f704f90e2f088d42219",
-    "handoff_limit": "All final sampled PCs were 0x000001F8 in mGBA BIOS and the framebuffer displayed the initial No recent game menu; plugin selection/handoff and shell return are not established",
+    "handoff_limit": "PC 0x000001F8 is an mGBA HLE BIOS wait point while frameCounter advances. Controlled input opens the SD browser and /ROMS; selecting staged flappy.a26 reaches generic File error framebuffer FNV64 797715054E71B915. The failing FatFs/storage or staging operation is not isolated; plugin handoff and shell return are not established",
     "scope": "Source-built kernel + synthetic raw FAT image under mGBA only; no physical card, physical timing, or proof of end-user launch"
   },
   "superfw_build769_source_audit": {
