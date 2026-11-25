@@ -34,6 +34,20 @@ Across those 840 GBA frames, the Atari 6502 clock accumulator advanced by 744,22
 
 The three host wall times were 4.32 s, 4.06 s, and 3.95 s for 3,200 mGBA frames. This variation reflects host execution and is not GBA speed evidence. The shared SD image passed `fsck.exfat -n` after runs and reported no SD load failures. The image and capture remain ignored under `work/`.
 
+## First placement candidate: interpreter loop in IWRAM
+
+**Candidate:** `mainloop()` is placed in IWRAM and three TIA raster event queues (`pl_change`, `pf_change`, `unified`) are placed in EWRAM. Plugin SHA-256 `fa851c1de2d7b3700a28ae29ad94bd36c98e6bd866735f8f98f6c541a86ab724`. This is a placement-only optimization; it does not alter Atari emulation logic.
+
+The runner's optional `A26_STOP_ATARI_TV_COUNTER=41` stops at an Atari TV count boundary. The before image used the baseline plugin and its original IWRAM offsets; the after image used the candidate plugin and its relinked offsets. Both used the same input sequence and pristine shared exFAT image. Both reached `tv_counter=41`, rendered 40 display frames, and produced byte-identical PPM captures (SHA-256 `c11fdf92de4b7fb70c1e23f6635b4c7527b2bcb995410443663c9126d8b20080`). The baseline required 3,179 external mGBA frames; the candidate required 3,083, about 3.0% fewer. Atari clock accumulators at the boundary were 800,745 and 801,494 respectively. WAITCNT remained `0x4000` (ROM0 non-sequential 4 and sequential 2 halfword cycles) in both runs. Both reported zero SD load failures.
+
+This is a small diagnostic improvement, far below the performance target. It compares work to the same Atari TV counter, but not a cycle-accurate ARM7 timing measurement or physical GBA result. The framebuffer match is the available output check; no claim of full game-state equivalence follows from matching output alone. The next candidate is moving the frequently called `do_screen()` routine into IWRAM and repeating the same boundary comparison.
+
+## Second placement candidate: TIA screen routine in IWRAM
+
+**Candidate:** `do_screen()` now executes from IWRAM along with `mainloop()`. Plugin SHA-256 `401b61c21e93dcc813179a81a0e3a16cbc821a74d2bf73a41464be412c8b3cad`; linked `.iwram` is 21,968 bytes. The same input replay and Chis runner stopped at `tv_counter=41` for the first placement candidate and this build. Both rendered 40 frames and produced byte-identical PPM captures (SHA-256 `c11fdf92de4b7fb70c1e23f6635b4c7527b2bcb995410443663c9126d8b20080`). The first candidate reached the boundary in 3,083 mGBA frames at `clk=801,494`; this candidate took 3,036 frames at `clk=800,241`, about 1.5% fewer frames. Active WAITCNT remained `0x4000` (ROM0 4/2 halfword cycles), and both images passed `fsck.exfat -n`.
+
+Three cold replays per candidate confirm a small, repeatable change in this mGBA model. The prior build stopped at 3,083, 3,081, and 3,079 frames (mean 3,081); the `do_screen()` build stopped at 3,036, 3,038, and 3,038 (mean 3,037), about 1.4% fewer frames. All six captures had the same SHA-256 above, and all reported zero SD load failures. Atari accumulator readings at the stop varied by several thousand clocks around 801k, so the boundary timing is not exact cycle-equivalence. SD command counts also varied substantially between cold replays (the `do_screen()` build ranged from 32,544 to 54,192 command writes and 6,877 to 144,946 data writes), and are retained as a caveat about changed guest progress/timing. This remains an mGBA-only signal, far below the PocketNES-like target; physical timing is unmeasured. Continue by inspecting hot memory accessors and rendering cost.
+
 ## Interpretation and limits
 
 - The probe shows emulated Atari clock and frame-counter progression, not physical output cadence or real input latency.

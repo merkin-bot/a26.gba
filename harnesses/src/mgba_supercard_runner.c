@@ -5,6 +5,7 @@
 #include <mgba/core/log.h>
 #include <mgba/gba/core.h>
 #include <mgba/internal/gba/gba.h>
+#include <mgba/internal/gba/io.h>
 #include <mgba/internal/gba/input.h>
 #include <mgba-util/image.h>
 
@@ -70,6 +71,16 @@ static uint32_t read_le32(const uint8_t *memory, unsigned offset) {
            ((uint32_t)memory[offset + 1u] << 8) |
            ((uint32_t)memory[offset + 2u] << 16) |
            ((uint32_t)memory[offset + 3u] << 24);
+}
+
+static unsigned env_offset(const char *name, unsigned fallback) {
+    const char *text = getenv(name);
+    if (!text || !*text) {
+        return fallback;
+    }
+    char *end = NULL;
+    unsigned long value = strtoul(text, &end, 0);
+    return end && !*end && value <= 0x7FFCu ? (unsigned)value : fallback;
 }
 
 static int capture_frame(struct mCore *core, const char *path,
@@ -306,6 +317,23 @@ int main(int argc, char **argv) {
             atari_trace_interval = 1ul;
         }
     }
+    unsigned atari_pc_offset = env_offset("A26_ATARI_PC_OFFSET", 0x5688u);
+    unsigned atari_clk_offset = env_offset("A26_ATARI_CLK_OFFSET", 0x567Cu);
+    unsigned atari_clkcount_offset = env_offset("A26_ATARI_CLKCOUNT_OFFSET", 0x54FCu);
+    unsigned atari_tv_counter_offset = env_offset("A26_ATARI_TV_COUNTER_OFFSET", 0x550Cu);
+    unsigned atari_ebeamy_offset = env_offset("A26_ATARI_EBEAMY_OFFSET", 0x6094u);
+    unsigned atari_hbeam_offset = env_offset("A26_ATARI_HBEAM_OFFSET", 0x5D60u);
+    unsigned atari_vbeam_offset = env_offset("A26_ATARI_VBEAM_OFFSET", 0x5D6Cu);
+    unsigned atari_pace_offset = env_offset("A26_ATARI_PACE_OFFSET", 0x7348u);
+    unsigned long stop_atari_tv_counter = 0;
+    const char *stop_tv_text = getenv("A26_STOP_ATARI_TV_COUNTER");
+    if (stop_tv_text && *stop_tv_text) {
+        char *end = NULL;
+        unsigned long value = strtoul(stop_tv_text, &end, 0);
+        if (end && !*end && value <= UINT32_MAX) {
+            stop_atari_tv_counter = value;
+        }
+    }
     int reset_tail_traced = 0;
     int pc_frame_window = 0;
     int first_bios_traced = 0;
@@ -328,8 +356,8 @@ int main(int argc, char **argv) {
             const char *region = pc_region((uint32_t)trace_pc);
             if (trace_atari_globals && strcmp(region, "cartridge") == 0) {
                 const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
-                uint32_t tv_counter = read_le32(iwram, 0x0054u);
-                uint32_t pace_frame = read_le32(iwram, 0x2D90u);
+                uint32_t tv_counter = read_le32(iwram, atari_tv_counter_offset);
+                uint32_t pace_frame = read_le32(iwram, atari_pace_offset);
                 if (!atari_counter_started) {
                     atari_last_tv_counter = tv_counter;
                     atari_counter_started = 1;
@@ -350,12 +378,12 @@ int main(int argc, char **argv) {
                            " display_calls=%" PRIu64
                            " rendered_calls=%" PRIu64 "\n",
                            i + 1u, keys,
-                           read_le32(iwram, 0x01D0u) & 0xFFFFu,
-                           read_le32(iwram, 0x01C4u),
-                           read_le32(iwram, 0x0044u), tv_counter,
-                           read_le32(iwram, 0x0F9Cu),
-                           read_le32(iwram, 0x08A8u),
-                           read_le32(iwram, 0x08B4u), pace_frame,
+                           read_le32(iwram, atari_pc_offset) & 0xFFFFu,
+                           read_le32(iwram, atari_clk_offset),
+                           read_le32(iwram, atari_clkcount_offset), tv_counter,
+                           read_le32(iwram, atari_ebeamy_offset),
+                           read_le32(iwram, atari_hbeam_offset),
+                           read_le32(iwram, atari_vbeam_offset), pace_frame,
                            atari_display_calls, atari_rendered_calls);
                 }
             }
@@ -535,6 +563,26 @@ int main(int argc, char **argv) {
                 break;
             }
         }
+        if (stop_atari_tv_counter && trace_atari_globals) {
+            int32_t stop_pc = -1;
+            if (core->readRegister(core, "pc", &stop_pc) &&
+                strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0 &&
+                read_le32((const uint8_t *)gba->memory.iwram,
+                          atari_tv_counter_offset) >= stop_atari_tv_counter) {
+                const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
+                printf("atari_stop frame=%lu cpu_pc=0x%04" PRIX32
+                       " clk=%" PRIu32 " clkcount=%" PRIu32
+                       " tv_counter=%" PRIu32 " ebeamy=%" PRIu32
+                       " pace_frame=%" PRIu32 "\n",
+                       i + 1u, read_le32(iwram, atari_pc_offset) & 0xFFFFu,
+                       read_le32(iwram, atari_clk_offset),
+                       read_le32(iwram, atari_clkcount_offset),
+                       read_le32(iwram, atari_tv_counter_offset),
+                       read_le32(iwram, atari_ebeamy_offset),
+                       read_le32(iwram, atari_pace_offset));
+                break;
+            }
+        }
     }
     const uint8_t *ewram = (const uint8_t *)gba->memory.wram;
     const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
@@ -613,6 +661,13 @@ int main(int argc, char **argv) {
            model.mode == SUPERCARD_MODE_SDRAM ? "sdram" : "firmware",
            model.sd_interface, model.write_access, video_width, video_height,
            frame_hash, capture_path ? capture_path : "(not-written)");
+    printf("gba_timing waitcnt=0x%04X rom0_nonseq16=%d rom0_seq16=%d"
+           " active_nonseq16=%d active_seq16=%d\n",
+           gba->memory.io[GBA_REG_WAITCNT >> 1],
+           gba->memory.waitstatesNonseq16[0x08],
+           gba->memory.waitstatesSeq16[0x08],
+           gba->cpu->memory.activeNonseqCycles16,
+           gba->cpu->memory.activeSeqCycles16);
     printf("sd_protocol decoded_commands=%" PRIu64 " last_command=%u"
            " responses=%" PRIu64 " response_line_reads=%" PRIu64
            " data_port_reads=%" PRIu64 " argument=0x%08" PRIX32

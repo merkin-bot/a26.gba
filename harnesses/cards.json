@@ -3,7 +3,7 @@
   "kernel_repository_commit": "published release tags listed per profile; untagged prior test snapshot f6350776f07eba91ba2ffa34c6833d85f348f2a1 is not current validation",
   "layers": [
     "mGBA GBA-system model",
-    "matching per-card firmware/kernel and cartridge behavior",
+    "DSSMM per-card firmware/kernel and cartridge behavior",
     "one unchanged exFAT SD block image shared across profile runs; restore its pristine bytes before each run"
   ],
   "profiles": [

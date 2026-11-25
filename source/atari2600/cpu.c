@@ -65,7 +65,7 @@ void invalid()
 		app_data.debug=1;
 }
 
-void mainloop()
+void __attribute__((section(".iwram"))) mainloop()
 {
   register BYTE b;
   unsigned menu_poll = 0;

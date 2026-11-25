@@ -106,7 +106,9 @@ struct RasterChange {
 };
 
 /* The various display lists */
-struct RasterChange pl_change[2][80], pf_change[1][80], unified[80];
+struct RasterChange pl_change[2][80] __attribute__((section(".sbss")));
+struct RasterChange pf_change[1][80] __attribute__((section(".sbss")));
+struct RasterChange unified[80] __attribute__((section(".sbss")));
 
 /* The display list counters */
 int pl_change_count[2], pf_change_count[1], unified_count;
@@ -336,7 +338,7 @@ void use_plraster_change( struct Player *pl, struct RasterChange *rc)
    setting it.
 */
 /* Main screen logic */
-void do_screen(int clks)
+void __attribute__((section(".iwram"))) do_screen(int clks)
 {
 	switch (vbeam_state) {
 		case VSYNCSTATE:
