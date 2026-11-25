@@ -46,7 +46,7 @@
       "artifact": "SuperFW Chis build",
       "source": "superfw/",
       "firmware_sha256": "7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24",
-      "status": "Build769 clean board build, two-boot settings, full native menu scenes and Chis NOR carousel mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Chis NOR/SRAM page mapping is not modeled: Build769 register sequences conflict with pinned ChisBread CPLD source; board-revision equivalence and physical behavior are UNVERIFIED"
+      "status": "Build769 clean board build, two-boot settings, full native menu scenes and Chis NOR carousel mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Chis NOR/SRAM page mapping is not modeled: Build769 register sequences conflict with pinned ChisBread CPLD source; board-revision equivalence and physical behavior are UNVERIFIED; matching Build769 PocketNES/Snail Maze control reached cartridge-mapped code on this profile at 2,200 frames with 1,432 blocks read, 13 written, zero synthetic load failures, and the shared startup-splash framebuffer C8F4325206720D24; physical behavior remains UNVERIFIED"
     },
     {
       "id": "supercard-sd",
@@ -57,7 +57,7 @@
       "artifact": "SuperFW SD build",
       "source": "superfw/",
       "firmware_sha256": "89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf",
-      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 1 read command/1 model block, zero failures, and framebuffer FNV64 30C994B7E348742D; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Runner models 0x09100000/0x0B100000 reads with source-described upper-halfword lane packing and serial writes; physical behavior is UNVERIFIED"
+      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 1 read command/1 model block, zero failures, and framebuffer FNV64 30C994B7E348742D; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Runner models 0x09100000/0x0B100000 reads with source-described upper-halfword lane packing and serial writes; physical behavior is UNVERIFIED; matching Build769 PocketNES/Snail Maze control reached cartridge-mapped code on this profile at 2,200 frames with 1,432 blocks read, 13 written, zero synthetic load failures, and the shared startup-splash framebuffer C8F4325206720D24; physical behavior remains UNVERIFIED"
     },
     {
       "id": "supercard-lite",
@@ -68,7 +68,7 @@
       "artifact": "SuperFW Lite build",
       "source": "superfw/",
       "firmware_sha256": "476e9d5fef4b07cc2b3a59476bae7692ea7405ab41fb92166489778b5a48c283",
-      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, 3,900 data-port reads, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Lite 0x09200000 data port and common SDRAM fetch mapping are source-shaped; physical SD behavior is UNVERIFIED"
+      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, 3,900 data-port reads, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Lite 0x09200000 data port and common SDRAM fetch mapping are source-shaped; physical SD behavior is UNVERIFIED; matching Build769 PocketNES/Snail Maze control reached cartridge-mapped code on this profile at 2,200 frames with 1,432 blocks read, 13 written, zero synthetic load failures, and the shared startup-splash framebuffer C8F4325206720D24; physical behavior remains UNVERIFIED"
     }
   ],
   "mGBA_upstream": {
@@ -142,7 +142,7 @@
     },
     "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Each current 2,000-frame run used the matching Build769 firmware and a separately created fresh 64 MiB FAT32 image containing KERNEL.GBA plus identical plugin/ROM file hashes. Host tests cover SD read port windows/lane packing, SD/Chis serial writes, and the Build769 Chis NOR-map transcript. With the kernel file in the image: SD reported 1 model block, 0 failures, FNV64 30C994B7E348742D; Lite reported 60 model blocks/3,900 data-port reads/0 failures, FNV64 357015EFA2DF90AB; Chis reported 60 model blocks/3,900 data-port reads/0 failures, same FNV64. First traced EWRAM execution is frame 47 on each. These fixed-total-frame hashes are not synchronized game-state comparisons. Separate image SHA-256: SD 8a4d3861e263f698340a661e1c38bfc87fce1c5597633b71baf03e442e61f3b2, Lite 041a776efe8fe91299808a4f00aecd2f3db9a882f9e66b6712e85006f143a53d, Chis af231ad09991c9ef925e2c2acf1bb4161208b49bf7222cba3bc020fd1825842f. Chis NOR/SRAM mappings remain unmodeled because Build769 expectations conflict with pinned CPLD source; board-revision equivalence is UNVERIFIED. Physical card behavior/timing remains UNVERIFIED. Key injection accepts one-frame taps or inclusive frame ranges in the SuperCard runner; this is input tooling only. No new positive PocketNES control result was obtained for Lite/SD in the latest attempts."
   },
-  "verification": "Current session ran the EZ launch fixtures at their release tags, all three source-built EZ kernels against separate synthetic FAT images, and all three Build769 SuperFW mGBA paths with separate images containing the kernel/plugin/ROM. These results qualify only the recorded source/fixture behavior; EZ plugin handoff/return remains unestablished, Chis NOR/SRAM remains unmodeled, and no physical card compatibility, real GBA timing, synchronized Atari correctness, or audio is inferred from mGBA.",
+  "verification": "Current session ran the EZ launch fixtures at their release tags, all three source-built EZ kernels against separate synthetic FAT images, and all three Build769 SuperFW mGBA paths with separate images containing the kernel/plugin/ROM. These results qualify only the recorded source/fixture behavior; EZ plugin handoff/return remains unestablished, Chis NOR/SRAM remains unmodeled, and no physical card compatibility, real GBA timing, synchronized Atari correctness, or audio is inferred from mGBA. Matching Build769 SD/Lite/Chis profiles also reached PocketNES code and its startup splash under identical input events at frame 2200; repeat Lite boot created a 128 KiB file under SYSTEM/SAVER. See supercard_pocketnes_control for scope and outstanding title/save/return checks.",
   "kernel_update": {
     "local_staging_directory": "work/kernels/ (ignored)",
     "image_builder_variable": "KERNEL_GBA=/path/to/kernel.gba",
@@ -162,5 +162,22 @@
       "qualification results"
     ],
     "evidence_policy": "Every kernel update requires a fresh profile-specific qualification; prior evidence does not transfer."
+  },
+  "supercard_pocketnes_control": {
+    "source_document": "docs/provenance/supercard-pocketnes-control.md",
+    "plugin_source_commit": "9c07f3d1d2a26b957769c5cde942060cc9ea6e64",
+    "plugin_sha256": "56489d3951c43081e5acbf2d508f7794dd2a37a17b5c27c00c72f5da2414256c",
+    "rom_source_commit": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+    "rom_sha256": "1f6d866458dac2d1d857037f55339f2531447d0032608e8cf28bd34353366184",
+    "image_layout": [
+      "SYSTEM/PLUG/nes.gba",
+      "SYSTEM/SAVER/",
+      "SYSTEM/KERNELS/KERNEL.GBA",
+      "ROMS/snailmaze.nes"
+    ],
+    "key_events": "600:0x1,1200:0x1,1800:0x80,1900:0x1",
+    "first_launch_frame_2200": "Build769 SD/Lite/Chis each reached cartridge-mapped PocketNES code. Each read 716 SD commands/1432 blocks, wrote 13 commands/blocks, had zero model load failures, and produced identical 240x160 framebuffer FNV64 C8F4325206720D24. Byte-identical PPM SHA-256 8595aa48e864a9f3f83fbb7b768b953ca791b7f023049ae37d65da1266ce2fb4; screen is PocketNES/Slydog startup splash.",
+    "save_observation": "A second Lite runner invocation created SYSTEM/SAVER/snailmaze.sav (131072 bytes), extracted SHA-256 b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260. SD/Chis repeat-boot save behavior not tested.",
+    "remaining": "Advance beyond splash to Snail Maze title/game; repeat save creation/read on SD and Chis; validate save content and shell return. All mGBA/storage-model evidence only; physical behavior UNVERIFIED."
   }
 }
