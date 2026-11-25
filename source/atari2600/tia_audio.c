@@ -18,7 +18,9 @@ typedef struct {
 } TiaTone;
 
 static TiaTone tone[2];
-static volatile uint32_t tia_fifo_ring[128] __attribute__((section(".sbss")));
+static volatile uint32_t tia_fifo_ring[2][72] __attribute__((section(".sbss")));
+static unsigned audio_buffer_index;
+static unsigned audio_frame_phase;
 static uint8_t poly4[2];
 static uint8_t poly5[2];
 static uint16_t poly9[2];
@@ -52,12 +54,16 @@ static unsigned channel_mix(TiaTone *t);
 
 static void tia_audio_dma_setup(void) {
 #ifdef A26_GBA_BUILD
-    *(volatile uint16_t *)0x04000080 = 0x0b0c;
+    *(volatile uint16_t *)0x040000c6 = 0;
+    *(volatile uint16_t *)0x04000102 = 0;
+    *(volatile uint16_t *)0x04000080 = 0;
+    *(volatile uint16_t *)0x04000084 = 0x0080;
+    *(volatile uint16_t *)0x04000082 = 0x0b0c;
 
-    *(volatile uint32_t *)0x040000bc = (uint32_t)(uintptr_t)tia_fifo_ring;
+    *(volatile uint32_t *)0x040000bc = (uint32_t)(uintptr_t)tia_fifo_ring[0];
     *(volatile uint32_t *)0x040000c0 = 0x040000a0u;
-    *(volatile uint16_t *)0x040000c4 = 128;
-    *(volatile uint16_t *)0x040000c6 = 0xb600;
+    *(volatile uint16_t *)0x040000c4 = 4;
+    *(volatile uint16_t *)0x040000c6 = 0xb640;
 
     *(volatile uint16_t *)0x04000100 = (uint16_t)(0xffffu - 512u);
     *(volatile uint16_t *)0x04000102 = 0x0080;
@@ -65,13 +71,34 @@ static void tia_audio_dma_setup(void) {
 }
 
 void tia_audio_refill(void) {
+    unsigned samples = 272u;
+    unsigned words;
     unsigned i;
-    for (i = 0; i < 128u; ++i) {
-        unsigned sample = channel_mix(&tone[0]) + channel_mix(&tone[1]);
-        unsigned char value = direct_sample(sample);
-        tia_fifo_ring[i] = value | ((uint32_t)value << 8) |
-                           ((uint32_t)value << 16) | ((uint32_t)value << 24);
+    unsigned byte;
+    unsigned sample;
+    uint32_t packed;
+    if (++audio_frame_phase == 15u) {
+        samples = 288u;
+        audio_frame_phase = 0;
     }
+    audio_buffer_index ^= 1u;
+    words = samples / 4u;
+    for (i = 0; i < words; ++i) {
+        packed = 0;
+        for (byte = 0; byte < 4u; ++byte) {
+            sample = channel_mix(&tone[0]) + channel_mix(&tone[1]);
+            packed |= (uint32_t)direct_sample(sample) << (byte * 8u);
+        }
+        tia_fifo_ring[audio_buffer_index][i] = packed;
+    }
+#ifdef A26_GBA_BUILD
+    *(volatile uint16_t *)0x040000c6 = 0;
+    *(volatile uint32_t *)0x040000bc =
+        (uint32_t)(uintptr_t)tia_fifo_ring[audio_buffer_index];
+    *(volatile uint32_t *)0x040000c0 = 0x040000a0u;
+    *(volatile uint16_t *)0x040000c4 = 4;
+    *(volatile uint16_t *)0x040000c6 = 0xb640;
+#endif
 }
 
 void tia_audio_init(void) {
@@ -80,6 +107,8 @@ void tia_audio_init(void) {
     tone[0].divider = tone[1].divider = 0;
     tone[0].divider_max = tone[1].divider_max = 0;
     tone[0].phase = tone[1].phase = 0;
+    audio_buffer_index = 1;
+    audio_frame_phase = 0;
     poly4[0] = poly4[1] = 0;
     poly5[0] = poly5[1] = 0;
     poly9[0] = 137;

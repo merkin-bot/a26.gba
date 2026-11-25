@@ -7,6 +7,7 @@
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/io.h>
 #include <mgba/internal/gba/input.h>
+#include <mgba-util/audio-buffer.h>
 #include <mgba-util/image.h>
 
 #include <errno.h>
@@ -137,6 +138,142 @@ static int capture_frame(struct mCore *core, const char *path,
     return 1;
 }
 
+static void put_le16(uint8_t *out, uint16_t value) {
+    out[0] = value & 0xFFu;
+    out[1] = value >> 8;
+}
+
+static void put_le32(uint8_t *out, uint32_t value) {
+    out[0] = value & 0xFFu;
+    out[1] = (value >> 8) & 0xFFu;
+    out[2] = (value >> 16) & 0xFFu;
+    out[3] = value >> 24;
+}
+
+typedef struct AudioWavCapture {
+    FILE *file;
+    const char *path;
+    unsigned channels;
+    unsigned sample_rate;
+    uint64_t frames;
+    uint64_t sum_squares;
+    uint32_t peak;
+    uint32_t data_bytes;
+} AudioWavCapture;
+
+static int audio_capture_begin(struct mCore *core, const char *path,
+                               AudioWavCapture *capture) {
+    struct mAudioBuffer *audio = core->getAudioBuffer(core);
+    capture->path = path;
+    capture->channels = audio->channels;
+    capture->sample_rate = core->audioSampleRate(core);
+    if (!capture->channels || capture->channels > UINT16_MAX ||
+        !capture->sample_rate) {
+        fputs("invalid mGBA audio buffer metadata\n", stderr);
+        return 0;
+    }
+    capture->file = fopen(path, "wb+");
+    if (!capture->file) {
+        fprintf(stderr, "could not open WAV capture %s\n", path);
+        return 0;
+    }
+    uint8_t header[44] = {0};
+    memcpy(header, "RIFF", 4);
+    memcpy(header + 8, "WAVEfmt ", 8);
+    put_le32(header + 16, 16);
+    put_le16(header + 20, 1);
+    put_le16(header + 22, (uint16_t)capture->channels);
+    put_le32(header + 24, capture->sample_rate);
+    put_le32(header + 28, capture->sample_rate * capture->channels * 2u);
+    put_le16(header + 32, (uint16_t)(capture->channels * 2u));
+    put_le16(header + 34, 16);
+    memcpy(header + 36, "data", 4);
+    if (fwrite(header, sizeof(header), 1, capture->file) != 1) {
+        fclose(capture->file);
+        capture->file = NULL;
+        fprintf(stderr, "could not initialize WAV capture %s\n", path);
+        return 0;
+    }
+    return 1;
+}
+
+static int audio_capture_drain(struct mCore *core, AudioWavCapture *capture) {
+    struct mAudioBuffer *audio = core->getAudioBuffer(core);
+    int16_t samples[4096];
+    size_t frames_available = mAudioBufferAvailable(audio);
+    while (frames_available) {
+        size_t chunk = frames_available > 2048 ? 2048 : frames_available;
+        size_t frames = mAudioBufferRead(audio, samples, chunk);
+        size_t sample_count = frames * capture->channels;
+        size_t bytes = sample_count * sizeof(*samples);
+        if (capture->data_bytes > UINT32_MAX - bytes ||
+            fwrite(samples, sizeof(*samples), sample_count, capture->file) !=
+                sample_count) {
+            fprintf(stderr, "WAV capture %s exceeded RIFF limits or write failed\n",
+                    capture->path);
+            return 0;
+        }
+        for (size_t i = 0; i < sample_count; ++i) {
+            int32_t sample = samples[i];
+            int32_t magnitude = sample < 0 ? -sample : sample;
+            if ((uint32_t)magnitude > capture->peak) {
+                capture->peak = (uint32_t)magnitude;
+            }
+            capture->sum_squares += (uint64_t)(sample * sample);
+        }
+        capture->frames += frames;
+        capture->data_bytes += (uint32_t)bytes;
+        frames_available -= frames;
+    }
+    return 1;
+}
+
+static int audio_capture_finish(struct mCore *core, AudioWavCapture *capture) {
+    struct GBA *gba = core->board;
+    uint8_t header[44] = {0};
+    memcpy(header, "RIFF", 4);
+    put_le32(header + 4, 36u + capture->data_bytes);
+    memcpy(header + 8, "WAVEfmt ", 8);
+    put_le32(header + 16, 16);
+    put_le16(header + 20, 1);
+    put_le16(header + 22, (uint16_t)capture->channels);
+    put_le32(header + 24, capture->sample_rate);
+    put_le32(header + 28, capture->sample_rate * capture->channels * 2u);
+    put_le16(header + 32, (uint16_t)(capture->channels * 2u));
+    put_le16(header + 34, 16);
+    memcpy(header + 36, "data", 4);
+    put_le32(header + 40, capture->data_bytes);
+    int ok = fseek(capture->file, 0, SEEK_SET) == 0 &&
+             fwrite(header, sizeof(header), 1, capture->file) == 1;
+    if (fclose(capture->file) != 0) ok = 0;
+    capture->file = NULL;
+    if (!ok) {
+        fprintf(stderr, "could not finalize WAV capture %s\n", capture->path);
+        return 0;
+    }
+    uint64_t rms_squared = capture->frames && capture->channels ?
+        capture->sum_squares / (capture->frames * capture->channels) : 0;
+    printf("audio_state enabled=%u soundcnt_h=0x%04X soundcnt_x=0x%04X"
+           " timer0_reload=0x%04X timer0_control=0x%04X"
+           " dma1_source=0x%08" PRIX32 " dma1_next_source=0x%08" PRIX32
+           " dma1_control=0x%04X fifo_a_read=%d fifo_a_write=%d"
+           " fifo_a_remaining=%d left=%u right=%u\n",
+           gba->audio.enable,
+           gba->memory.io[GBA_REG_SOUNDCNT_HI >> 1],
+           gba->memory.io[GBA_REG_SOUNDCNT_X >> 1],
+           gba->memory.io[GBA_REG_TM0CNT_LO >> 1],
+           gba->memory.io[GBA_REG_TM0CNT_HI >> 1],
+           gba->memory.dma[1].source, gba->memory.dma[1].nextSource,
+           gba->memory.dma[1].reg, gba->audio.chA.fifoRead,
+           gba->audio.chA.fifoWrite, gba->audio.chA.internalRemaining,
+           gba->audio.chALeft, gba->audio.chARight);
+    printf("audio_capture=%s frames=%" PRIu64 " sample_rate=%u channels=%u"
+           " peak=%" PRIu32 " rms_squared=%" PRIu64 "\n",
+           capture->path, capture->frames, capture->sample_rate,
+           capture->channels, capture->peak, rms_squared);
+    return 1;
+}
+
 static int stage_kernel_in_sdram(const char *path, SuperCardModel *model) {
     FILE *file = fopen(path, "rb");
     if (!file) {
@@ -217,6 +354,7 @@ int main(int argc, char **argv) {
     }
     mCoreInitConfig(core, NULL);
     config_initialized = 1;
+    const char *audio_capture_path = getenv("A26_CAPTURE_AUDIO");
 
     if (!mCoreLoadFile(core, argv[1])) {
         fprintf(stderr, "mGBA could not load %s\n", argv[1]);
@@ -248,6 +386,12 @@ int main(int argc, char **argv) {
     core->setVideoBuffer(core, video_buffer, base_width);
 
     core->reset(core);
+    AudioWavCapture audio_capture = {0};
+    if (audio_capture_path && *audio_capture_path &&
+        !audio_capture_begin(core, audio_capture_path, &audio_capture)) {
+        cleanup(core, &bus, &model, config_initialized);
+        return 1;
+    }
     uint32_t start_frame = core->frameCounter(core);
     struct GBA *gba = core->board;
     SuperCardKeyEvent events[64];
@@ -352,6 +496,13 @@ int main(int argc, char **argv) {
         }
         core->setKeys(core, keys);
         core->runFrame(core);
+        if (audio_capture.file && !audio_capture_drain(core, &audio_capture)) {
+            fclose(audio_capture.file);
+            audio_capture.file = NULL;
+            free(video_buffer);
+            cleanup(core, &bus, &model, config_initialized);
+            return 1;
+        }
         int32_t trace_pc = -1;
         if (core->readRegister(core, "pc", &trace_pc)) {
             const char *region = pc_region((uint32_t)trace_pc);
@@ -728,6 +879,12 @@ int main(int argc, char **argv) {
         printf(" %02X", bus.cmd_write_trace[i] & 0xFFu);
     }
     putchar('\n');
+
+    if (audio_capture.file && !audio_capture_finish(core, &audio_capture)) {
+        free(video_buffer);
+        cleanup(core, &bus, &model, config_initialized);
+        return 1;
+    }
 
     free(video_buffer);
     cleanup(core, &bus, &model, config_initialized);
