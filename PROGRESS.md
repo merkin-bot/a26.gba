@@ -1,273 +1,78 @@
-# PROGRESS.md
+# Project state and next actions
 
-Handoff document for any AI agent or human continuing this project. Read `AGENTS.md` first, then this file in full.
+**Updated:** 2026-11-25 UTC
+**Branch:** main
+**Latest code checks:** run at `800fa94`; the following `fdaedc6` commit changed handoff text only. Check `git log` and the working tree on each session start.
 
-**Last updated:** 2026-11-25 UTC by Codex
-**Current branch:** main
-**Last known pushed commit before this workspace change:** `b01e3f1` (`Repair Codespaces harness environment setup`). Check `git log` for this task's commit.
+This is the source of truth for current status, exact next work, evidence, and test outcomes. Project requirements are in `AGENTS.md`; session kickoff is in `HANDOFF.md`; environment setup is in `WORKSPACE.md`.
 
-> Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
+## 1. Current task and next action
 
----
+**Current task:** Re-establish a clean, reproducible unrestricted Ubuntu 24.04 Codespaces workspace and verify the plugin and harness baseline.
 
-## 1. Project summary
+**Next action:** In the new unrestricted Codespace, follow `WORKSPACE.md` from its first step. Record the installed devkitARM version, run the baseline and harness commands, and reconcile the resulting artifacts/results here. If an official installation endpoint fails, autonomously use devkitPro's current official Linux instructions and document what worked; do not reintroduce Docker or stop for owner input. Then resume harness qualification below.
 
-- **Goal:** Atari 2600 emulator for the Game Boy Advance, running as a PogoShell plugin on EZ-FLASH Omega family and SuperCard family devices. Continues https://github.com/voluptuary/dssmm.
-- **Status:** Runs on unpublished SuperCard build 822, but slowly, with no sound, and menu parity with other PogoShell plugins (e.g. Goomba) is incomplete (different menu font). Existing source archive has a prepared GPLv3 source build, an experimental plugin binary, an open-source generated diagnostic, and runtime checks from stock mGBA 0.10.1.
-- **Current focus:** Harness-first validation against latest published DSSMM kernels; plugin optimization remains gated on harness qualification.
+**Why this comes first:** The current/restricted workspace has no devkitARM or `gbafix`; the plugin build, FAT image verification, and full baseline have not been rerun after replacing Docker with host tools. The host-side CMake model/core/EZ trace smokes and PogoShell ABI check pass. This qualification is outstanding, not a plugin failure.
 
----
+## 2. End goal and required order
 
-## 2. Quick start for a new agent
+Acceptance target and engineering rules are defined in AGENTS.md. Do not optimize the plugin before the harness gate; validate emulator behavior against the evidence-backed hardware model.
 
-1. Read `AGENTS.md`, `HANDOFF.md`, then this file.
-2. `git status` and `git log -5 --oneline`; reconcile with section 6.
-3. If the environment is fresh, follow section 3.
-4. Follow WORKSPACE.md and run its build/baseline commands.
-5. Resume the item under "In progress" in section 6 using its resume command.
+### Ordered work
 
----
+1. **Workspace/baseline:** complete the current task above.
+2. **Harness gate:** finish evidence-backed mGBA paths for the six profiles in `harnesses/cards.json`. Cover, as separate layers, GBA hardware; each matching card/kernel/launch profile; and SD/block storage with kernel/plugin/test ROM. Reuse DSSMM fixtures rather than duplicate launcher/UI tests. Test launch, ROM handoff, saves/storage, and return where evidence supports them. Clearly label seams/mocks and unknowns. Never alter a hardware model to make the Atari plugin pass.
+3. **Emulator timing/performance:** establish real GBA timing evidence and correct measured bottlenecks.
+4. **TIA audio:** implement and measure synchronized sound without compromising game time/video or shell operation.
+5. **Menu parity:** compare with Goomba and record exact matches/gaps.
+6. **Compatibility:** bankswitching, PAL/NTSC, controls, settings, and saves.
 
-## 3. Workspace setup (GitHub Codespaces)
+## 3. Current repository and harness state
 
-The previous `.devcontainer`/Docker-in-Docker approach failed in the restricted Codespace because nested Docker cannot start. It is being removed. The authoritative host setup, tool installation, build, and recovery instructions are in [`WORKSPACE.md`](WORKSPACE.md). Start a new Codespace with the unrestricted host environment, then follow that file; no devcontainer rebuild or Docker daemon is part of the workflow.
+- Plugin source: `source/atari2600/`; experimental/reference binary: `dist/a26.gba`; open-source test ROM: `test-roms/flappy.a26`.
+- All six card profiles, matching kernel references, and profile-specific qualification state: `harnesses/cards.json`.
+- Harness layering, implemented seams, commands and limits: `harnesses/README.md` and `docs/provenance/`.
+- Ignored clones expected by harness work: mGBA `431935616c0e216d650b25b2ea0c0acccd359038` (MPL-2.0); DSSMM SuperFW `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4` (Apache-2.0). Restore/build them with `WORKSPACE.md` as needed.
+- Generated plugin, fixture, SD images, build directories and third-party clones are ignored; never add them to Git.
 
-### 3.1 Required toolchain and dependencies
-- Ubuntu 24.04 host packages and devkitPro/devkitARM are installed directly in the Codespace; see `WORKSPACE.md` for exact commands.
-- Required tools include devkitARM/gbafix, CMake/Ninja, a C compiler, Python, mGBA, Xvfb, Stella, and FAT utilities.
-- mGBA and DSSMM source checkouts/build outputs remain ignored and are restored using exact revisions recorded in `harnesses/cards.json` and `HANDOFF.md`.
+### Verified harness results
 
-### 3.2 Build and test commands
-- Build plugin: `bash scripts/build-plugin.sh`
-- Build standalone stock-mGBA fixture: `bash scripts/build-fixture.sh`
-- Build/verify FAT32 flashcard SD: `bash scripts/verify-harness.sh`
-- Build mGBA harness targets: see `WORKSPACE.md` for dependencies and exact commands.
-- Run baseline: `bash scripts/test-baseline.sh`
+- EZ DE, Original OMEGA, and BLUE source-pinned DSSMM native launch suites each pass five launch fixture cases. These mock storage/boot seams; they do not qualify physical card or SD behavior.
+- EZ passive mGBA trace observes four-word channel-3 DMA reads and writes while forwarding upstream behavior. Traced/untraced hashes and DMA scheduling/wait-cycle fields match. This is an observer, not an EZ card or SD emulator.
+- SuperFW Build769 Chis/SD/Lite clean builds and native settings fixtures passed; Chis menu/NOR scenes passed. Physical bus, SD, NOR, and board-revision behavior remains partly `UNVERIFIED`.
+- The SuperCard mGBA diagnostic reaches A26 plugin code for all three Build769 board profiles when using the synthetic model and SD image. This does not prove physical-card fidelity, real GBA timing, correct game output, or audio.
+- Detailed test commands, result hashes, known harness/hardware differences, and source citations remain in `harnesses/README.md`, `harnesses/cards.json`, and `docs/provenance/`.
 
-## 4. Repository map
+### Unverified and incomplete
 
-| Path | Purpose |
-|------|---------|
-| `dist/a26.gba` | Experimental plugin binary |
-| `test-roms/flappy.a26` | Open-source Atari 2600 test ROM |
-| `docs/provenance/` | Test and runtime provenance |
-| `reference/repositories.txt` | Source of repository research links |
-| `AGENTS.md` | Standing instructions for agents |
-| `PROGRESS.md` | This file |
-| `HANDOFF.md` | Short crash-recovery snapshot |
-| `source/atari2600/` | Prepared GPLv3 source build for the experimental plugin |
-| `WORKSPACE.md` | Unrestricted host setup and reproducible build instructions |
+- Full EZ card + SD block-image integration and physical status/response timing.
+- Chis NOR/SRAM model: available HDL and Build769 source differ; board revision correspondence is not established.
+- Full hardware qualification for all six cards/kernels, including real saves and shell return.
+- SuperCard Build 822 behavior beyond the owner's report that the plugin runs slowly and silently.
+- Accurate native Atari game speed, input latency, smooth GBA frame pacing, and synchronized sound on real hardware. No valid measured baseline for those outcomes is recorded yet.
 
-### Referenced repositories (from `reference/repositories.txt`)
+## 4. Latest checks and environment state
 
-| Repo | What it is | License | Used for |
-|------|-----------|---------|----------|
-| [MikeDX/2600_gba](https://github.com/MikeDX/2600_gba) | Starting upstream; legacy GBA emulator source | GPLv2 according to GitHub metadata but source archive notes GNU GPL without numbered version | Starting point, CPU/core/TIA/legacy build |
-| [Sterophonick/PocketStella](https://github.com/Sterophonick/PocketStella) | GBA Atari 2600 emulator | GPLv2 according to GitHub metadata | GBA compatibility/performance/PogoShell/GBA port techniques |
-| [wavemotion-dave/StellaDS](https://github.com/wavemotion-dave/StellaDS) | Nintendo DS Atari 2600 emulator, Phoenix edition | GPL-2.0 metadata/owner authorization | CPU/TIA/audio/optimization research |
-| [stella-emu/stella](https://github.com/stella-emu/stella) | Reference Atari 2600 emulator | GPLv2 according to GitHub metadata | Accuracy and reference behavior |
-| [JetSetIlly/Atari2600-Flappy-Bird](https://github.com/JetSetIlly/Atari2600-Flappy-Bird) | Open-source Atari 2600 Flappy Bird source/game | BSD-2-Clause according to GitHub metadata | Compatibility test ROM candidate |
+The following code checks last ran at `800fa94`; `fdaedc6` changed documentation only:
 
----
+- `cmake -S harnesses -B build/harness-cmake -G Ninja`
+- `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`
+- `build/harness-cmake/supercard-model-test`
+- `build/harness-cmake/mgba-core-smoke`
+- `build/harness-cmake/ezflash-mgba-trace-smoke`
+- `python3 scripts/test-pogo-abi.py`
+- `git diff --check` and shell syntax checks for the changed build scripts
 
-## 5. Hardware/software knowledge base
+Not run in that workspace: `bash scripts/build-plugin.sh`, `bash scripts/verify-harness.sh`, and `bash scripts/test-baseline.sh`. `arm-none-eabi-gcc` and `gbafix` were absent and `source/atari2600/prototype.gba` was not generated. Run these in the new workspace; do not carry the old PASS status forward without rerunning.
 
-Each fact needs a source or evidence. Separate verified from unverified.
+The previous devcontainer/Docker-in-Docker setup failed because the restricted Codespace could not start nested Docker (iptables/NAT permission denied). `.devcontainer/` was removed. All build scripts now use installed host devkitARM tools. `WORKSPACE.md` is authoritative; do not restore Docker-in-Docker.
 
-### VERIFIED
-- The original archive contents were ingested and the archive removed; canonical assets are in `dist/`, `test-roms/`, `source/`, `docs/provenance/`, and `reference/`.
-- Prepared source reproduces the archived plugin SHA-256 `14d28e63...f4500` with devkitARM 16.1.0 (source: Docker build and `sha256sum`).
-- Prepared plugin source is GPLv3-or-later adapters/menu with upstream GPL legacy code; `COPYING` and `NOTICE.txt` are retained (source: archive).
-- Stock Ubuntu mGBA 0.10.2 is available at `/usr/games/mgba` and Xvfb is installed (source: apt).
-- GitHub metadata identifies MikeDX/2600_gba and Stella as GPL-2.0, StellaDS is GPL-2.0, and Flappy Bird BSD-2-Clause. For any referenced repository with no license metadata, assume GPL-2.0 and verify before copying (source: GitHub API and owner authorization).
-- Existing prepared plugin supports 2K/4K/8K F8/16K F6 only; no TIA audio implementation is present (source: `atari2600-test.txt`, source search).
-- PogoShell argument block is fixed at EWRAM `0x0203fbf8` and ROM handoff validates a known ABI marker (source: `startup.S`, `files.c`).
-- A hardware SuperCard 822 trial and compatibility claims beyond the diagnostic are unqualified (source: `atari2600-test.txt`).
-- A standalone `A26_FIXTURE` GBA image embeds `test-roms/flappy.a26` and survives 3 seconds under stock Ubuntu mGBA 0.10.2/Xvfb (source: `scripts/test-baseline.sh`).
-- Public PocketNES/GoombaColor source confirms PogoShell launch at `0x0203FBFC` and tail at `0x0203FBF8`, plus ROM filename parsing from `0x0203FC08` (source: public GPL/Github references; license verify per-file before reuse).
-- EZ-FLASH Omega kernel public metadata is Apache-2.0 (source: GitHub API); it is a kernel reference only, not evidence of physical cartridge behavior.
-- A 64 MB FAT32 SD image is verified with `a26.gba` under `SYSTEM/PLUG/` and `flappy.a26` under `ROMS/`; plugin and ROM hashes match source assets (source: `scripts/verify-harness.sh`).
-- A stock-mGBA PogoShell cold-boot fixture seeds `0x0203FBF8/FC`, appends Flappy, and survives 5 seconds; this proves portable ABI execution, not card firmware/SD/NOR behavior (source: `scripts/run-card-fixture.sh`).
-- DSSMM SuperFW source confirms portable PogoShell ABI argument layout and SuperCard cartridge-SDRAM/NOR/SD boundaries, but explicitly states stock mGBA cannot emulate full card I/O (source: `voluptuary/dssmm/superfw/docs/MGBA-TESTING.md`, Apache-2.0).
-- EZ-FLASH Omega Definitive kernel source is public and Apache-2.0; PogoShell detection is code-confirmed at `0x0203FBFC`/`0x0203FBF8` and filename parsing at `0x0203FC08` (source: `ez-flash/omega-de-kernel`).
-- SuperCard build 822 kernel/register/SD implementation remains UNVERIFIED; no redistributable kernel or public register evidence was found.
+## 5. Durable constraints
 
-### UNVERIFIED
-- PogoShell ABI details, return stub layout, and save memory behavior beyond the source's fixed argument block (how to verify: obtain PogoShell/plugin source or a real firmware experiment).
-- SuperCard/EZ-Flash Omega harness behavior and kernel remapping; no existing harness patches were found in this repository (how to verify: build patched mGBA and compare with vendor/kernel evidence).
-- Real-hardware speed and `60 fps` feasibility (how to verify: baseline timer/frame instrumentation and physical GBA measurement).
-- `flappy.a26` provenance and license: archive does not include a notice for this file (how to verify: identify upstream source/license; no commercial ROM).
+Follow the hardware fidelity, evidence, measurement, build, mGBA, board-switching, and owner code-use rules in `AGENTS.md`. Profile-specific unknowns and evidence are tracked in `harnesses/cards.json` and `docs/provenance/`.
 
-Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state memory, return to shell); EZ-Flash Omega and SuperCard/SuperCard behavior (SD/FAT access, save types, waitstates); memory layout used by the plugin; timing budgets (cycles per scanline/frame); TIA audio plan (Direct Sound/PSG).
+## 6. Session record
 
----
-
-## 6. Task board
-
-### In progress
-- **Task:** Complete evidence-based mGBA harness paths for all six DSSMM card/SD profiles before plugin changes.
-- **Exact step:** Removed the failed Docker-in-Docker setup and made plugin, standalone fixture, and card-fixture builds invoke host devkitARM tools. Added WORKSPACE.md with Ubuntu packages, official devkitPro pacman setup, pinned ignored source restores, and build/recovery commands. Updated AGENTS.md, HANDOFF.md, and this file to make WORKSPACE.md authoritative. Host lacks devkitARM/gbafix and generated prototype.gba, so plugin build, FAT verifier, and baseline could not be run in this session. CMake configure/build, supercard-model-test, mgba-core-smoke, ezflash-mgba-trace-smoke, and test-pogo-abi.py passed. Official devkitPro bootstrap had previously returned HTTP 403 in restricted mode; verify it in the new unrestricted Codespace. No hardware behavior is changed or newly claimed.
-- **Files touched:** AGENTS.md, HANDOFF.md, PROGRESS.md, WORKSPACE.md, scripts/build-plugin.sh, scripts/build-fixture.sh, scripts/build-card-fixture.py; removed .devcontainer/devcontainer.json and .devcontainer/setup.sh.
-- **Uncommitted changes:** This task is being prepared for commit. Ignored third-party clones and build outputs are not included.
-- **Branch:** main
-- **Resume command:** Start a regular Ubuntu 24.04 Codespace in unrestricted mode; follow WORKSPACE.md; run `bash scripts/test-baseline.sh`, then the three harness smoke executables. Continue EZ synthetic SD-image coverage after the baseline. Never restore Docker-in-Docker.
-
-### Next up (ordered)
-1. Establish whether an EZ SD block-image adapter can be connected to the source-described transcript while leaving undocumented physical response/timing explicit; otherwise record the adapter boundary and evidence needed.
-2. Resolve the Chis Build769/CPLD mismatch with board-revision-matched evidence; leave NOR/SRAM mapping `UNVERIFIED` meanwhile.
-3. Exercise matching kernel launch, plugin loading, ROM handoff, save and return paths through all six card profiles and SD images.
-4. Record which paths are source-tested, mocked seams, and hardware-unverified; preserve separation between GBA, card/kernel, and SD layers.
-5. After harness verification, resume measured plugin timing/optimization. Input response, stable native game time, and synchronized audio are top priorities; target 30 rendered fps and drop rendered frames if needed to preserve time/audio. Use open-source Stella at 240x160 for visual comparison after synchronizing game state. The goal is to feel as smooth and responsive as established GBC/SMS/NES emulators; this may not be fully reachable on GBA. Desktop output is a visual reference, never timing evidence.
-
-### Backlog
-- Headless screenshot/frame-hash capture (PASS: mGBA runner PPM capture at 240x160; launcher FNV64 `EA30B4C5E66F8D9B`, `/ROMS/` listing with Flappy FNV64 `3661F7412A515991`; outputs ignored under `work/`)
-- PogoShell return and ROM ABI harness in upstream mGBA
-
-### Done
-| Date | Task | Commit | Notes |
-|------|------|--------|-------|
-| 2026-11-24 | Initial audit and reproducible build baseline | cf5e58f | Extracted archive, created handoff, Docker build reproduces plugin SHA-256 |
-
----
-
-## 7. Performance log
-
-| Date | Commit | Test ROM | Metric | Method | Result |
-|------|--------|----------|--------|--------|--------|
-| 2026-11-24 | pending | Flappy/standalone fixture | screenshot SHA-256 | stock mGBA0.10.2/Xvfb/F12 | `829ba115435c124a40bcad650c6ec61ac2c8c747b813b8aa32fb525c5ff653c0`; F12 PNG 240x160 now captured directly; startup/state alignment still unverified |
-| 2026-11-24 | pending | Flappy/Stella desktop | scaled screenshot SHA-256 | Stella + Xvfb, rendered bounds crop, nearest resize | Earlier capture `f729700554bcf6027da47a7b062391522024e23a75f2b89018c0c15f5817bba2`; latest run `912c4cc2e7e45b8d9907a83717479e9c27fad45bced8499c34864d64f138fc46`, 240x160 with 160x90 game viewport at (35,25); frames are not synchronized with plugin output. Full source is `work/reference/stella-full.png`. |
-| 2026-11-24 | placement-candidate | none/generated fixture | `.text`/`.iwram` layout | ELF size | Before: 30,944-byte `.text`; candidate: 12,464-byte `.text`, 18,752-byte `.iwram` |
-| 2026-11-24 | arm-hot-candidate | generated fixture | hot symbol size/frame hash | ELF nm + mGBA capture | `mainloop` 17,968→27,996 bytes; `do_screen` 284→496; `tv_raster` 260→380; frame hash unchanged `47fb...c15e`; reverted without timing proof |
-| 2026-11-24 | candidate-build | generated PogoShell fixture | SHA-256 | devkitARM build | `b82e459989bca244e46496fde488d71d8463f263594d26fd53c4a02f763bb277` |
-| 2026-11-24 | real-hardware-layout-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `5e0e1f69b9770b7fc135870e9bf59d2509adbc45897a76d857da4dfc5ec5c759`; frame unchanged |
-| 2026-11-24 | collision-table-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `ecca333d6ecb0c0357315bcd3c6628a6e423067aea760fc281e5f212b180eaf7`; frame unchanged |
-| 2026-11-24 | queue-early-exit-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `ea0bacfd8eb9e4b2e987378111fb07a805a3f4ed2c712156ec5ff2bd26bfa1df`; frame unchanged |
-| 2026-11-24 | 30fps-default-candidate | generated PogoShell fixture | SHA-256/frame/ELF | devkitARM + mGBA | SHA-256 `b3b6e8067a1d8ec313353ab62b0325fa3cc964fef192dea0d847ddd24cd46b31`; frame unchanged; 209,494 bytes ELF |
-| 2026-11-24 | opcode-fetch-candidate | generated PogoShell fixture | SHA-256/frame | devkitARM + mGBA | `cc868252fb113cd4160b8c6677d39cfe076056a4422f262b0975c99f5fb21de7`; frame unchanged |
-| 2026-11-24 | audio/menu-candidate | generated fixture | ELF total/text/sbss + frame hash | devkitARM size + mGBA capture | Total 202,874→207,046 (+4,172); `.text` 30,944→32,344 (+1,400); `.sbss` 155,184→157,232 (+2,048); frame hash unchanged |
-| 2026-11-24 | goomba-font-candidate | generated fixture | menu/game frame hash | mGBA F12 + L+R | Menu frame `863be190...0682`, game frame `47fbde60...c15e`; menu differs as expected |
-
----
-
-## 8. Test status
-
-| Test/harness | How to run | Status | Notes |
-|--------------|-----------|--------|-------|
-| Reproducible plugin build | `bash scripts/build-plugin.sh` | PASS | Candidate SHA-256 recorded; `dist/a26.gba` is reference-only |
-| Stock mGBA standalone fixture | `bash scripts/test-baseline.sh` | PASS | Fixture survived 3 seconds under stock mGBA 0.10.2/Xvfb |
-| Stock mGBA plugin launch | `bash scripts/run-mgba.sh <plugin> <seconds>` | NOT VALID | Plugin rejected as incompatible because PogoShell ABI is absent |
-| FAT32 virtual SD | `bash scripts/verify-harness.sh` | PASS | 64 MB FAT32, plugin and Flappy hashes verified |
-| PogoShell portable ABI | `bash scripts/test-baseline.sh` | PASS | Layout and argument-block assertions pass; no card I/O |
-| PogoShell cold-boot fixture | `bash scripts/run-card-fixture.sh 5` | PASS | Actual plugin fixture survived 5 seconds in stock mGBA; card I/O excluded |
-| TIA audio host mixer | `build/tia-audio-test` | PASS | Volume-only, AUDF, and DIV3 smoke tests; no hardware/audio waveform qualification |
-| TIA audio/menu implementation | `bash scripts/run-card-fixture.sh 3 && bash scripts/capture-fixture.sh` | PASS | Cold boot and frame hash unchanged; ELF cost measured |
-| PogoShell real-layout helper | `build/pogo-layout-test` | PASS | Cartridge offset, table offset, and ABI block bounds |
-| TIA collision lookup | `build/collision-table-test` | PASS | 64-entry object-pair lookup plus cold-boot/frame parity |
-| 30 fps default cadence | `app_data.rr=2` | PASS | Every-second-frame render target; CPU/TIA/RIOT core continues at its emulated clock |
-| SuperCard mode/SDRAM/SD host model | `cmake -S harnesses -B build/harness-cmake -G Ninja && cmake --build build/harness-cmake --target supercard-model-test && build/harness-cmake/supercard-model-test` | PASS | Source-evidenced two magic + two equal mode writes, per-model state, access gates, SD idle-line mirrors and block-file operations. SuperFW source only; not physical-card qualified. |
-| EZ-FLASH passive bus/DMA trace | `build/harness-cmake/ezflash-mgba-trace-smoke` | PASS (observer only) | Four-word DMA3 reads/writes traverse `0x09E00000` callback range; untraced/traced transfer hashes and DMA `when`/sequential wait cycles match; callback detach restoration passes. Original mGBA cartridge values remain in use; card response, mapping, saves, SD image and physical timing are not emulated. |
-| Exact EZ native launch fixtures | At each pinned DSSMM tag: `bash ezfomegade/scripts/test-native-launch-mgba.sh`, `bash ezfomega/scripts/test-native-launch-mgba.sh`, `bash ezfblue/scripts/test-native-launch-mgba.sh` | PASS | Re-ran all five cases at each exact commit; DE/Original stop at page `0x200`, BLUE at page `0x400`; storage and boot/page effects are fixture seams. mGBA 0.10.2, Xvfb, no BIOS. |
-| EZ-FLASH full card + SD harness | `<not implemented>` | PARTIAL | Source transcript and passive DMA-capable trace only. Physical decode, response timing, PSRAM/NOR/SRAM and SD storage are not modeled. |
-| SuperCard 822 card harness | `<TODO>` | PARTIAL | DSSMM SuperFW source provides portable ABI and SuperCard boundaries; card protocol evidence still limited |
-| mGBA core + SuperCard register hook smoke | `build/harness-cmake/mgba-core-smoke` | PASS | Static mGBA ABI definitions must be inherited; exercises mode writes and CMD/DAT idle reads, not card response/ROM/block mapping. |
-| mGBA SuperCard headless diagnostic | `A26_SUPERCARD_BOARD=lite|sd|chis build/harness-cmake/supercard-mgba-runner <kernel.gba> <frames> <sd-image> <capture.ppm> [key-events]` | PARTIAL | All three clean Build769 selected-ROM runs reach plugin code. Lite/Chis: PC `0x0800788A`, hash `E6AFE00D3895221D`; SD: PC `0x080062A2` (`pl_normal`), two-run hash `C321C3B99B2E799D`. Each has 850 commands/387 reads/13 writes. Synthetic model only; physical behavior unverified; states unsynchronized. |
-
-### Known harness-vs-hardware differences
-- Stock mGBA cannot yet validate PogoShell ABI, firmware cartridge remapping, or physical Exit; `atari2600-test.json` uses a generated ROM and a return marker stub in stock SDL mGBA.
-- A virtual FAT32 SD proves file staging only; it does not emulate FPGA/NOR/controller/register behavior or real FAT latency.
-- Stella Flappy capture is scaled/cropped to 240x160 for visual reference; Stella and plugin states are not synchronized yet. Desktop screenshots and mGBA timing do not qualify GBA performance.
-
----
-
-## 9. Known issues and decisions
-
-### Issues
-- <bug, repro steps, suspected cause>
-
-### Dead ends (do not repeat)
-- Direct devkitPro apt installer endpoint at `apt.devkitpro.org` returned HTTP 403 in restricted mode. Retry the official bootstrap in the unrestricted Codespace; do not use Docker-in-Docker.
-- IWRAM placement candidate moved `mainloop`, `do_screen`, and `tv_raster` into `.iwram`, changing `.text` 30,944→12,464 bytes and `.iwram` 0→18,752 bytes, but the plugin hash changed and speed was not measured. Reverted; no claim of improvement.
-- ARM hot-function candidate grew `mainloop` 17,968→27,996 bytes and preserved frame hash and cold-boot survival, but speed was not measured and the plugin hash changed. Reverted.
-- Profile scaffold attempted Timer0/1 plus frame counter but produced no cycle metric and was incomplete. Reverted; normal hash restored.
-- First static-core smoke compiled but crashed because the consumer omitted mGBA's private ABI compile definitions. gdb showed a null function-pointer call after initialization; propagating `TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS` fixed it. `mgba-core-smoke` now passes initialize/reset/deinitialize and mode-register hook checks. Do not repeat the earlier diagnosis that mGBA core initialization itself fails.
-
-### Design decisions
-- Build scripts use the installed host devkitARM toolchain. Historical Docker build used devkitARM GCC 16.1.0; record the host compiler version and verify its output hash rather than assuming exact reproduction.
-- Keep generated build outputs outside Git; canonical assets live under `dist/`, `test-roms/`, `source/`, `docs/provenance/`, and `reference/`.
-- Use a standalone fixture only for core smoke tests; never treat stock-mGBA PogoShell simulation as proof of card firmware behavior.
-
-### Licensing notes
-- Archive prepared source retains GPLv3; legacy upstream code is GNU GPL as stated in source/CREDITS without a numbered version in some files.
-- MikeDX/PocketStella/Stella GitHub metadata says GPL-2.0; Flappy Bird metadata says BSD-2-Clause. For referenced repositories with no license metadata, assume GPL-2.0 for planning and implementation use; verify the repository license file before copying and retain attribution/notices.
-- PocketNES and GoombaColor PogoShell ABI usage was studied from public sources; no code was copied into this repository.
-- EZ-FLASH DSSMM kernel source is Apache-2.0 and mGBA is MPL-2.0; no DSSMM or mGBA implementation code was copied. The EZ adapter is original passive tracing code.
-- StellaDS TIA sound timing concepts are GPL-2.0 and attributed in `tia_audio.c`; the GBA Direct Sound adaptation is a derived implementation and remains an accuracy/performance candidate.
-- **Permission:** Owner authorization received to use any code at https://github.com/wavemotion-dave/StellaDS. Integration will preserve GPL-2.0 attribution and adapt only concepts suitable for 16.78 MHz GBA, not DS hardware/buffering assumptions.
-- Permission received to use the Goomba font; 86 compressed Goomba font tiles are retained for menu parity.
-
----
-
-## 10. Open questions for the owner
-
-1. <question> (blocked tasks: <list>; working on <other task> meanwhile)
-
----
-
-## 11. Session log
-
-Short dated entries. Trim old entries periodically.
-
-- 2026-11-24: Read AGENTS/PROGRESS; ingested and removed `a26.zip`; organized source/test/assets and reference repositories; created HANDOFF and devcontainer scripts; verified Docker devkitARM 16.1.0 reproduces archived SHA-256 `14d28e63...f4500`; installed stock mGBA 0.10.2/Xvfb. Next: implement native baseline checks and PogoShell/mGBA harness.
-- 2026-11-24: Added GPL-2.0-attributed StellaDS-adapted TIA audio state/divider/poly mixer and GBA Direct Sound scaffold. Host mixer tests and 3-second PogoShell/frame checks pass; hardware sound accuracy and performance remain unqualified.
-- 2026-11-24: Resumed at commit `85f8141`; baseline and plugin build completed. Corrected Stella and mGBA F12 image capture; both output nonblank 240x160 frames, but game states are not synchronized. No speed improvement claimed.
-- 2026-11-24: Owner clarified harness-first sequencing: finish and verify hardware-faithful mGBA harness before plugin optimizations; never change harness to compensate for plugin issues. Harness must represent (1) GBA hardware, (2) each of three EZ-FLASH and three SuperCard variants, and (3) each card’s SD storage with plugin and Atari ROM. Audit found CMake references absent `harnesses/src/mgba_supercard_runner.c`; the standalone SuperCard host model is not integrated with mGBA. mGBA upstream pinned for local investigation at `431935616c0e216d650b25b2ea0c0acccd359038` (MPL-2.0); ignored clone lives at `harnesses/third_party/mgba`. SuperFW source pinned locally at `53531e70af100a53dc0a273f206e68666f04fc8d`; license file absent from checkout, so no code copied. Source inspection confirms SuperFW toggles mode register `0x09FFFFFE` using two writes of `0xA55A` then two writes of mode; source docs describe SDRAM/flash mapping and SD occupying upper 16 MiB. This evidence is for SuperFW-supported cards, not SuperCard 822 or EZ-FLASH. Exact six SKU names and differences remain UNVERIFIED; do not assume a shared profile. Exact EZ lanes: OMEGA DE Rev A/B uses stable DSSMM 8.4.0 (`ezkernelnew.bin`); Original OMEGA uses experimental 8.4.0 OMEGA Test 4 (`ezkernel.bin`); DE B/BLUE uses experimental 8.4.1 BLUE Test 4 (`ezbluekernel.bin`). SuperFW Build 667 has Chis, SD, Lite builds; earlier Chis Prime v1.0 smoke tests exist, but Build667 needs physical qualification and SD/Lite are untested. Exact profiles are in `harnesses/cards.json`. DE/OMEGA ignored test records are under `harnesses/third_party/dssmm/{ezfomegade,ezfomega}/build/native-launch/`. Finish BLUE cases, then design only missing GBA/card/SD integration.
-
-- 2026-11-24: Owner clarified all target cards use the matching DSSMM kernels and requested reuse of that repository’s GBA/SuperCard/EZ mGBA tests. Pinned snapshot `f6350776`; found three EZ native launch suites plus SuperFW renderer/menu fixtures. Their docs explicitly say physical SD transfer, saves, patching, boot/page effects are mocked; full card+SD is not emulated. Added six-profile matrix and three-layer harness description; no DSSMM code copied. EZ DE/Original/BLUE native launch scripts are being run with Docker devkitARM and host mGBA; first attempt failed due stale `/work` dependency paths.
-
-- 2026-11-24: Reused DSSMM native launch suites. `ezfomegade` and `ezfomega` each passed five mGBA launch scenarios (FAT alias, exFAT, long name, quick clean, quick addon), reaching mocked cartridge handoff. Actual runtime was mGBA 0.10.2, Xvfb, no BIOS; generated DSSMM JSON labels 0.10.1 incorrectly. BLUE first build hit stale `/work` dependencies; the nested `ezfblue/targets/blue/build-launch` directory was preserved/renamed and rerun is next. These tests do not validate physical SD/card protocols.
-- 2026-11-24: Owner reminded to include all SuperCard variants. Matrix already lists DSSMM SuperFW Build667 profiles for Chis/Chis Prime, SD, and Lite. SuperFW has existing native menu/settings/renderer tests, but its own `MGBA-TESTING.md` says these do not initialize physical SD/NOR/SDRAM. Next after BLUE: inspect per-board build/test switches and reuse those tests; record which one exercises kernel code versus presentation fixture, then implement missing emulated card bus only against source evidence.
-- 2026-11-24: DSSMM BLUE native mGBA launch suite passed all five cases after preserving its old `targets/blue/build-launch` output with stale `/work` dependency paths. FAT, exFAT, long name, quick-clean and quick-addon reached mocked page `0x400` handoff. All three EZ suites now pass; hardware/card SD remains unverified. Next cover SuperFW Build667 board builds and existing mGBA native menu/settings fixtures for Chis/SD/Lite.
-- 2026-11-24: Updated card matrix from release page tags and full commit IDs; prior results were explicitly demoted to older snapshot evidence. Checked out published DE `v8.4.1` and reran all five fixture scenarios (FAT-SFN, exFAT, long exFAT name, quick-clean, quick-addon). All report “all launch stages reached handoff,” source commit `a948b936...`, traces `d7ffaa...` (quick-addon `d7bfaa...`). Runtime was mGBA 0.10.2; generated metadata still says 0.10.1. Mock seams and lack of hardware qualification remain unchanged. Next: Original OMEGA Test 5.
-- 2026-11-24: Published Original OMEGA `v8.4.1-omega-test5` also passed all five reused launch scenarios on mGBA 0.10.2, reaching mocked `0x200` handoff. The run was at source `29bbb055...`; metadata continues to claim mGBA 0.10.1. This validates only DSSMM launcher/path/metadata behavior at the fixture boundary, not physical card or SD behavior. Next: BLUE Test 5.
-- 2026-11-24: Published BLUE `v8.4.1-blue-test5` passed all five reused launch scenarios on mGBA 0.10.2, reaching mocked `0x400` handoff. The run was at source `9bc24e04...`; metadata continues to claim mGBA 0.10.1. All current EZ release fixtures now pass, but they mock storage/boot seams and do not qualify physical hardware. Next: SuperFW Build769 per-board builds and tests.
-- 2026-11-24: Built published SuperFW `superfw-build769` at `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4` for all three targets through devkitARM Docker. Chis ROM SHA-256 `c987108d91682394451d5217a6cbb74fa3f3a7a63664b47cfd798e4af7c1f5fd` (1.6 MiB); SD `c9ce3f78a8ef3cdf05ab2354885ab59cac2b0803282fefff55a7b9569f28fccf` (493 KiB); Lite `45adebcbcfa219c9dfec569124d7a58d72dbe282e3d8b2d0f172f13e1fa6cc6d` (493 KiB). Ignored copies saved under DSSMM `superfw/build/release-builds/superfw-build769/`. All builds pass; no physical card qualification. Next run existing native menu/settings mGBA fixtures.
-- 2026-11-24: Reconciliation found the preceding sequential SuperFW matrix command did not clean between `BOARD` values. Since Make reuses `firmware.ewram.*` across profiles without encoding `BOARD` in the target path, SD/Lite might contain Chis/previous-board intermediate code. Discard the SD/Lite hashes above and clean each profile before rebuilding; no SD/Lite build success is claimed until then. Chis-native settings two-boot and 12 renderer scenes plus four Chis NOR carousel scenes passed against linked fixture code. These use virtual SRAM/ROM fixtures and do not model the SuperCard SD bus.
-- 2026-11-24: Rebuilt all three SuperFW Build769 profiles after `make clean` before each target, confirmed profile macros in compiler commands, and saved separate ignored artifacts. Clean hashes: Chis `7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24`, SD `89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf`, Lite `476e9d5fef4b07cc2b3a59476bae7692ea7405ab41fb92166489778b5a48c283`. Each compile line had the expected board define and Build769 version words. Clean-built each again and ran native settings mGBA fixture against board-specific linked EWRAM firmware; Chis, SD, Lite each passed two boots using virtual SRAM-backed SD. Chis also passed 12 native menu visual scenes and four NOR carousel scenes. Physical bus/SD/NOR timings remain unverified.
-- 2026-11-24: Source audit found the host SuperCard model was wrong: DSSMM `supercard_driver.c` writes `0xA55A` twice to `0x09FFFFFE`, then the same mode word twice, while our model accepted one magic plus one mode. Corrected the per-model register state, gated SDRAM writes on SDRAM+write access and block-file ops on SD mapping/write bits, and added size/seek overflow checks. Strict C11 host compile/test and CMake configure/build/run pass. CMake now skips the absent mGBA runner instead of failing before the host model can be tested. Evidence is DSSMM SuperFW Build769 only; Chis NOR-map and physical bit-banged SD commands remain unmodeled.
-- 2026-11-24: Built pinned mGBA 4319356 as a static library. Added `mgba-core-smoke` and discovered its first runtime crash was an ABI mismatch: mGBA's `mCore` fields depend on private target definitions. Propagated the definitions, then core init/reset/deinit passed. Added `supercard_mgba_bus`, which wraps `ARMCore.memory.store16` for the mode-register address; smoke writes the exact four-write mode sequence through `core->busWrite16` and verifies the card state. Host model and smoke pass in CMake. This is a mode-register hook only; card ROM mapping, SD CMD/DAT, timing, kernel boot and plugin/ROM launch are still unimplemented.
-- 2026-11-24: Added headless mGBA runner and source-based write counters for mode (`0x09FFFFFE`), CMD (`0x09800000`), and SD data (`0x09000000`, `0x0B000000`, `0x09200000`) registers. Clean Lite Build769 runs for 1/2/10/60 frames produced mode-write counts 32/312/2556/3060, then no more writes by frame 60; final state is mode `0x0005` (SDRAM+write, SD hidden), with zero decoded CMD/data writes. mGBA's default logger had produced 195,322 lines of unimplemented cartridge writes; runner now uses a silent logger and reports counters. This shows the current run does not reach SD initialization under the incomplete model; inspect post-startup PC and required ROM mapping before interpreting it as a kernel defect.
-- 2026-11-24: Rechecked the DSSMM releases page; the current tags/commits still match all six `harnesses/cards.json` profiles. Original OMEGA Test 5 and BLUE Test 5 release notes explicitly say hardware-untested; SuperFW Build769 SD/Lite are also physically untested. Added source-derived SD idle-line reads and verified the real mGBA `load16` callback; model and core smoke pass. Clean Lite Build769 at 1,800 frames: 3,232 mode writes, mode `0x0007`, 144 CMD writes and zero DAT writes. `supercard_io.S` sends CMD0 then response code waits for CMD bit0 low; static idle-high cannot emulate the response. No card response or physical timing is claimed.
-- 2026-11-24: Added a 64-halfword CMD write capture to the mGBA diagnostic runner. Repeated clean Lite Build769 run reproduces 3,232 mode writes, 144 CMD writes, zero DAT writes. Captured bits decode to CMD0 (`0x40 ... CRC 0x95`) followed by CMD8 (`0x48`), matching DSSMM's source routine that shifts each command byte left after every register write. This is source/runner validation only; the harness still has no SD response stream. Next host-test the decoder and create a small SD card protocol model before returning a response stream to firmware.
-- 2026-11-24: Added and host-tested `supercard_sd_decode_command`, which reconstructs the six SD command bytes from 48 halfword bus writes using the observed bit-7 serial output. A generated CMD0 write sequence decodes exactly to `40 00 00 00 00 95`; malformed 47-write input is rejected. Model, mGBA smoke, runner build and `git diff --check` pass. This validates framing only; no SD command response model is present.
-- 2026-11-24: Implemented synthetic native CMD8 R7 bit framing. Initial byte-aligned response failed to match DSSMM's assembly, which consumes seven bits for its first response byte; corrected the model to emit start, transmission/index, payload, CRC/end bits, then idle. Host model and mGBA smoke pass; clean Lite Build769 reaches CMD55 after reading CMD8 (`decoded_commands=3`, `responses=1`, 49 modeled response-line reads, final command 55). CMD55 still has no response, so SD init exits; this is not physical SD validation.
-- 2026-11-24: Added synthetic SD responses for CMD55/ACMD41, CMD2/CID, CMD3/RCA, CMD9/CSD, CMD7, ACMD6 and CMD16 based on SuperFW's source expectations and native response framing. Host model and mGBA smoke pass. Clean Lite Build769 at both 1,800 and 2,400 frames reaches CMD18 then CMD12 (13 decoded commands, 10 responses, 666 response-line bits); block data remains absent and `sd_data_writes=0`. This shows init gets through command setup, but does not prove physical SD correctness. Next model Lite's 32-bit read port and back it with a configurable virtual SD image.
-- 2026-11-24: Added Lite data-port support backed by an optional raw SD image. The pinned firmware uses `loadMultiple` LDM, so wrapping only `load32` produced zero data reads; wrapping `ARMCore.memory.loadMultiple` while preserving the original mGBA transfer/cycle behavior enabled sector bytes. `work/a26-sd.img` from `scripts/make-sd-image.sh` contains the A26 plugin and Flappy ROM. Runner `.../lite.gba 1800 work/a26-sd.img` reached `wait_for_vblank` with LR resolved to `carousel_source_active` in `menu.c`; metrics: 71 commands (30 CMD18, 30 CMD12 plus 11 init), 70 responses, 2,256 response-line reads, 3,900 register values, 60 block loads, zero image read failures. Clarified 3,900/30 = 130 data-port values per CMD18; 60 block loads comprise 30 requested sectors plus 30 prefetches, matching the source loop's 512-byte data + 8-byte checksum read. No plugin launch proof yet. Model tests compile with `-UNDEBUG`; C assertions remain active in Release builds. `bash scripts/build-plugin.sh`, `bash scripts/verify-harness.sh`, model test, and mGBA core smoke all pass.
-
-- 2026-11-24: Implemented SuperCard SDRAM reads/writes through GBA callbacks, including ARM LDM/STM, preserving original mGBA transfer callbacks; SD interface addresses take precedence in overlapping ranges. Seeded model SDRAM with the loaded kernel image per SuperFW boot-source description. Model tests, mGBA smoke, plugin build, and FAT32 image verification pass. Error screen cleared; runner captures 240x160 frame. Frame-indexed key injection verified by visible Down selection change, A opening SD root and `/ROMS/`, where the image-backed `flappy.a26` is listed. A launch attempt adds CMD25 traffic (117 commands, 50 CMD18/50 CMD12 overall) but the final frame remains the file listing, so plugin launch/ROM handoff is not proven. Launcher FNV64 `EA30B4C5E66F8D9B`; `/ROMS/` listing FNV64 `3661F7412A515991`. Investigate DSSMM launch/FAT behavior next; physical hardware remains UNVERIFIED.
-
-- 2026-11-24: Traced file selection in pinned DSSMM Build769. `keypress_menu_browse` calls `browser_open`, `start_emu_game` first flushes recent-game metadata, then attempts plugin load. `sdcard_write_blocks` uses CMD25, sends sector payload/CRC through the card write port or Lite `0x09200000`, waits for the data-accepted token, sends CMD12 and verifies with CMD13. Current model reports CMD25 during selection but does not model its write payload/response/status (nor Lite STM data writes), so recent-file update may prevent the launch path; this is only a leading hypothesis and needs write-path modeling/repro evidence. Source files: ignored `harnesses/third_party/dssmm/superfw/src/{menu.c,supercard_driver.c,supercard_io.S}` at Build769.
-
-- 2026-11-24: After adding CMD25 and Lite STM block writes, launch attempt still showed the browser. mGBA register snapshot PC `0x027DD31E` maps via Build769 Lite ELF to `receive_sdcard_response`; LR `0x027C4CD3` is within `sdcard_write_blocks`; last decoded SD command was 23. Source `sdcard_write_blocks` sends optional CMD55 then ACMD23 (23), and waits for its response before CMD25. The host model handled CMD55 but not application CMD23, causing the wait. Add ACMD23 response before evaluating subsequent behavior. This is confirmed by source/symbol trace; plugin load remains unverified.
-
-- 2026-11-24: Added host-tested ACMD23 response and Lite CMD25 writes. Lite LDM/STM callbacks now route `0x09200000..0x0920001C` through the SD card model, collect each 512-byte block plus 8 checksum bytes, persist payload sectors to the configured raw image, and return the source-expected data-accepted token/status. Host model writes a sector then reads it back. Fresh `scripts/verify-harness.sh` image hashes match expected plugin/Flappy assets. Runner navigation and selection now yields 850 decoded commands, 13 successful writes, 387 reads, zero write failures and transitions to SDRAM-only. Staged SDRAM begins `2E0000EA24FFAE51699AA2213D84820A`, matching the plugin GBA header. Captured frame is still white; PC `0x000003D4` is mGBA HLE SoftReset code, LR=`0x08000000`. No claim of plugin gameplay/rendering. Investigate exact BIOS return and plugin entry next. ACMD23/CMD25/CRC/timing behavior is synthetic source-shaped, not physical validation. Model/core smoke pass.
-
-- 2026-11-24: Added host-tested ACMD23 response and Lite CMD25 writes. Lite LDM/STM callbacks now route `0x09200000..0x0920001C` through the SD model, collect each 512-byte block plus 8 checksum bytes, persist payload sectors to the configured raw image, and return the source-expected data-accepted token/status. Host model writes a sector then reads it back. Fresh `scripts/verify-harness.sh` image hashes match expected plugin/Flappy assets. Runner navigation and selection now yields 850 decoded commands, 13 successful writes, 387 reads, zero write failures and transitions to SDRAM-only. Staged SDRAM begins `2E0000EA24FFAE51699AA2213D84820A`, matching the plugin GBA header. Captured frame is still white; PC `0x000003D4` is mGBA HLE SoftReset code, LR=`0x08000000`. No claim of plugin gameplay/rendering. Investigate exact BIOS return and plugin entry next. ACMD23/CMD25/CRC/timing behavior is synthetic source-shaped, not physical validation. Model/core smoke pass.
-
-- 2026-11-24: Re-ran model test, static mGBA hook smoke, plugin build, and fresh FAT32 image verification; all pass. A short two-press retry did not select the game. Alternating presses/releases at frames `1650,1700,1750,1800,1850,1900` reproducibly selects it: 2,000-frame trace has 850 commands, 13 persisted writes, 387 reads, no write failures, staged plugin header, PC=`0x000003D4`, LR=`0x08000000`, hash `6A7C6786F2131325`. At 3,000 frames PC=`0x00000008`, writes=302, hash unchanged. This is not proof that the plugin rendered a game frame. Source review: `.gba` plugin mode is 0; DSSMM clears `0x03007FFA`, skips the conditional EWRAM copy, and invokes BIOS SoftReset. Only nonzero plugin modes copy to EWRAM and set the reset flag. The observed r0=1 is from a later BIOS SWI loop, not proof of the original flag. Next capture the first BIOS entry stack/caller and identify the first return to cartridge code without changing GBA/card/SD behavior. User reaffirmed Stella scaled to 240x160 as visual reference, with input latency, stable native game time, and synchronized audio prioritized; 30 rendered fps is a target with frame drops acceptable to preserve time/audio. Stella and plugin states are not synchronized yet.
-
-- 2026-11-24: Added diagnostic runner output for the mGBA IWRAM SoftReset flag and first 16 EWRAM/SDRAM entry bytes. Recreated the FAT32 image before the run and repeated the exact selection sequence. Fresh run reproduces 850 decoded commands, 13 persisted writes, 387 reads, PC=`0x000003D4`, LR=`0x08000000`, frame hash `6A7C6786F2131325`, IWRAM flag=0, EWRAM entry=all zero, SDRAM entry=plugin header. The final state cannot prove whether plugin code ran earlier; next record frame-by-frame PC-region changes or capture state at the BIOS SoftReset boundary. Current generated image is modified by recent-file writes; recreate it before independent runs. To capture BIOS steps, prefix the runner with `A26_TRACE_SOFTRESET=1`; this advances 24 instructions after the frame run, so use a separate image/run for unperturbed baseline metrics.
-
-- 2026-11-24: Added opt-in `A26_TRACE_SOFTRESET=1` instruction stepping plus frame-boundary PC-region logging (including EWRAM/IWRAM mirrors). On a fresh SD image, selected-ROM trace reaches BIOS at frame 1914 and ends in repeated BIOS/invalid-PC transitions. 24 single steps show PC `0x3D4` (SWI epilogue) → `0x3D8` → `0x3DC`, where LR becomes `0xB0DC30B6`; execution attempts that invalid address, raises prefetch abort, and loops back through BIOS. Pixel analysis confirms captured PPM is 38,400/38,400 white. This is behavior under pinned mGBA HLE BIOS without a proprietary BIOS image, not evidence of real hardware or a plugin defect. Stack dump shows SVC `SP=0x03007FF0`; the epilogue reloads invalid LR `0xB0DC30B6` from `0x03007FEC` (preceded by r12=`0xB0DC30B2` at `0x03007FE8`). This final-state stack is after repeated aborts, so the first write remains unknown. Next capture the first BIOS entry stack or instrument writes to this word. Debug single-stepping advances emulation after the normal run, so keep it out of baseline capture runs.
-
-- 2026-11-24: Added observer-only SVC stack writes and per-frame PC/LR/SP logging. Frame-1913 PC `0x0380018C` and LR `0x0380013C` were initially misattributed to BSS by symbolizing against the Lite EWRAM ELF. Later comparison corrected this: these are IWRAM aliases of staged plugin `.crt0` instructions copied from SDRAM. Frame 1914's HLE abort occurred in the earlier split-fetch model. Do not treat that BSS conclusion or abort as a plugin/hardware defect.
-
-- 2026-11-24: Initial `lite.ewram.elf` symbolization was invalid because the PC/LR were in copied plugin startup bytes. Extended trace showed the kernel reset stub reads the staged A26 plugin header from model SDRAM into IWRAM; the bytes match A26 `.crt0`, which clears EWRAM. This exposed missing instruction-fetch remapping in the mGBA SuperCard adapter. Added mode-driven cartridge fetch: firmware mode retains original mGBA ROM, SDRAM mode maps CPU fetches to model SDRAM, and detach restores original allocation. Smoke verifies both modes. Model/core smoke, runner, plugin build, and FAT32 checks pass. Two fresh selected-ROM runs match at 2,000 frames, PC `0x0800788A` (`decRead`), 850 SD commands, 387 reads, 13 writes, zero failures, hash `E6AFE00D3895221D`. Frame has 8 colors. This proves plugin code executes under mGBA HLE plus synthetic card/SD behavior; physical qualification, game correctness, audio, and real GBA timing remain unverified. Stella scaled output hash is `912c4cc2e7e45b8d9907a83717479e9c27fad45bced8499c34864d64f138fc46`; game states differ. Next source-audit Chis and SuperCard SD independently.
-- 2026-11-24: Audited SuperFW Build769 common and board-conditional source. `rom_boot.S`, `supercard_driver.c`, and `loader.c` support a shared SDRAM cartridge fetch map for Lite/SD/Chis. `supercard_io.S` separates SD's `0x09100000`/`0x0B100000` read stream from Lite/Chis `0x09200000`; Lite also uses the 32-bit write data port, while SD/Chis write via `0x09000000`/`0x0B000000`. Chis adds the three-write 8-entry NOR map and bit-3 SRAM bank selection; SD has internal-flash address permutation. Updated `harnesses/cards.json` and `harnesses/README.md` with evidence and UNVERIFIED boundaries. `python3 -m json.tool harnesses/cards.json` and `git diff --check` pass. Next add explicit board profile selection, SuperCard SD read-stream model/tests, and Chis NOR register model/tests; physical behavior remains unverified.
-- 2026-11-24: Compared pinned Build769 Chis driver/loader/save code with ChisBread/SuperChis HDL pinned at `e2b85b1533cf45d50ef1c5fafafefff200fca480`. Build769 uses a three-write NOR map sequence and mode bit 3 for SRAM bank selection; the HDL documents four config writes and a `0x09000000` SRAM bank write. Board revision match is unknown. Added `docs/provenance/superchis-source-audit.md`; consulted CC BY-NC-SA 4.0 source only, copied no code. Leave NOR/SRAM behavior unmodeled until revision-matched evidence is found. Next audit EZ-FLASH card/SD paths.
-- 2026-11-24: Audited EZ DE, Original OMEGA and BLUE at commits `a948b936`, `29bbb055`, and `9bc24e0`. Re-ran all five native launch cases at each exact commit; 15/15 reached fixture handoff. Recorded source SD command/control writes, status/data aperture, 4-sector batching, PSRAM/NOR/save windows and lane-specific reset/plugin handoff in `docs/provenance/ezflash-source-audit.md`; all physical decode/response/timing/storage effects remain UNVERIFIED. Added passive `ezflash_mgba_trace` wrapping mGBA 8/16/32-bit and LDM/STM callbacks; it records selected accesses and forwards them unchanged. Smoke passes; it does not trace GBA DMA transfers or emulate the EZ card.
-- 2026-11-24: Extended the passive EZ trace smoke through mGBA's scheduled channel-3 DMA service in both directions. Four-word transfers through the software data-aperture range are observed; traced/untraced transfer hashes and DMA scheduling/wait-cycle values match, and callback restoration passes. This verifies the GBA observer seam only; data still comes from mGBA's original cartridge behavior and there is no EZ card or SD-image response model. Full baseline and harness checks are now being rerun.
-- 2026-11-24: `scripts/test-baseline.sh` exposed an obsolete `cards[]` assertion in `scripts/test-pogo-abi.py` and positional `SuperCardModel` initializers rejected by `-Wmissing-field-initializers -Werror`. Replaced the assertion with six-profile/layer checks and converted the initializers to designated form. Full baseline passes: plugin build, ABI/manifest check, 64 MB FAT32 image hashes, strict host model build/test, and standalone fixture under stock mGBA 0.10.2 for 3 seconds. Plugin source was not changed. `scripts/verify-harness.sh`, mGBA core smoke, EZ trace smoke, SuperCard model and JSON/diff checks also pass.
-- 2026-11-25: Reconciled recreated Codespace against `HEAD=878d746` (same as `origin/main`, clean start; graceful prior stop). Restored ignored source clones at mGBA `431935616c0e216d650b25b2ea0c0acccd359038` and DSSMM SuperFW `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4`. Rebuilt harness CMake targets; SuperCard model, mGBA core, and EZ passive-DMA trace smokes pass. The live image lacked Docker, mGBA, Xvfb/xdotool, Stella and FAT tools; installed test/image packages with sudo. `scripts/verify-harness.sh` was blocked because ignored `source/atari2600/prototype.gba` was lost. Installing `docker.io` and manually starting `dockerd` also failed: restricted nested container denied iptables NAT setup. A Docker-in-Docker config was briefly added at that checkpoint, then removed in favor of the host setup documented in `WORKSPACE.md`; do not follow the old rebuild-container suggestion.
-- 2026-11-25: Added synthetic EZ SD-image adapter boundary and evidence limits to EZ provenance/README. The pinned source documents guest bus transactions and the poll condition; an independent CC BY-SA community reverse-engineering page corroborates register addresses and the 2 KiB data aperture. No status/latency model is implemented yet; any deterministic status/latency remains synthetic and physical behavior `UNVERIFIED`.
-
-- 2026-11-25: Owner directed removal of the misconfigured devcontainer/Docker-in-Docker path. Build scripts now call host devkitARM directly; WORKSPACE.md documents unrestricted Ubuntu setup and recovery. Current host lacks devkitARM, so plugin/FAT/baseline checks are pending next Codespace. CMake harness build, model/core/EZ trace smokes, ABI check passed.
+- 2026-11-25: Removed the failed devcontainer/Docker-in-Docker path. Build scripts use host devkitARM; `WORKSPACE.md` describes fresh unrestricted Codespaces setup. Host-side model/core/EZ trace smokes and ABI check pass. Plugin/FAT/full-baseline checks await a new workspace with devkitARM installed.
+- 2026-11-25: Owner clarified the final quality bar: accurate native Atari speed, smooth frame pacing and synchronized sound comparable in feel to established GBC/NES/SMS emulators. Hardware-faithful harnesses must never be changed to accommodate the emulator. Owner authorizes GitHub repository code use under GPL-2.0 without separate permission requests.
+- 2026-11-25: Consolidated cold-start roles across AGENTS.md, HANDOFF.md, PROGRESS.md, and WORKSPACE.md. No code or harness behavior changed.

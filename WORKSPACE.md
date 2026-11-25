@@ -11,22 +11,16 @@ These provide build tools, Python, stock mGBA, Xvfb, Stella, and FAT image tools
 
 ## 2. Install devkitARM without Docker
 
-Use devkitPro official Debian/Ubuntu pacman bootstrap. Review the installer before running it:
+Use the [official devkitPro pacman instructions](https://devkitpro.org/wiki/devkitPro_pacman) and Debian/Ubuntu bootstrap. Review the installer before running it:
 
     curl -fsSLo /tmp/install-devkitpro-pacman https://apt.devkitpro.org/install-devkitpro-pacman
     less /tmp/install-devkitpro-pacman
     chmod +x /tmp/install-devkitpro-pacman
     sudo /tmp/install-devkitpro-pacman
-    sudo dkp-pacman -Sy --needed gba-dev
+    sudo /opt/devkitpro/pacman/bin/dkp-pacman -Sy --needed gba-dev
+    source /etc/profile.d/devkit-env.sh
 
-If dkp-pacman is not on PATH, use `/opt/devkitpro/pacman/bin/dkp-pacman`. Configure future shells:
-
-    cat >> ~/.bashrc <<'BASHRC'
-    export DEVKITPRO=/opt/devkitpro
-    export DEVKITARM="$DEVKITPRO/devkitARM"
-    export PATH="$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH"
-    BASHRC
-    source ~/.bashrc
+The official installer provides the `devkit-env.sh` profile used to set `DEVKITPRO`, `DEVKITARM`, and tool paths in new login shells. If the profile is not present, inspect the installed files under `/etc/profile.d/` and set those variables to the installed devkitPro paths; do not hardcode a guessed compiler location.
 
 Verify the tools:
 
@@ -35,7 +29,7 @@ Verify the tools:
     gbafix --help >/dev/null
     command -v cmake ninja cc python3 /usr/games/mgba xvfb-run xdotool stella mkfs.vfat mcopy fsck.fat
 
-If the official bootstrap URL returns HTTP 403, use devkitPro current Linux instructions at https://devkitpro.org/wiki/devkitPro_pacman; do not restore Docker-in-Docker or substitute an unrelated ARM compiler. The prior restricted Codespace received HTTP 403, so confirm access in the new unrestricted Codespace. Historical builds used devkitARM GCC 16.1.0 from `devkitpro/devkitarm:latest`. The pacman package may be newer; record compiler version and plugin hash in `PROGRESS.md`. Claim exact archived hash reproduction only if the result matches.
+If the official bootstrap URL returns HTTP 403, autonomously follow the current installation alternatives linked from devkitPro's Linux instructions; do not restore Docker-in-Docker or substitute an unrelated ARM compiler. The prior restricted Codespace received HTTP 403, so confirm access in the new unrestricted Codespace. Historical builds used devkitARM GCC 16.1.0 from `devkitpro/devkitarm:latest`. The pacman package may be newer; record compiler version and plugin hash in `PROGRESS.md`. Claim exact archived hash reproduction only if the result matches.
 
 ## 3. Restore ignored source checkouts
 
