@@ -13,6 +13,6 @@ On a cold start, saying “Read AGENTS.md” is sufficient. Follow the instructi
 - Build environment and exact commands: `WORKSPACE.md`.
 - Card profiles and harness evidence: `harnesses/cards.json`, `harnesses/README.md`, `docs/provenance/`.
 - Latest commit and verified/unverified results: run `git log`; see `PROGRESS.md`.
-- Offline workspace cleanup and full baseline passed and was pushed in `114f259`. Current work is SuperCard SD/Lite/Chis control-launch qualification; see the latest task note in `PROGRESS.md`. Continue in small verified commits and update the handoff/progress records as evidence changes. Full offline commands and kernel overrides are in `WORKSPACE.md`.
+- Offline workspace cleanup and baseline passed in `114f259`. The shared-image harness gate now passes in mGBA for all six profiles using one 4 GiB exFAT image with 32 KiB clusters; run `scripts/verify-six-profile-image.sh`. The EZ shared-image scenario ends at a kernel save-error dialog and does not prove EZ plugin handoff. Current task: establish the Atari gameplay timing/input baseline on Chis, per `PROGRESS.md` §1. Keep physical GBA timing and physical-card behavior marked `UNVERIFIED`; update the handoff after each completed task. Full offline commands are in `WORKSPACE.md`.
 
 This file is intentionally a short recovery index. Project requirements belong in `AGENTS.md`; detailed current state and evidence belong in `PROGRESS.md`; environment setup belongs in `WORKSPACE.md`.

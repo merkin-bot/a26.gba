@@ -14,8 +14,9 @@ sudo apt-get \
 sudo apt-get \
   -o Dir::Etc::sourcelist="$source_file" \
   -o Dir::Etc::sourceparts=- \
-  --no-download --no-install-recommends --yes install \
+  --no-install-recommends --yes install \
   build-essential cmake ninja-build pkg-config git python3 python3-pil \
-  python3-unicorn lcov mtools dosfstools stella mgba-sdl xvfb xdotool xauth
+  python3-unicorn lcov mtools dosfstools exfatprogs exfat-fuse fuse3 \
+  stella mgba-sdl xvfb xdotool xauth
 
 echo "Host tools installed from this repository's Ubuntu 24.04 offline package set."

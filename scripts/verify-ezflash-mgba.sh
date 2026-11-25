@@ -50,15 +50,17 @@ while IFS='|' read -r tag lane kernel_rel kernel_env; do
   image="work/ez-${lane}-sd.img"
   capture="work/ez-${lane}-300.ppm"
   test -s "$kernel"
-  KERNEL_GBA="$kernel" bash scripts/make-sd-image.sh "$image" 64
+  bash scripts/make-sd-image.sh "$image" 64
   fsck.fat -n "$image" >/dev/null
   build/harness-cmake/ezflash-mgba-runner "$kernel" 300 "$image" "$capture"
 
   kernel_hash="$(sha256sum "$kernel" | awk '{print $1}')"
-  image_kernel_hash="$(mtype -i "$image" ::SYSTEM/KERNELS/KERNEL.GBA | sha256sum | awk '{print $1}')"
   plugin_hash="$(mtype -i "$image" ::SYSTEM/PLUG/a26.gba | sha256sum | awk '{print $1}')"
   rom_hash="$(mtype -i "$image" ::ROMS/flappy.a26 | sha256sum | awk '{print $1}')"
-  test "$kernel_hash" = "$image_kernel_hash"
+  if mdir -i "$image" ::SYSTEM/KERNELS >/dev/null 2>&1; then
+    echo "unexpected SYSTEM/KERNELS content in standard harness image" >&2
+    exit 1
+  fi
   test "$plugin_hash" = "cc868252fb113cd4160b8c6677d39cfe076056a4422f262b0975c99f5fb21de7"
   test "$rom_hash" = "ad7bc56f0e4ae5938cc06f7cbd9be8a2cc8de715ca4a3eadfb057fd9d260afcb"
   echo "profile=$lane kernel_source=$kernel_source kernel_sha256=$kernel_hash image_sha256=$(sha256sum "$image" | awk '{print $1}') plugin_sha256=$plugin_hash rom_sha256=$rom_hash"

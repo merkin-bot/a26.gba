@@ -3,8 +3,8 @@
   "kernel_repository_commit": "published release tags listed per profile; untagged prior test snapshot f6350776f07eba91ba2ffa34c6833d85f348f2a1 is not current validation",
   "layers": [
     "mGBA GBA-system model",
-    "DSSMM per-card firmware/kernel and cartridge behavior",
-    "per-card SD block image/filesystem containing kernel/plugin/Atari ROM"
+    "matching per-card firmware/kernel and cartridge behavior",
+    "one unchanged exFAT SD block image shared across profile runs; restore its pristine bytes before each run"
   ],
   "profiles": [
     {
@@ -15,7 +15,7 @@
       "source_commit": "a948b936c11bc984ca8a84d141dc1b7ea81751a6",
       "artifact": "ezkernelnew.bin",
       "source": "ezfomegade/",
-      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2; separate fresh DE kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 803 blocks read, 216 written, zero synthetic failures, and framebuffer FNV64 ABA1E9FDDE9F1C85; source-shaped SD/PSRAM/S71 only; physical behavior and shell return UNVERIFIED"
+      "status": "v8.4.1 five-case native launch fixture passed on mGBA 0.10.2; separate fresh DE kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 803 blocks read, 216 written, zero synthetic failures, and framebuffer FNV64 ABA1E9FDDE9F1C85; source-shaped SD/PSRAM/S71 only; physical behavior and shell return UNVERIFIED; shared 4 GiB 32 KiB-cluster exFAT image run completed 3,200 frames with zero synthetic storage failures; final screen is a kernel save-error dialog, so PocketNES and Atari plugin handoff are UNVERIFIED in this scenario"
     },
     {
       "id": "ezfomega-original",
@@ -25,7 +25,7 @@
       "source_commit": "29bbb055b26968468cadf7358bdffd340209a355",
       "artifact": "ezkernel.bin",
       "source": "ezfomega/",
-      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2; separate fresh Original OMEGA kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 751 blocks read, 224 written, zero synthetic failures, and framebuffer FNV64 ABA1E9FDDE9F1C85; source-shaped SD/PSRAM/S71 only; physical behavior and shell return UNVERIFIED"
+      "status": "v8.4.1-omega-test5 five-case native launch fixture passed on mGBA 0.10.2; separate fresh Original OMEGA kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 751 blocks read, 224 written, zero synthetic failures, and framebuffer FNV64 ABA1E9FDDE9F1C85; source-shaped SD/PSRAM/S71 only; physical behavior and shell return UNVERIFIED; shared 4 GiB 32 KiB-cluster exFAT image run completed 3,200 frames with zero synthetic storage failures; final screen is a kernel save-error dialog, so PocketNES and Atari plugin handoff are UNVERIFIED in this scenario"
     },
     {
       "id": "ezfblue",
@@ -35,7 +35,7 @@
       "source_commit": "9bc24e04efe4fa815c6a2d83bf319ec9ebbcd278",
       "artifact": "ezbluekernel.bin",
       "source": "ezfblue/",
-      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2; separate fresh BLUE kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 802 blocks read, 216 written, zero synthetic failures, and framebuffer FNV64 3BDA64DE762CE6D0; source-shaped SD/PSRAM/S98 only; physical behavior and shell return UNVERIFIED"
+      "status": "v8.4.1-blue-test5 five-case native launch fixture passed on mGBA 0.10.2; separate fresh BLUE kernel/plugin/ROM image passed its 300-frame storage baseline and a controlled 2,500-frame PocketNES/Snail Maze run with 802 blocks read, 216 written, zero synthetic failures, and framebuffer FNV64 3BDA64DE762CE6D0; source-shaped SD/PSRAM/S98 only; physical behavior and shell return UNVERIFIED; shared 4 GiB 32 KiB-cluster exFAT image run completed 3,200 frames with zero synthetic storage failures; final screen is a kernel save-error dialog, so PocketNES and Atari plugin handoff are UNVERIFIED in this scenario"
     },
     {
       "id": "supercard-chis",
@@ -46,7 +46,7 @@
       "artifact": "SuperFW Chis build",
       "source": "superfw/",
       "firmware_sha256": "7fa0e67e66345b05d6ffe9896c2dfc10f0095877e4b2cd8664ad13e15d999d24",
-      "status": "Build769 clean board build, two-boot settings, full native menu scenes and Chis NOR carousel mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Chis NOR/SRAM page mapping is not modeled: Build769 register sequences conflict with pinned ChisBread CPLD source; board-revision equivalence and physical behavior are UNVERIFIED; matching Build769 PocketNES/Snail Maze control reached cartridge-mapped code on this profile at 2,200 frames with 1,432 blocks read, 13 written, zero synthetic load failures, and the shared startup-splash framebuffer C8F4325206720D24; physical behavior remains UNVERIFIED"
+      "status": "Build769 clean board build, two-boot settings, full native menu scenes and Chis NOR carousel mGBA fixtures passed. In the separate fresh 64 MiB FAT image, with the kernel passed directly to the runner, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Chis NOR/SRAM page mapping is not modeled: Build769 register sequences conflict with pinned ChisBread CPLD source; board-revision equivalence and physical behavior are UNVERIFIED. Matching Build769 PocketNES/Snail Maze control reached cartridge code at 2,200 frames; a repeat 3,000-frame run created and read back the 131,072-byte save and returned to kernel EWRAM. Extracted save SHA-256 b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260; physical behavior remains UNVERIFIED; shared 4 GiB 32 KiB-cluster exFAT image run completed 3,200 frames with zero SD load failures and reached cartridge-mapped code; physical behavior UNVERIFIED"
     },
     {
       "id": "supercard-sd",
@@ -57,7 +57,7 @@
       "artifact": "SuperFW SD build",
       "source": "superfw/",
       "firmware_sha256": "89786c48771c8df7b73c2009af4db74699a7147bafad1d2c21e39acd74d6fecf",
-      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 1 read command/1 model block, zero failures, and framebuffer FNV64 30C994B7E348742D; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Runner models 0x09100000/0x0B100000 reads with source-described upper-halfword lane packing and serial writes; physical behavior is UNVERIFIED; matching Build769 PocketNES/Snail Maze control reached cartridge-mapped code on this profile at 2,200 frames with 1,432 blocks read, 13 written, zero synthetic load failures, and the shared startup-splash framebuffer C8F4325206720D24; physical behavior remains UNVERIFIED"
+      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. In the separate fresh 64 MiB FAT image, with the kernel passed directly to the runner, the A26 runner completed 2,000 global GBA frames, reported 1 read command/1 model block, zero failures, and framebuffer FNV64 30C994B7E348742D; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Runner models 0x09100000/0x0B100000 reads with source-described upper-halfword lane packing and serial writes; physical behavior is UNVERIFIED. Matching Build769 PocketNES/Snail Maze control reached cartridge code at 2,200 frames; a repeat 3,000-frame run created and read back the 131,072-byte save and returned to kernel EWRAM. Extracted save SHA-256 b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260; physical behavior remains UNVERIFIED; shared 4 GiB 32 KiB-cluster exFAT image run completed 3,200 frames with zero SD load failures and reached cartridge-mapped code; physical behavior UNVERIFIED"
     },
     {
       "id": "supercard-lite",
@@ -68,7 +68,7 @@
       "artifact": "SuperFW Lite build",
       "source": "superfw/",
       "firmware_sha256": "476e9d5fef4b07cc2b3a59476bae7692ea7405ab41fb92166489778b5a48c283",
-      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. With KERNEL.GBA included on the separate fresh 64 MiB FAT image, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, 3,900 data-port reads, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Lite 0x09200000 data port and common SDRAM fetch mapping are source-shaped; physical SD behavior is UNVERIFIED; matching Build769 PocketNES/Snail Maze control reached cartridge-mapped code on this profile at 2,200 frames with 1,432 blocks read, 13 written, zero synthetic load failures, and the shared startup-splash framebuffer C8F4325206720D24; physical behavior remains UNVERIFIED"
+      "status": "Build769 clean board build, two-boot settings, and full native menu mGBA fixtures passed. In the separate fresh 64 MiB FAT image, with the kernel passed directly to the runner, the A26 runner completed 2,000 global GBA frames, reported 30 read commands/60 model blocks, 3,900 data-port reads, zero failures, and framebuffer FNV64 357015EFA2DF90AB; first traced EWRAM execution frame 47. Fixed-total-frame output is not synchronized to other boards. Lite 0x09200000 data port and common SDRAM fetch mapping are source-shaped; physical SD behavior is UNVERIFIED. Matching Build769 PocketNES/Snail Maze control reached cartridge code at 2,200 frames; a repeat 3,000-frame run created and read back the 131,072-byte save and returned to kernel EWRAM. Extracted save SHA-256 b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260; physical behavior remains UNVERIFIED; shared 4 GiB 32 KiB-cluster exFAT image run completed 3,200 frames with zero SD load failures and reached cartridge-mapped code; physical behavior UNVERIFIED"
     }
   ],
   "mGBA_upstream": {
@@ -140,19 +140,18 @@
       "sd_data": "The conditional read path shares Lite's 0x09200000 block port; writes use the 0x09000000/0x0B000000 serial register path",
       "flash_difference": "rom_boot.S programs eight NOR map entries using three writes (0xA55A twice, then 0x100 | map value); Chis also assigns mode bit 3 to SRAM bank selection"
     },
-    "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Each current 2,000-frame run used the matching Build769 firmware and a separately created fresh 64 MiB FAT32 image containing KERNEL.GBA plus identical plugin/ROM file hashes. Host tests cover SD read port windows/lane packing, SD/Chis serial writes, and the Build769 Chis NOR-map transcript. With the kernel file in the image: SD reported 1 model block, 0 failures, FNV64 30C994B7E348742D; Lite reported 60 model blocks/3,900 data-port reads/0 failures, FNV64 357015EFA2DF90AB; Chis reported 60 model blocks/3,900 data-port reads/0 failures, same FNV64. First traced EWRAM execution is frame 47 on each. These fixed-total-frame hashes are not synchronized game-state comparisons. Separate image SHA-256: SD 8a4d3861e263f698340a661e1c38bfc87fce1c5597633b71baf03e442e61f3b2, Lite 041a776efe8fe91299808a4f00aecd2f3db9a882f9e66b6712e85006f143a53d, Chis af231ad09991c9ef925e2c2acf1bb4161208b49bf7222cba3bc020fd1825842f. Chis NOR/SRAM mappings remain unmodeled because Build769 expectations conflict with pinned CPLD source; board-revision equivalence is UNVERIFIED. Physical card behavior/timing remains UNVERIFIED. Key injection accepts one-frame taps or inclusive frame ranges in the SuperCard runner; this is input tooling only. No new positive PocketNES control result was obtained for Lite/SD in the latest attempts."
+    "runner_status": "A26 runner board is selected with A26_SUPERCARD_BOARD=lite|sd|chis (default lite). Each 2,000-frame baseline used matching Build769 firmware as runner input and a separate fresh 64 MiB FAT32 image with identical plugin/ROM hashes (no kernel or theme files on the image). Host tests cover SD read windows/lane packing, SD/Chis serial writes, and the Build769 Chis NOR-map transcript. Baseline model results: SD 1 block/FNV64 30C994B7E348742D; Lite and Chis 60 blocks, Lite/Chis 3,900 data-port reads, FNV64 357015EFA2DF90AB. First traced EWRAM execution is frame 47. PocketNES/Snail Maze reached cartridge code on SD/Lite/Chis at frame 2,200 (1,432 blocks read, 13 written, zero model failures; shared startup-splash FNV64 C8F4325206720D24). Repeat 3,000-frame runs created 131,072-byte save files and returned to kernel EWRAM on all three; extracted save SHA-256 b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260; final PPMs are byte-identical (SHA-256 5bb42bf22a46219a8777518c103dc924b03faf2f75786899b0fcdd30ce4c79dc). Fixed-frame outputs are not synchronized game comparisons. Chis NOR/SRAM mappings remain unmodeled because Build769 expectations conflict with pinned CPLD source; board-revision equivalence, physical card behavior, and timing remain UNVERIFIED."
   },
-  "verification": "Current session ran the EZ launch fixtures at their release tags, all three source-built EZ kernels against separate synthetic FAT images, and all three Build769 SuperFW mGBA paths with separate images containing the kernel/plugin/ROM. These results qualify only the recorded source/fixture behavior; EZ plugin handoff/return remains unestablished, Chis NOR/SRAM remains unmodeled, and no physical card compatibility, real GBA timing, synchronized Atari correctness, or audio is inferred from mGBA. Matching Build769 SD/Lite/Chis profiles also reached PocketNES code and its startup splash under identical input events at frame 2200; repeat Lite boot created a 128 KiB file under SYSTEM/SAVER. See supercard_pocketnes_control for scope and outstanding title/save/return checks.",
+  "verification": "The shared exFAT image qualification in shared_image_test passes for all six source-kernel/mGBA storage models. Prior per-profile PocketNES controls and SuperCard save/return evidence remain distinct experiments and are not upgraded by the shared-image result. EZ final captures showed a kernel save-error dialog in the shared-image scenario; EZ PocketNES/Atari handoff remains UNVERIFIED. Physical card compatibility, real GBA timing, synchronized Atari correctness, and audio are not inferred from mGBA.",
   "kernel_update": {
     "local_staging_directory": "work/kernels/ (ignored)",
-    "image_builder_variable": "KERNEL_GBA=/path/to/kernel.gba",
     "ezflash_binary_overrides": {
       "ezfomegade": "EZ_DE_KERNEL_GBA",
       "ezfomega": "EZ_OMEGA_KERNEL_GBA",
       "ezfblue": "EZ_BLUE_KERNEL_GBA"
     },
     "qualify_command": "EZFLASH_PROFILE=<ezfomegade|ezfomega|ezfblue> <profile override>=work/kernels/<new-kernel>.gba scripts/verify-ezflash-mgba.sh",
-    "supercard_runner": "Pass the new kernel as argument 1 to supercard-mgba-runner and set the same path as KERNEL_GBA when creating its image.",
+    "supercard_runner": "Pass the new kernel as argument 1 to supercard-mgba-runner. Do not copy the kernel onto the shared SD image.",
     "provenance_required": [
       "kernel release/version",
       "source URL or archive origin",
@@ -172,12 +171,31 @@
     "image_layout": [
       "SYSTEM/PLUG/nes.gba",
       "SYSTEM/SAVER/",
-      "SYSTEM/KERNELS/KERNEL.GBA",
       "ROMS/snailmaze.nes"
     ],
     "key_events": "600:0x1,1200:0x1,1800:0x80,1900:0x1",
     "first_launch_frame_2200": "Build769 SD/Lite/Chis each reached cartridge-mapped PocketNES code. Each read 716 SD commands/1432 blocks, wrote 13 commands/blocks, had zero model load failures, and produced identical 240x160 framebuffer FNV64 C8F4325206720D24. Byte-identical PPM SHA-256 8595aa48e864a9f3f83fbb7b768b953ca791b7f023049ae37d65da1266ce2fb4; screen is PocketNES/Slydog startup splash.",
-    "save_observation": "A second Lite runner invocation created SYSTEM/SAVER/snailmaze.sav (131072 bytes), extracted SHA-256 b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260. SD/Chis repeat-boot save behavior not tested.",
-    "remaining": "Advance beyond splash to Snail Maze title/game; repeat save creation/read on SD and Chis; validate save content and shell return. All mGBA/storage-model evidence only; physical behavior UNVERIFIED."
+    "save_observation": "Repeated 3,000-frame runs created SYSTEM/SAVER/snailmaze.sav (131072 bytes) on SD/Lite/Chis. Each extracted save SHA-256 is b5a41c3758763bbec72769fab4a2533bf2db0b6312d93d25a695f9e4b9e02260. Final PC samples are in kernel EWRAM and the three PPM captures are byte-identical (SHA-256 5bb42bf22a46219a8777518c103dc924b03faf2f75786899b0fcdd30ce4c79dc). This is modeled save-file creation/readback and return to kernel code; save semantics and physical persistence are not proven.",
+    "remaining": "Reach and capture the Snail Maze title/game screen with a reproducible input sequence; validate save semantics beyond byte-identical file creation/readback. All mGBA/storage-model evidence only; physical behavior UNVERIFIED.",
+    "shared_image_note": "The six-profile exFAT run restores pristine image SHA-256 b237c4c14f0091e88e4c5e535e7bdda7ce490f372de7c72db6fac9339b82d6c7 before every profile. Existing SD/Lite/Chis save/return observations came from separate FAT32 images and remain separate evidence."
+  },
+  "shared_image_test": {
+    "script": "scripts/verify-six-profile-image.sh",
+    "filesystem": "exFAT",
+    "image_size_bytes": 4294967296,
+    "cluster_size_bytes": 32768,
+    "pristine_sha256": "b237c4c14f0091e88e4c5e535e7bdda7ce490f372de7c72db6fac9339b82d6c7",
+    "layout": [
+      "SYSTEM/PLUG/a26.gba",
+      "SYSTEM/PLUG/nes.gba",
+      "SYSTEM/SAVER/",
+      "ROMS/flappy.a26",
+      "ROMS/snailmaze.nes"
+    ],
+    "kernel_on_image": false,
+    "theme_style_payload_on_image": false,
+    "method": "Copy the byte-identical pristine image to the run path before each matching profile; fsck.exfat -n before and after each run; profile kernels are supplied directly to their matching runners.",
+    "result": "All six matching source-kernel/model runs completed 3,200 GBA frames with zero reported SD/image load failures. The three SuperCard profiles reached cartridge-mapped code. The EZ runs completed the kernel/storage scenario but the final capture was a kernel save-error dialog; this result does not establish EZ PocketNES or Atari plugin handoff. The shared-image filesystem and storage-path check passes at the synthetic model boundary.",
+    "physical_status": "UNVERIFIED: no physical card or GBA timing evidence"
   }
 }

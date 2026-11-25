@@ -1032,6 +1032,56 @@ Description: utility to monitor Linux input device events
  package should be used instead.
 Original-Maintainer: Stephen Kitt <skitt@debian.org>
 
+Package: exfat-fuse
+Source: fuse-exfat
+Version: 1.4.0-2
+Architecture: amd64
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Installed-Size: 65
+Depends: libc6 (>= 2.34), libfuse3-3 (>= 3.2.3)
+Recommends: exfatprogs
+Filename: ./exfat-fuse_1.4.0-2_amd64.deb
+Size: 25670
+MD5sum: 2d9c6a57da6d7c1dd9c9c1ee95229caf
+SHA1: ec20684b682b72acfc65b123cd38a07c7bd5cceb
+SHA256: c0ff5f611c4bd93121f8aaced42d911d76bf7e11c04192dd93450518e74c595e
+Section: otherosfs
+Priority: optional
+Homepage: https://github.com/relan/exfat
+Description: read and write exFAT driver for FUSE
+ fuse-exfat is a read and write driver implementing
+ the extended file allocation table as a filesystem in userspace.
+ A mounthelper is provided unter the name mount.exfat-fuse.
+Original-Maintainer: Sven Hoexter <hoexter@debian.org>
+
+Package: exfatprogs
+Version: 1.2.2-1build1
+Architecture: amd64
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Installed-Size: 222
+Depends: libc6 (>= 2.34)
+Filename: ./exfatprogs_1.2.2-1build1_amd64.deb
+Size: 65858
+MD5sum: 93e1e4066d919c4cbfa2ec153922eda8
+SHA1: 5804399479a4d4759ec85b757e0792d774d2c5b0
+SHA256: 64ef15897c8b80b92670fd14edd47733b90ea12c9fa836694158c04e6f60bc0d
+Section: otherosfs
+Priority: optional
+Homepage: https://github.com/exfatprogs/exfatprogs
+Description: exFAT file system utilities
+ Tools to manage extended file allocation table filesystem.
+ This package provides tools to create, check, dump and label
+ the filesystem. It contains
+  - mkfs.exfat to create an exFAT filesystem
+  - fsck.exfat to check and repair an exFAT filesystem
+  - tune.exfat to print and edit the volume label or serial
+  - dump.exfat to show on-disk information of an exFAT filesystem
+  - exfat2img to dump exFAT metadata
+ The tools included in this package are the exfatprogs
+ maintained by Samsung and LG engineers, who provided Linux exFAT
+ support.
+Original-Maintainer: Sven Hoexter <hoexter@debian.org>
+
 Package: fakeroot
 Version: 1.33-1
 Architecture: amd64
@@ -1179,6 +1229,30 @@ Description: Vera font family derivate with additional characters
  DejaVu fonts are intended for use on low-resolution devices (mainly
  computer screens) but can be used in printing as well.
 Original-Maintainer: Debian Fonts Task Force <debian-fonts@lists.debian.org>
+
+Package: fuse3
+Version: 3.14.0-5build1
+Architecture: amd64
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Installed-Size: 94
+Depends: libc6 (>= 2.38), libfuse3-3 (= 3.14.0-5build1), adduser, mount (>= 2.19.1), sed (>= 4)
+Breaks: fuse
+Replaces: fuse
+Provides: fuse (= 3.14.0-5build1)
+Filename: ./fuse3_3.14.0-5build1_amd64.deb
+Size: 25156
+MD5sum: 2e1761ff756f3bfcd8f1ecf562521194
+SHA1: 15822827825a72c010dd94ea66935757685a4b64
+SHA256: 1e5580eeb72e830f0b242254b2438669a94c9912abf1e2f188b2992f188cc995
+Section: utils
+Priority: optional
+Homepage: https://github.com/libfuse/libfuse/wiki
+Description: Filesystem in Userspace (3.x version)
+ Filesystem in Userspace (FUSE) is a simple interface for userspace programs to
+ export a virtual filesystem to the Linux kernel. It also aims to provide a
+ secure method for non privileged users to create and mount their own filesystem
+ implementations.
+Original-Maintainer: Laszlo Boszormenyi (GCS) <gcs@debian.org>
 
 Package: g++
 Source: gcc-defaults (1.214ubuntu1)
@@ -5356,6 +5430,32 @@ Description: Free Implementation of the Unicode BiDi algorithm
  languages.
  This package contains the shared libraries.
 Original-Maintainer: Debian Hebrew Packaging Team <team+hebrew@tracker.debian.org>
+
+Package: libfuse3-3
+Source: fuse3
+Version: 3.14.0-5build1
+Architecture: amd64
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Installed-Size: 287
+Depends: libc6 (>= 2.38)
+Suggests: fuse3
+Filename: ./libfuse3-3_3.14.0-5build1_amd64.deb
+Size: 83124
+MD5sum: c759a0a6fa385509d93ff7ff6a6bb586
+SHA1: 13237bed679563f08856946ddf7211e949e1dc22
+SHA256: 3042159c6d7d4dcb3df9d49cd21e49ecb57f4ba8c4153a72102f512a4fc534a2
+Section: libs
+Priority: optional
+Multi-Arch: same
+Homepage: https://github.com/libfuse/libfuse/wiki
+Description: Filesystem in Userspace (library) (3.x version)
+ Filesystem in Userspace (FUSE) is a simple interface for userspace programs to
+ export a virtual filesystem to the Linux kernel. It also aims to provide a
+ secure method for non privileged users to create and mount their own filesystem
+ implementations.
+ .
+ This package contains the shared library.
+Original-Maintainer: Laszlo Boszormenyi (GCS) <gcs@debian.org>
 
 Package: libgbm1
 Source: mesa
