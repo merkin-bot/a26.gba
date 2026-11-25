@@ -13,6 +13,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+
+typedef struct SuperCardKeyEvent {
+    unsigned long first_frame;
+    unsigned long last_frame;
+    uint32_t mask;
+} SuperCardKeyEvent;
 
 static void quiet_log(struct mLogger *logger, int category,
                       enum mLogLevel level, const char *format, va_list args) {
@@ -151,7 +158,8 @@ int main(int argc, char **argv) {
     mLogSetDefaultLogger(&silent_logger);
     if (argc < 2 || argc > 6) {
         fprintf(stderr, "usage: %s <gba-image> [frames [sd-image [capture.ppm [key-events]]]]\n"
-                        "  key-events: comma-separated frame:mask taps (e.g. 1800:0x1)\n"
+                        "  key-events: comma-separated frame:mask taps or first-last:mask holds\n"
+                        "    e.g. 1800:0x1 or 1800-1810:0x1\n"
                         "  A26_SUPERCARD_BOARD: lite (default), sd, or chis\n", argv[0]);
         return 2;
     }
@@ -224,45 +232,58 @@ int main(int argc, char **argv) {
     core->reset(core);
     uint32_t start_frame = core->frameCounter(core);
     struct GBA *gba = core->board;
-    unsigned long event_frame[64];
-    uint32_t event_mask[64];
+    SuperCardKeyEvent events[64];
     size_t event_count = 0;
     if (argc == 6) {
-        char *events = strdup(argv[5]);
-        if (!events) {
+        char *event_list = strdup(argv[5]);
+        if (!event_list) {
             fputs("could not allocate key-event list\n", stderr);
             free(video_buffer);
             cleanup(core, &bus, &model, config_initialized);
             return 1;
         }
         char *save = NULL;
-        for (char *event = strtok_r(events, ",", &save); event;
+        for (char *event = strtok_r(event_list, ",", &save); event;
              event = strtok_r(NULL, ",", &save)) {
             char *colon = strchr(event, ':');
-            char *frame_end = NULL, *mask_end = NULL;
-            if (!colon || event_count == 64) {
-                free(events);
-                fputs("invalid key-event list (maximum 64 frame:mask entries)\n", stderr);
+            char *range = strchr(event, '-');
+            char *first_end = NULL, *last_end = NULL, *mask_end = NULL;
+            if (!colon || event_count == 64 || (range && range > colon)) {
+                free(event_list);
+                fputs("invalid key-event list (maximum 64 frame or range entries)\n", stderr);
                 free(video_buffer);
                 cleanup(core, &bus, &model, config_initialized);
                 return 2;
             }
             *colon++ = '\0';
+            unsigned long first_frame, last_frame;
             errno = 0;
-            unsigned long event_at = strtoul(event, &frame_end, 10);
+            if (range) {
+                *range++ = '\0';
+                first_frame = strtoul(event, &first_end, 10);
+                last_frame = strtoul(range, &last_end, 10);
+            } else {
+                first_frame = strtoul(event, &first_end, 10);
+                last_frame = first_frame;
+                last_end = first_end;
+            }
             unsigned long mask = strtoul(colon, &mask_end, 0);
-            if (errno || !frame_end || *frame_end || !mask_end || *mask_end ||
-                event_at >= frames || mask > 0x3FFu) {
-                free(events);
-                fputs("key event frame/mask is out of range or malformed\n", stderr);
+            if (errno || !first_end || *first_end || !last_end || *last_end ||
+                !mask_end || *mask_end || first_frame > last_frame ||
+                last_frame >= frames || mask > 0x3FFu) {
+                free(event_list);
+                fputs("key event range/mask is out of range or malformed\n", stderr);
                 free(video_buffer);
                 cleanup(core, &bus, &model, config_initialized);
                 return 2;
             }
-            event_frame[event_count] = event_at;
-            event_mask[event_count++] = (uint32_t)mask;
+            events[event_count++] = (SuperCardKeyEvent) {
+                .first_frame = first_frame,
+                .last_frame = last_frame,
+                .mask = (uint32_t)mask,
+            };
         }
-        free(events);
+        free(event_list);
     }
     const char *previous_region = NULL;
     int trace_first_bios = getenv("A26_TRACE_FIRST_BIOS") != NULL;
@@ -274,8 +295,8 @@ int main(int argc, char **argv) {
     for (unsigned long i = 0; i < frames; ++i) {
         uint32_t keys = 0;
         for (size_t event = 0; event < event_count; ++event) {
-            if (event_frame[event] == i) {
-                keys = event_mask[event];
+            if (events[event].first_frame <= i && i <= events[event].last_frame) {
+                keys = events[event].mask;
                 break;
             }
         }
