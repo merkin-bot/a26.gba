@@ -341,6 +341,7 @@ int main(int argc, char **argv) {
     uint32_t atari_last_tv_counter = 0;
     uint64_t atari_display_calls = 0;
     uint64_t atari_rendered_calls = 0;
+    uint32_t min_atari_iwram_sp = UINT32_MAX;
     for (unsigned long i = 0; i < frames; ++i) {
         uint32_t keys = 0;
         for (size_t event = 0; event < event_count; ++event) {
@@ -356,6 +357,12 @@ int main(int argc, char **argv) {
             const char *region = pc_region((uint32_t)trace_pc);
             if (trace_atari_globals && strcmp(region, "cartridge") == 0) {
                 const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
+                int32_t sp = -1;
+                if (atari_counter_started && core->readRegister(core, "sp", &sp) &&
+                    (uint32_t)sp >= 0x03000000u &&
+                    (uint32_t)sp < min_atari_iwram_sp) {
+                    min_atari_iwram_sp = (uint32_t)sp;
+                }
                 uint32_t tv_counter = read_le32(iwram, atari_tv_counter_offset);
                 uint32_t pace_frame = read_le32(iwram, atari_pace_offset);
                 if (!atari_counter_started) {
@@ -632,8 +639,9 @@ int main(int argc, char **argv) {
     uint32_t end_frame = core->frameCounter(core);
     if (trace_atari_globals) {
         printf("atari_probe_total display_calls=%" PRIu64
-               " rendered_calls=%" PRIu64 "\n",
-               atari_display_calls, atari_rendered_calls);
+               " rendered_calls=%" PRIu64 " min_iwram_sp=0x%08" PRIX32 "\n",
+               atari_display_calls, atari_rendered_calls,
+               min_atari_iwram_sp);
     }
     int32_t pc = -1, r0 = 0, r1 = 0, r2 = 0, r3 = 0, lr = 0;
     int has_pc = core->readRegister(core, "pc", &pc);

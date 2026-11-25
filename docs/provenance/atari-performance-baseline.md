@@ -48,6 +48,12 @@ This is a small diagnostic improvement, far below the performance target. It com
 
 Three cold replays per candidate confirm a small, repeatable change in this mGBA model. The prior build stopped at 3,083, 3,081, and 3,079 frames (mean 3,081); the `do_screen()` build stopped at 3,036, 3,038, and 3,038 (mean 3,037), about 1.4% fewer frames. All six captures had the same SHA-256 above, and all reported zero SD load failures. Atari accumulator readings at the stop varied by several thousand clocks around 801k, so the boundary timing is not exact cycle-equivalence. SD command counts also varied substantially between cold replays (the `do_screen()` build ranged from 32,544 to 54,192 command writes and 6,877 to 144,946 data writes), and are retained as a caveat about changed guest progress/timing. This remains an mGBA-only signal, far below the PocketNES-like target; physical timing is unmeasured. Continue by inspecting hot memory accessors and rendering cost.
 
+## Third placement candidate: decoded data reads in IWRAM
+
+`decRead()` was moved from cartridge ROM to IWRAM (plugin SHA-256 `5d60fbe81de5d066edd3166c6c9ce3f15a3649dd507636cac2a11f9e523a3bc1`). This adds about 1,488 bytes to `.iwram`; it does not change emulator logic. Three fixed-TV-counter replays on the prior build took 3,036, 3,038, and 3,036 mGBA frames (mean 3,036.7); the new build took 3,023, 3,027, and 3,025 (mean 3,025), about 0.38% fewer. Captures stayed byte-identical at SHA-256 `c11fdf92de4b7fb70c1e23f6635b4c7527b2bcb995410443663c9126d8b20080`, rendered counts were 40, WAITCNT stayed 0x4000, and SD load failures were zero.
+
+The linked `.iwram`, `.bss`, and `.data` end at `0x03007A3C`; initial IWRAM stack top is `0x03007F00`, leaving 1,220 bytes before the change. A new runner diagnostic samples the GBA SP after every GBA frame once Atari code is active. Both builds reached a lowest sampled SP of `0x03007DC8`, leaving 908 bytes above static data in this replay. This is sampled stack use, not a proof of the absolute worst-case IRQ/call-chain stack requirement. Given the small gain and remaining uncertainty, retain the placement only provisionally and revisit if later code needs IWRAM. Physical hardware timing remains unmeasured.
+
 ## Interpretation and limits
 
 - The probe shows emulated Atari clock and frame-counter progression, not physical output cadence or real input latency.

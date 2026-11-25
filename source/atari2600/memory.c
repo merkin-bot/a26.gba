@@ -354,7 +354,7 @@ void decWrite ( ADDRESS a, BYTE b) {
 
 
 /* Decoded Read */
-BYTE decRead (ADDRESS a)
+BYTE __attribute__((section(".iwram"))) decRead (ADDRESS a)
 {
 	BYTE res;
 	ADDRESS a1;
