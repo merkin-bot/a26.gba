@@ -4,7 +4,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 
 **Last updated:** 2026-11-25 UTC by Codex
 **Current branch:** main
-**Last pushed commit:** `b01e3f1` (`Repair Codespaces harness environment setup`); recovery/configuration changes are committed and pushed.
+**Last known pushed commit before this workspace change:** `b01e3f1` (`Repair Codespaces harness environment setup`). Check `git log` for this task's commit.
 
 > Rules: update this file before starting each task and right after finishing each step. Commit and push it often. Delete stale info rather than piling up contradictions. Mark anything not confirmed as `UNVERIFIED`.
 
@@ -23,44 +23,26 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 1. Read `AGENTS.md`, `HANDOFF.md`, then this file.
 2. `git status` and `git log -5 --oneline`; reconcile with section 6.
 3. If the environment is fresh, follow section 3.
-4. Run the build and test commands in section 3.4 to confirm the baseline.
+4. Follow WORKSPACE.md and run its build/baseline commands.
 5. Resume the item under "In progress" in section 6 using its resume command.
 
 ---
 
-## 3. Dev environment setup (GitHub Codespaces)
+## 3. Workspace setup (GitHub Codespaces)
 
-### 3.1 Base environment
-- Devcontainer: `.devcontainer/devcontainer.json`
-- Setup script: `.devcontainer/setup.sh`
-- Base image: `mcr.microsoft.com/devcontainers/base:ubuntu-24.04`
-- Docker: `ghcr.io/devcontainers/features/docker-in-docker:4` (added 2026-11-25; requires a Codespace container rebuild)
+The previous `.devcontainer`/Docker-in-Docker approach failed in the restricted Codespace because nested Docker cannot start. It is being removed. The authoritative host setup, tool installation, build, and recovery instructions are in [`WORKSPACE.md`](WORKSPACE.md). Start a new Codespace with the unrestricted host environment, then follow that file; no devcontainer rebuild or Docker daemon is part of the workflow.
 
-### 3.2 Toolchain
-- devkitPro / devkitARM version: Docker `devkitpro/devkitarm:latest`, compiler `arm-none-eabi-gcc (devkitARM) 16.1.0`; exact image digest not pinned
-- Install method: `.devcontainer/setup.sh` installs host build/test packages, waits for the Docker daemon, and pulls `devkitpro/devkitarm:latest`; plugin/fixture scripts build inside that official image. The devcontainer setup currently fails fast if Docker is missing/unavailable.
-- Environment variables: `DEVKITPRO=/opt/devkitpro`, `DEVKITARM=/opt/devkitpro/devkitARM`, PATH additions: `$DEVKITARM/bin:$DEVKITPRO/tools/bin`
-- apt packages include build-essential, CMake/Ninja, SDL2/Qt/OpenGL, PNG/ZIP/ZLIB, FFmpeg, ELF/edit, `mgba-sdl`, Xvfb/xdotool/xauth, Stella, dosfstools and mtools.
+### 3.1 Required toolchain and dependencies
+- Ubuntu 24.04 host packages and devkitPro/devkitARM are installed directly in the Codespace; see `WORKSPACE.md` for exact commands.
+- Required tools include devkitARM/gbafix, CMake/Ninja, a C compiler, Python, mGBA, Xvfb, Stella, and FAT utilities.
+- mGBA and DSSMM source checkouts/build outputs remain ignored and are restored using exact revisions recorded in `harnesses/cards.json` and `HANDOFF.md`.
 
-### 3.3 Repo contents and third-party assets
-- The original archive was ingested and removed; assets are organized under `dist/`, `test-roms/`, `source/`, `docs/provenance/`, and `reference/`
-- Prepared canonical source: `source/atari2600/`
-- PogoShell and other required third-party binaries: where to get them, where to place them, license notes. **Do not commit** anything whose redistribution is not permitted.
-- Open-source test game: `test-roms/flappy.a26`, source/license: archive-provenance `JetSetIlly/Atari2600-Flappy-Bird` BSD-2-Clause
-
-### 3.4 Build and test commands
-- Build plugin: `bash scripts/build-plugin.sh` (official `devkitpro/devkitarm:latest` Docker image; requires Docker-in-Docker after rebuilding the Codespace)
+### 3.2 Build and test commands
+- Build plugin: `bash scripts/build-plugin.sh`
 - Build standalone stock-mGBA fixture: `bash scripts/build-fixture.sh`
 - Build/verify FAT32 flashcard SD: `bash scripts/verify-harness.sh`
-- Build mGBA harness targets: `cmake -S harnesses -B build/harness-cmake -G Ninja && cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`
-- Run stock mGBA headlessly: `bash scripts/run-mgba.sh <gba-rom> <seconds>`
+- Build mGBA harness targets: see `WORKSPACE.md` for dependencies and exact commands.
 - Run baseline: `bash scripts/test-baseline.sh`
-
-### 3.5 Codespaces limitations hit
-- No USB passthrough to real hardware. The live nested Codespace denied `dockerd` iptables operations; Docker-in-Docker was added to `.devcontainer/devcontainer.json` but still needs validation after **Rebuild Container**. A manually installed `docker.io` daemon is not a working workaround in a restricted nested container.
-- apt devkitPro installer URL was blocked with HTTP 403/Cloudflare; official Docker image `devkitpro/devkitarm:latest` is the verified fallback.
-
----
 
 ## 4. Repository map
 
@@ -74,7 +56,7 @@ Handoff document for any AI agent or human continuing this project. Read `AGENTS
 | `PROGRESS.md` | This file |
 | `HANDOFF.md` | Short crash-recovery snapshot |
 | `source/atari2600/` | Prepared GPLv3 source build for the experimental plugin |
-| `.devcontainer/` | Reproducible Codespaces environment setup |
+| `WORKSPACE.md` | Unrestricted host setup and reproducible build instructions |
 
 ### Referenced repositories (from `reference/repositories.txt`)
 
@@ -124,11 +106,11 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 
 ### In progress
 - **Task:** Complete evidence-based mGBA harness paths for all six DSSMM card/SD profiles before plugin changes.
-- **Exact step:** Fixed `.devcontainer/devcontainer.json` by adding the Docker-in-Docker feature; expanded `.devcontainer/setup.sh` to install/verify `mgba-sdl`, Xvfb/xdotool/xauth, Stella, dosfstools and mtools, and to wait for a working Docker daemon before pulling devkitARM. Rebuilt both source clones at their pinned commits and rebuilt CMake harness targets. `supercard-model-test`, `mgba-core-smoke`, and `ezflash-mgba-trace-smoke` pass. Installed the missing apt packages in the live container with sudo; the tools now resolve. However, this running Codespace cannot start nested Docker (`dockerd` fails to create iptables NAT rules with permission denied), so the new Docker-in-Docker feature must be validated after **Rebuild Container**. `scripts/verify-harness.sh` now reaches plugin staging but fails because ignored `source/atari2600/prototype.gba` was lost and plugin rebuilding still needs Docker. Earlier EZ/SuperCard baseline results remain as recorded; no plugin build has been repeated this session. The EZ audit also documents a synthetic SD-image adapter boundary: source register/command contract plus independently corroborated 2 KiB aperture, with ready status/latency and physical effects explicitly UNVERIFIED. Added the DinD feature and host dependencies, corrected the stale setup/toolchain description, and checked JSON/shell syntax plus `git diff --check`; CMake rebuild and all three harness smokes pass. The container must now be rebuilt by the owner before plugin/FAT/baseline checks can be rerun. **Active:** ready for Codespace rebuild/restart. After the corrected devcontainer loads, rerun setup and the full baseline to regenerate ignored artifacts; then continue EZ synthetic SD-image coverage and only afterward resume the Atari emulator task sequence. The status/latency policy must remain explicit and configurable, never treated as physical evidence. Plugin remains unchanged. Input latency, stable native time and synchronized audio remain priorities; target 30 rendered fps with frame drops allowed.
-- **Files touched:** `.devcontainer/devcontainer.json`, `.devcontainer/setup.sh`, `HANDOFF.md`, `PROGRESS.md`, `harnesses/README.md`, `docs/provenance/ezflash-source-audit.md`; current session also restored ignored mGBA/DSSMM clones and installed live apt packages.
-- **Uncommitted changes:** none; devcontainer/recovery documentation is committed and pushed. Generated outputs and third-party clones remain ignored.
+- **Exact step:** Removed the failed Docker-in-Docker setup and made plugin, standalone fixture, and card-fixture builds invoke host devkitARM tools. Added WORKSPACE.md with Ubuntu packages, official devkitPro pacman setup, pinned ignored source restores, and build/recovery commands. Updated AGENTS.md, HANDOFF.md, and this file to make WORKSPACE.md authoritative. Host lacks devkitARM/gbafix and generated prototype.gba, so plugin build, FAT verifier, and baseline could not be run in this session. CMake configure/build, supercard-model-test, mgba-core-smoke, ezflash-mgba-trace-smoke, and test-pogo-abi.py passed. Official devkitPro bootstrap had previously returned HTTP 403 in restricted mode; verify it in the new unrestricted Codespace. No hardware behavior is changed or newly claimed.
+- **Files touched:** AGENTS.md, HANDOFF.md, PROGRESS.md, WORKSPACE.md, scripts/build-plugin.sh, scripts/build-fixture.sh, scripts/build-card-fixture.py; removed .devcontainer/devcontainer.json and .devcontainer/setup.sh.
+- **Uncommitted changes:** This task is being prepared for commit. Ignored third-party clones and build outputs are not included.
 - **Branch:** main
-- **Resume command:** First **Rebuild Container** to activate Docker-in-Docker, then run `bash .devcontainer/setup.sh`; rebuild `prototype.gba` and run `bash scripts/test-baseline.sh`. Continue by implementing/testing the separately documented EZ SD image seam using explicit synthetic status/latency settings. CMake regression command: `cmake --build build/harness-cmake --target supercard-model-test mgba-core-smoke supercard-mgba-runner ezflash-mgba-trace-smoke -j2`, then run each smoke and the FAT verifier. Do not infer physical response/timing values from DSSMM source or SuperCard behavior.
+- **Resume command:** Start a regular Ubuntu 24.04 Codespace in unrestricted mode; follow WORKSPACE.md; run `bash scripts/test-baseline.sh`, then the three harness smoke executables. Continue EZ synthetic SD-image coverage after the baseline. Never restore Docker-in-Docker.
 
 ### Next up (ordered)
 1. Establish whether an EZ SD block-image adapter can be connected to the source-described transcript while leaving undocumented physical response/timing explicit; otherwise record the adapter boundary and evidence needed.
@@ -203,14 +185,14 @@ Topics to cover: PogoShell plugin ABI (load, launch, ROM handoff, save/state mem
 - <bug, repro steps, suspected cause>
 
 ### Dead ends (do not repeat)
-- Direct devkitPro apt installer endpoint at `apt.devkitpro.org` returned HTTP 403 in this environment; use official Docker image or a host-specific installer.
+- Direct devkitPro apt installer endpoint at `apt.devkitpro.org` returned HTTP 403 in restricted mode. Retry the official bootstrap in the unrestricted Codespace; do not use Docker-in-Docker.
 - IWRAM placement candidate moved `mainloop`, `do_screen`, and `tv_raster` into `.iwram`, changing `.text` 30,944→12,464 bytes and `.iwram` 0→18,752 bytes, but the plugin hash changed and speed was not measured. Reverted; no claim of improvement.
 - ARM hot-function candidate grew `mainloop` 17,968→27,996 bytes and preserved frame hash and cold-boot survival, but speed was not measured and the plugin hash changed. Reverted.
 - Profile scaffold attempted Timer0/1 plus frame counter but produced no cycle metric and was incomplete. Reverted; normal hash restored.
 - First static-core smoke compiled but crashed because the consumer omitted mGBA's private ABI compile definitions. gdb showed a null function-pointer call after initialization; propagating `TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS` fixed it. `mgba-core-smoke` now passes initialize/reset/deinitialize and mode-register hook checks. Do not repeat the earlier diagnosis that mGBA core initialization itself fails.
 
 ### Design decisions
-- Official `devkitpro/devkitarm:latest` Docker image is the default build path because it produced the exact archived plugin hash and avoids broken host bootstrap.
+- Build scripts use the installed host devkitARM toolchain. Historical Docker build used devkitARM GCC 16.1.0; record the host compiler version and verify its output hash rather than assuming exact reproduction.
 - Keep generated build outputs outside Git; canonical assets live under `dist/`, `test-roms/`, `source/`, `docs/provenance/`, and `reference/`.
 - Use a standalone fixture only for core smoke tests; never treat stock-mGBA PogoShell simulation as proof of card firmware behavior.
 
@@ -287,3 +269,5 @@ Short dated entries. Trim old entries periodically.
 - 2026-11-24: `scripts/test-baseline.sh` exposed an obsolete `cards[]` assertion in `scripts/test-pogo-abi.py` and positional `SuperCardModel` initializers rejected by `-Wmissing-field-initializers -Werror`. Replaced the assertion with six-profile/layer checks and converted the initializers to designated form. Full baseline passes: plugin build, ABI/manifest check, 64 MB FAT32 image hashes, strict host model build/test, and standalone fixture under stock mGBA 0.10.2 for 3 seconds. Plugin source was not changed. `scripts/verify-harness.sh`, mGBA core smoke, EZ trace smoke, SuperCard model and JSON/diff checks also pass.
 - 2026-11-25: Reconciled recreated Codespace against `HEAD=878d746` (same as `origin/main`, clean start; graceful prior stop). Restored ignored source clones at mGBA `431935616c0e216d650b25b2ea0c0acccd359038` and DSSMM SuperFW `37c9e069c1f44c2d53ea633fa1bdcf97e788dcd4`. Rebuilt harness CMake targets; SuperCard model, mGBA core, and EZ passive-DMA trace smokes pass. The live image lacked Docker, mGBA, Xvfb/xdotool, Stella and FAT tools; installed test/image packages with sudo. `scripts/verify-harness.sh` is blocked because ignored `source/atari2600/prototype.gba` was lost; plugin build needs Docker. Installing `docker.io` and manually starting `dockerd` also failed: restricted nested container denied iptables NAT setup. Added Docker-in-Docker feature and full host test tools to `.devcontainer`; must use **Rebuild Container** before validating that change. Documented this recovery in `HANDOFF.md`.
 - 2026-11-25: Added synthetic EZ SD-image adapter boundary and evidence limits to EZ provenance/README. The pinned source documents guest bus transactions and the poll condition; an independent CC BY-SA community reverse-engineering page corroborates register addresses and the 2 KiB data aperture. No status/latency model is implemented yet; any deterministic status/latency remains synthetic and physical behavior `UNVERIFIED`.
+
+- 2026-11-25: Owner directed removal of the misconfigured devcontainer/Docker-in-Docker path. Build scripts now call host devkitARM directly; WORKSPACE.md documents unrestricted Ubuntu setup and recovery. Current host lacks devkitARM, so plugin/FAT/baseline checks are pending next Codespace. CMake harness build, model/core/EZ trace smokes, ABI check passed.

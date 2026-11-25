@@ -51,12 +51,12 @@ seed_src = out / "card-seed.S"
 seed_src.write_text(seed)
 import os
 import subprocess
-docker = ["docker", "run", "--rm", "-v", f"{ROOT}:/work", "-w", "/work",
-          "devkitpro/devkitarm:latest"]
-subprocess.run(docker + ["bash", "-lc",
-    f"/opt/devkitpro/devkitARM/bin/arm-none-eabi-as -mcpu=arm7tdmi work/card-fixture/card-seed.S -o work/card-fixture/card-seed.o && "
-    "/opt/devkitpro/devkitARM/bin/arm-none-eabi-objcopy -O binary work/card-fixture/card-seed.o work/card-fixture/card-seed.bin"],
-    check=True)
+assembler = os.environ.get("DEVKITARM", "/opt/devkitpro/devkitARM") + "/bin/arm-none-eabi-as"
+objcopy = os.environ.get("DEVKITARM", "/opt/devkitpro/devkitARM") + "/bin/arm-none-eabi-objcopy"
+subprocess.run([assembler, "-mcpu=arm7tdmi", str(out / "card-seed.S"), "-o",
+                str(out / "card-seed.o")], check=True)
+subprocess.run([objcopy, "-O", "binary", str(out / "card-seed.o"),
+                str(out / "card-seed.bin")], check=True)
 seed_bin = (out / "card-seed.bin").read_bytes()
 if len(seed_bin) > 512:
     raise SystemExit("PogoShell seed exceeds fixture padding")

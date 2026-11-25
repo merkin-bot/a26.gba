@@ -42,7 +42,7 @@ These execute real launch UI/path/metadata code, but mock save, FAT transfer, pa
 
 ## Build context
 
-DSSMM fixtures need devkitARM. In this Codespace the verified build path is the `devkitpro/devkitarm:latest` Docker image, while mGBA/Xvfb run on the host. Absolute workspace paths matter because fixtures generate absolute include paths. A previous `build-launch/` created under `/work` can leave stale `.d` dependencies; preserve/rename those generated directories before rebuilding under `/workspaces/a26.gba`.
+DSSMM fixtures need devkitARM. Install and run the host toolchain by following [`WORKSPACE.md`](../WORKSPACE.md); this repository does not use Docker or a devcontainer. mGBA/Xvfb run on the host. Absolute workspace paths matter because fixtures generate absolute include paths. A previous `build-launch/` created under `/work` can leave stale `.d` dependencies; preserve/rename those generated directories before rebuilding under `/workspaces/a26.gba`.
 
 The local mGBA/DSSMM source checkouts are ignored by Git. Do not commit mGBA, DSSMM kernel binaries, BIOS images, card firmware, or generated SD images.
 

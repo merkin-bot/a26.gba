@@ -82,12 +82,9 @@ Continue the work at **https://github.com/voluptuary/dssmm**: an **Atari 2600 em
 
 ---
 
-## 5. Dev environment (summary)
+## 5. Workspace setup (summary)
 
-The full, authoritative setup instructions live in `PROGRESS.md` section 3. Maintain these so a fresh Codespace is reproducible:
-
-- `.devcontainer/devcontainer.json` and `.devcontainer/setup.sh` (devkitPro/devkitARM install, `DEVKITPRO`/`DEVKITARM` env vars, apt packages for mGBA and headless runs).
-- Scripts under `scripts/` (or similar) for: building the plugin, building patched mGBA, running the harness headlessly, capturing screenshots/frame hashes, and running the test suite.
+The full, authoritative host setup and fresh Codespace instructions are in [`WORKSPACE.md`](WORKSPACE.md). Do not restore `.devcontainer` or rely on Docker/Docker-in-Docker: nested Docker failed in the restricted Codespace. The plugin, fixture, and card-fixture build scripts must use installed host devkitARM tools. Keep exact commands, toolchain version, and verification results in `WORKSPACE.md` and `PROGRESS.md`.
 
 Never commit: commercial ROMs, BIOS files, PogoShell/kernel binaries whose redistribution is not permitted, or build output.
 
@@ -97,7 +94,7 @@ Never commit: commercial ROMs, BIOS files, PogoShell/kernel binaries whose redis
 
 1. Check for `PROGRESS.md`. If none exists, create it from the template and commit immediately.
 2. Inventory the canonical source, test ROM, provenance, and referenced repositories. Record what each is and its license.
-3. Set up the Codespaces environment, make it reproducible via `.devcontainer`, and get the plugin building. Document every command in `PROGRESS.md`.
+3. Set up the unrestricted Codespaces host by following `WORKSPACE.md`, and get the plugin building. Document exact commands and results in `PROGRESS.md`.
 4. Build mGBA with the existing harnesses. Run the plugin (via PogoShell on the harness) with the open-source test game. Record exactly what works.
 5. Establish a **baseline performance measurement** and a baseline screenshot/frame-hash test before changing any emulation code.
 6. Write the prioritized plan (objectives 1 to 6) into the task board and begin with the highest-priority item.
