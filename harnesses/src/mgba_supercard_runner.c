@@ -3,6 +3,7 @@
 #include <mgba/core/config.h>
 #include <mgba/core/core.h>
 #include <mgba/core/log.h>
+#include <mgba/core/timing.h>
 #include <mgba/gba/core.h>
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/io.h>
@@ -482,6 +483,9 @@ int main(int argc, char **argv) {
     int pc_frame_window = 0;
     int first_bios_traced = 0;
     int atari_counter_started = 0;
+    int precise_atari_stop = 0;
+    uint32_t atari_stop_cycles = 0;
+    uint32_t gba_cycles_start = (uint32_t)mTimingCurrentTime(&gba->timing);
     uint32_t atari_last_tv_counter = 0;
     uint64_t atari_display_calls = 0;
     uint64_t atari_rendered_calls = 0;
@@ -495,7 +499,37 @@ int main(int argc, char **argv) {
             }
         }
         core->setKeys(core, keys);
-        core->runFrame(core);
+        if (stop_atari_tv_counter && trace_atari_globals) {
+            uint32_t frame_before = core->frameCounter(core);
+            const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
+            while (core->frameCounter(core) == frame_before) {
+                core->runLoop(core);
+                int32_t stop_pc = -1;
+                if (!precise_atari_stop &&
+                    core->readRegister(core, "pc", &stop_pc) &&
+                    strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0 &&
+                    read_le32(iwram, atari_tv_counter_offset) >=
+                        stop_atari_tv_counter) {
+                    precise_atari_stop = 1;
+                    atari_stop_cycles =
+                        (uint32_t)mTimingCurrentTime(&gba->timing) -
+                        gba_cycles_start;
+                    printf("atari_stop precise=1 frame=%lu gba_cycles=%" PRIu32
+                           " cpu_pc=0x%04" PRIX32 " clk=%" PRIu32
+                           " clkcount=%" PRIu32 " tv_counter=%" PRIu32
+                           " ebeamy=%" PRIu32 " pace_frame=%" PRIu32 "\n",
+                           i + 1u, atari_stop_cycles,
+                           read_le32(iwram, atari_pc_offset) & 0xFFFFu,
+                           read_le32(iwram, atari_clk_offset),
+                           read_le32(iwram, atari_clkcount_offset),
+                           read_le32(iwram, atari_tv_counter_offset),
+                           read_le32(iwram, atari_ebeamy_offset),
+                           read_le32(iwram, atari_pace_offset));
+                }
+            }
+        } else {
+            core->runFrame(core);
+        }
         if (audio_capture.file && !audio_capture_drain(core, &audio_capture)) {
             fclose(audio_capture.file);
             audio_capture.file = NULL;
@@ -721,26 +755,7 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-        if (stop_atari_tv_counter && trace_atari_globals) {
-            int32_t stop_pc = -1;
-            if (core->readRegister(core, "pc", &stop_pc) &&
-                strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0 &&
-                read_le32((const uint8_t *)gba->memory.iwram,
-                          atari_tv_counter_offset) >= stop_atari_tv_counter) {
-                const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
-                printf("atari_stop frame=%lu cpu_pc=0x%04" PRIX32
-                       " clk=%" PRIu32 " clkcount=%" PRIu32
-                       " tv_counter=%" PRIu32 " ebeamy=%" PRIu32
-                       " pace_frame=%" PRIu32 "\n",
-                       i + 1u, read_le32(iwram, atari_pc_offset) & 0xFFFFu,
-                       read_le32(iwram, atari_clk_offset),
-                       read_le32(iwram, atari_clkcount_offset),
-                       read_le32(iwram, atari_tv_counter_offset),
-                       read_le32(iwram, atari_ebeamy_offset),
-                       read_le32(iwram, atari_pace_offset));
-                break;
-            }
-        }
+        if (precise_atari_stop) break;
     }
     const uint8_t *ewram = (const uint8_t *)gba->memory.wram;
     const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;

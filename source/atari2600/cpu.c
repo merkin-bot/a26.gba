@@ -80,7 +80,17 @@ void __attribute__((section(".iwram"))) mainloop()
 	while (1) {
   if ((menu_poll++ & 15) == 0 && ((~(*KEYS)) & 0x300) == 0x300 && atari_menu()) return;
 //	  keyboard();
-	  do_screen(clkcount);
+	  if (vbeam_state == DRAWSTATE && hbeam_state == DRAWSTATE) {
+		int next_ebeamx = ebeamx + clkcount * 3;
+		if (next_ebeamx < tv_width &&
+		    ebeamy < tv_height + tv_overscan) {
+			ebeamx = next_ebeamx;
+		} else {
+			do_screen(clkcount);
+		}
+	  } else {
+		do_screen(clkcount);
+	  }
 	//  if (app_data.debug) x_loop();
 	  b=LOADEXEC(PC);
 	  beamadj=0;

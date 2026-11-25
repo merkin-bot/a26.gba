@@ -82,3 +82,9 @@ The Direct Sound change altered linked IWRAM globals, so the runner's original d
 With the Direct Sound plugin SHA-256 `ab91d38db0ad10c6c93ebdf930018815e93559d088a8a8679eef729c103d4964`, three fresh fixed-TV-counter runs all stopped at Atari TV counter 41 after 2,995 mGBA frames with `clk=805693`, 41 rendered display calls, minimum sampled SP `0x03007DD0`, and PPM SHA-256 `c11fdf92de4b7fb70c1e23f6635b4c7527b2bcb995410443663c9126d8b20080`. This supersedes the old observer offsets for the current linked image; any plugin relink must recheck them.
 
 A branch-flattened `do_screen()` rewrite was tested in three runs and reverted: it had the same whole-frame boundary, state, captures, and stack observations. Since the boundary metric resolves only whole external mGBA frames, this was inconclusive about sub-frame changes and is not retained as an optimization. Callgrind host profile remains diagnostic support for the next candidate, not GBA timing evidence.
+
+## mGBA host Callgrind profile
+
+The same 3,200-frame Chis replay was run under Valgrind Callgrind 3.22.0 (with no Atari stop counter, to retain the normal runner workload). The profile recorded 40,269,249,886 host instruction events. Inclusive attribution placed 99.94% in `_GBACoreRunFrame`, 99.85% in mGBA's `ARMRunLoop`; within that interpreter path, `GBAProcessEvents` accounted for 44.27%, `_ThumbInstructionSTRH1` 12.40%, and `_ThumbInstructionBNE` 4.97% of total host instruction events. The rest of the displayed instruction handlers were each below these values.
+
+This explains where the desktop harness spends host work while emulating the GBA; it does not measure GBA ARM7 cycles or attribute those guest instructions to Atari plugin routines. In particular, do not optimize the mGBA core or storage model to make Atari appear faster. Source-level Atari candidates still require the same fixed Atari boundary and capture checks; GBA hardware timing requires hardware evidence.
