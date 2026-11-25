@@ -17,8 +17,12 @@ export MTOOLS_SKIP_CHECK=1
 mmd -i "$out" "::SYSTEM"
 mmd -i "$out" "::SYSTEM/PLUG"
 mmd -i "$out" "::ROMS"
+mmd -i "$out" "::SYSTEM/KERNELS"
 plugin="${PLUGIN_GBA:-source/atari2600/prototype.gba}"
 mcopy -i "$out" "$plugin" "::SYSTEM/PLUG/a26.gba"
 mcopy -i "$out" test-roms/flappy.a26 "::ROMS/flappy.a26"
+if [[ -n "${KERNEL_GBA:-}" ]]; then
+  mcopy -i "$out" "$KERNEL_GBA" "::SYSTEM/KERNELS/KERNEL.GBA"
+fi
 
 echo "Created FAT32 SD image: $out"

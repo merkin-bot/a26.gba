@@ -3,4 +3,5 @@ https://github.com/Sterophonick/PocketStella
 https://github.com/wavemotion-dave/StellaDS
 https://github.com/stella-emu/stella
 https://github.com/JetSetIlly/Atari2600-Flappy-Bird
+https://github.com/retrobrews/atari2600-games — useful homebrew test-ROM catalog; inspected commit 0e16f397027ebb5d3be204c90efff169419ba5f8. ROMs have individual rights notices; repository README says ROM redistribution is approved only on the RetroBrew site/project. Keep ROMs local and ignored, inspect each accompanying .txt, and do not commit or redistribute them without the rights holder's permission.
 https://github.com/ChisBread/SuperChis — CC BY-NC-SA 4.0; hardware-source reference only, no code copied. Pinned source audit: docs/provenance/superchis-source-audit.md

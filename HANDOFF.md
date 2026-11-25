@@ -4,7 +4,7 @@ On a cold start, saying “Read AGENTS.md” is sufficient. Follow the instructi
 
 1. Read `AGENTS.md`, this file, `PROGRESS.md`, then `WORKSPACE.md` completely.
 2. Run `git status --short --branch` and `git log -5 --oneline`; reconcile repository state with `PROGRESS.md`.
-3. Follow `WORKSPACE.md` to provision a fresh unrestricted Ubuntu 24.04 Codespace and run its baseline commands. Do not use `.devcontainer` or Docker-in-Docker.
+3. Confirm the host matches `WORKSPACE.md`. If tools or pinned clones are missing, follow its host setup and run the baseline. Do not use `.devcontainer` or Docker-in-Docker.
 4. Resume the exact **Current task / Next action** in `PROGRESS.md`. Update that file before and after each step. Continue autonomously; do not ask the owner to restate context.
 
 ## Current checkpoint

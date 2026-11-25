@@ -30,6 +30,12 @@ add_executable(supercard-model-test tests/supercard_model_test.c)
 target_link_libraries(supercard-model-test PRIVATE supercard_model)
 target_compile_options(supercard-model-test PRIVATE -UNDEBUG)
 
+add_library(ezflash_sd_model STATIC src/ezflash_sd_model.c)
+target_include_directories(ezflash_sd_model PUBLIC include)
+add_executable(ezflash-sd-model-test tests/ezflash_sd_model_test.c)
+target_link_libraries(ezflash-sd-model-test PRIVATE ezflash_sd_model)
+target_compile_options(ezflash-sd-model-test PRIVATE -UNDEBUG)
+
 if(TARGET mgba)
   add_library(supercard_mgba_bus STATIC src/supercard_mgba_bus.c)
   target_include_directories(supercard_mgba_bus PUBLIC
@@ -56,6 +62,33 @@ if(TARGET mgba)
   target_compile_definitions(ezflash_mgba_trace PRIVATE
     $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
   target_link_libraries(ezflash_mgba_trace PUBLIC mgba)
+
+  add_library(ezflash_mgba_sd STATIC src/ezflash_mgba_sd.c)
+  target_include_directories(ezflash_mgba_sd PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(ezflash_mgba_sd PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(ezflash_mgba_sd PUBLIC ezflash_sd_model mgba)
+
+  add_executable(ezflash-mgba-sd-smoke src/ezflash_mgba_sd_smoke.c)
+  target_include_directories(ezflash-mgba-sd-smoke PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(ezflash-mgba-sd-smoke PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(ezflash-mgba-sd-smoke PRIVATE ezflash_mgba_sd)
+
+  add_executable(ezflash-mgba-runner src/ezflash_mgba_runner.c)
+  target_include_directories(ezflash-mgba-runner PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mgba/include
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/mgba/include)
+  target_compile_definitions(ezflash-mgba-runner PRIVATE
+    $<TARGET_PROPERTY:mgba,COMPILE_DEFINITIONS>)
+  target_link_libraries(ezflash-mgba-runner PRIVATE ezflash_mgba_sd)
 
   add_executable(ezflash-mgba-trace-smoke src/ezflash_mgba_trace_smoke.c)
   target_include_directories(ezflash-mgba-trace-smoke PRIVATE
