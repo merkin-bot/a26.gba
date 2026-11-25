@@ -65,6 +65,13 @@ static const char *pc_region(uint32_t pc) {
     return "other";
 }
 
+static uint32_t read_le32(const uint8_t *memory, unsigned offset) {
+    return (uint32_t)memory[offset] |
+           ((uint32_t)memory[offset + 1u] << 8) |
+           ((uint32_t)memory[offset + 2u] << 16) |
+           ((uint32_t)memory[offset + 3u] << 24);
+}
+
 static int capture_frame(struct mCore *core, const char *path,
                          uint64_t *hash_out, unsigned *width_out,
                          unsigned *height_out) {
@@ -289,9 +296,23 @@ int main(int argc, char **argv) {
     int trace_first_bios = getenv("A26_TRACE_FIRST_BIOS") != NULL;
     int trace_pc_frames = getenv("A26_TRACE_PC_FRAMES") != NULL;
     int trace_reset_tail = getenv("A26_TRACE_RESET_TAIL") != NULL;
+    int trace_atari_globals = getenv("A26_TRACE_ATARI_GLOBALS") != NULL;
+    unsigned long atari_trace_interval = 0;
+    const char *atari_interval_text = getenv("A26_TRACE_ATARI_INTERVAL");
+    if (trace_atari_globals) {
+        atari_trace_interval = atari_interval_text ?
+            strtoul(atari_interval_text, NULL, 10) : 1ul;
+        if (!atari_trace_interval) {
+            atari_trace_interval = 1ul;
+        }
+    }
     int reset_tail_traced = 0;
     int pc_frame_window = 0;
     int first_bios_traced = 0;
+    int atari_counter_started = 0;
+    uint32_t atari_last_tv_counter = 0;
+    uint64_t atari_display_calls = 0;
+    uint64_t atari_rendered_calls = 0;
     for (unsigned long i = 0; i < frames; ++i) {
         uint32_t keys = 0;
         for (size_t event = 0; event < event_count; ++event) {
@@ -305,6 +326,39 @@ int main(int argc, char **argv) {
         int32_t trace_pc = -1;
         if (core->readRegister(core, "pc", &trace_pc)) {
             const char *region = pc_region((uint32_t)trace_pc);
+            if (trace_atari_globals && strcmp(region, "cartridge") == 0) {
+                const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
+                uint32_t tv_counter = read_le32(iwram, 0x0054u);
+                uint32_t pace_frame = read_le32(iwram, 0x2D90u);
+                if (!atari_counter_started) {
+                    atari_last_tv_counter = tv_counter;
+                    atari_counter_started = 1;
+                } else if (tv_counter != atari_last_tv_counter) {
+                    uint32_t delta = tv_counter - atari_last_tv_counter;
+                    atari_display_calls += delta;
+                    if (pace_frame) {
+                        atari_rendered_calls += delta;
+                    }
+                    atari_last_tv_counter = tv_counter;
+                }
+                if ((i + 1u) % atari_trace_interval == 0 || keys != 0) {
+                    printf("atari_probe frame=%lu keys=0x%03" PRIX32
+                           " cpu_pc=0x%04" PRIX32 " clk=%" PRIu32
+                           " clkcount=%" PRIu32 " tv_counter=%" PRIu32
+                           " ebeamy=%" PRIu32 " hbeam=%" PRIu32
+                           " vbeam=%" PRIu32 " pace_frame=%" PRIu32
+                           " display_calls=%" PRIu64
+                           " rendered_calls=%" PRIu64 "\n",
+                           i + 1u, keys,
+                           read_le32(iwram, 0x01D0u) & 0xFFFFu,
+                           read_le32(iwram, 0x01C4u),
+                           read_le32(iwram, 0x0044u), tv_counter,
+                           read_le32(iwram, 0x0F9Cu),
+                           read_le32(iwram, 0x08A8u),
+                           read_le32(iwram, 0x08B4u), pace_frame,
+                           atari_display_calls, atari_rendered_calls);
+                }
+            }
             if (trace_reset_tail && !reset_tail_traced &&
                 (uint32_t)trace_pc == 0x03007E2Cu) {
                 fputs("reset_tail_trace_start\n", stdout);
@@ -528,6 +582,11 @@ int main(int argc, char **argv) {
         return 1;
     }
     uint32_t end_frame = core->frameCounter(core);
+    if (trace_atari_globals) {
+        printf("atari_probe_total display_calls=%" PRIu64
+               " rendered_calls=%" PRIu64 "\n",
+               atari_display_calls, atari_rendered_calls);
+    }
     int32_t pc = -1, r0 = 0, r1 = 0, r2 = 0, r3 = 0, lr = 0;
     int has_pc = core->readRegister(core, "pc", &pc);
     core->readRegister(core, "r0", &r0);
