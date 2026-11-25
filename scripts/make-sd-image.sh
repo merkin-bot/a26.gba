@@ -16,6 +16,7 @@ export MTOOLS_SKIP_CHECK=1
 
 mmd -i "$out" "::SYSTEM"
 mmd -i "$out" "::SYSTEM/PLUG"
+mmd -i "$out" "::SYSTEM/SAVER"
 mmd -i "$out" "::ROMS"
 mmd -i "$out" "::SYSTEM/KERNELS"
 plugin="${PLUGIN_GBA:-source/atari2600/prototype.gba}"

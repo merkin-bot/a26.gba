@@ -15,6 +15,9 @@ static int advance_block(EZFlashSDModel *model);
 static int start_command(EZFlashSDModel *model) {
     uint32_t count = model->count_word & 0x7FFFu;
     model->write_command = (model->count_word & 0x8000u) != 0;
+    model->last_command_sector = model->sector;
+    model->last_command_blocks = (uint16_t)count;
+    model->last_command_write = model->write_command;
     if (!model->write_command) model->buffer_offset = 0;
     model->buffer_bytes = (uint16_t)(count <= 4 ? count * 512u : 0);
     model->failed = 0;

@@ -54,6 +54,8 @@ int main(void) {
     command(&model, 2, 2);
     set_control(&model, 3);
     assert(ezflash_sd_model_read(&model, STATUS, 16, &value) && value == 0);
+    assert(model.last_command_sector == 2 && model.last_command_blocks == 2 &&
+           model.last_command_write == 0);
     for (unsigned i = 0; i < 1024; i += 4) {
         assert(ezflash_sd_model_read(&model, STATUS + i, 32, &value));
         assert(value == ((uint32_t)source[1024 + i] |
@@ -69,6 +71,8 @@ int main(void) {
         assert(ezflash_sd_model_write(&model, STATUS + i, 32, 0xA5C30000u | i));
     command(&model, 3, 0x8001u);
     assert(model.blocks_written == 1 && model.failures == 0);
+    assert(model.last_command_sector == 3 && model.last_command_blocks == 1 &&
+           model.last_command_write == 1);
     command(&model, 8, 1); /* Image has eight sectors; end-of-image is rejected. */
     assert(!model.command_active && model.failures == 1);
     assert(ezflash_sd_model_read(&model, STATUS, 16, &value));

@@ -27,6 +27,9 @@ typedef struct {
     uint64_t blocks_read;
     uint64_t blocks_written;
     uint64_t failures;
+    uint32_t last_command_sector;
+    uint16_t last_command_blocks;
+    uint8_t last_command_write;
 } EZFlashSDModel;
 
 int ezflash_sd_model_open(EZFlashSDModel *model, const char *image_path,

@@ -21,9 +21,16 @@ static void quiet_log(struct mLogger *logger, int category,
     (void)logger; (void)category; (void)level; (void)format; (void)args;
 }
 
+typedef struct {
+    unsigned long first_frame;
+    unsigned long last_frame;
+    uint32_t mask;
+} KeyEvent;
+
 int main(int argc, char **argv) {
     if (argc < 4 || argc > 6) {
         fprintf(stderr, "usage: %s <matching-ez-kernel.gba> <frames> <raw-sd-image> [capture.ppm [frame:mask,...]]\n", argv[0]);
+        fprintf(stderr, "  key events accept taps (300:0x80) or held ranges (300-310:0x80)\n");
         return 2;
     }
     char *end = NULL;
@@ -54,8 +61,7 @@ int main(int argc, char **argv) {
     core->setVideoBuffer(core, video, width);
     core->reset(core);
     if (!ezflash_mgba_sd_attach(&adapter, core, &model)) goto cleanup;
-    unsigned long key_frame[64];
-    uint32_t key_mask[64];
+    KeyEvent key_events[64];
     size_t key_count = 0;
     if (argc == 6) {
         char *events = strdup(argv[5]);
@@ -64,15 +70,30 @@ int main(int argc, char **argv) {
         for (char *event = strtok_r(events, ",", &save); event;
              event = strtok_r(NULL, ",", &save)) {
             char *colon = strchr(event, ':');
-            char *frame_end = NULL, *mask_end = NULL;
+            char *frame_end = NULL, *last_end = NULL, *mask_end = NULL;
             if (!colon || key_count == 64) { free(events); goto cleanup; }
-            *colon++ = '\0';
-            unsigned long at = strtoul(event, &frame_end, 10);
-            unsigned long mask = strtoul(colon, &mask_end, 0);
-            if (!frame_end || *frame_end || !mask_end || *mask_end ||
-                at >= frames || mask > 0x3FFu) { free(events); goto cleanup; }
-            key_frame[key_count] = at;
-            key_mask[key_count++] = (uint32_t)mask;
+            *colon = '\0';
+            char *mask_text = colon + 1;
+            char *dash = strchr(event, '-');
+            unsigned long first, last;
+            if (dash) {
+                *dash = '\0';
+                if (!event[0] || !dash[1]) { free(events); goto cleanup; }
+                first = strtoul(event, &frame_end, 10);
+                last = strtoul(dash + 1, &last_end, 10);
+            } else {
+                first = strtoul(event, &frame_end, 10);
+                last = first;
+            }
+            unsigned long mask = strtoul(mask_text, &mask_end, 0);
+            if (!frame_end || frame_end == event || *frame_end ||
+                !mask_end || mask_end == mask_text || *mask_end ||
+                (dash && (!last_end || last_end == dash + 1 || *last_end)) ||
+                first > last || last >= frames || mask > 0x3FFu) {
+                free(events);
+                goto cleanup;
+            }
+            key_events[key_count++] = (KeyEvent){first, last, (uint32_t)mask};
         }
         free(events);
     }
@@ -81,16 +102,32 @@ int main(int argc, char **argv) {
     for (unsigned long frame = 0; frame < frames; ++frame) {
         uint32_t keys = 0;
         for (size_t i = 0; i < key_count; ++i)
-            if (key_frame[i] == frame) { keys = key_mask[i]; break; }
+            if (frame >= key_events[i].first_frame &&
+                frame <= key_events[i].last_frame)
+                keys |= key_events[i].mask;
         core->setKeys(core, keys);
         core->runFrame(core);
         if (trace_pc) {
             uint32_t frame_pc = 0;
             (void)core->readRegister(core, "pc", &frame_pc);
             printf("trace frame=%lu pc=0x%08" PRIX32 " sd_commands=%" PRIu64
-                   " sd_reads=%" PRIu64 " sd_writes=%" PRIu64 "\n",
+                   " sd_reads=%" PRIu64 " sd_writes=%" PRIu64
+                   " last_lba=%" PRIu32 " last_blocks=%u last_write=%u"
+                   " keys=0x%03X keycnt=0x%04X ie=0x%04X if=0x%04X"
+                   " ime=0x%04X dispstat=0x%04X vcount=%u"
+                   " irq_masked=%u halted=%d\n",
                    frame, frame_pc, model.commands, model.blocks_read,
-                   model.blocks_written);
+                   model.blocks_written, model.last_command_sector,
+                   model.last_command_blocks, model.last_command_write,
+                   ((struct GBA *)core->board)->keysActive,
+                   ((struct GBA *)core->board)->memory.io[GBA_REG_KEYCNT / 2u],
+                   ((struct GBA *)core->board)->memory.io[GBA_REG_IE / 2u],
+                   ((struct GBA *)core->board)->memory.io[GBA_REG_IF / 2u],
+                   ((struct GBA *)core->board)->memory.io[GBA_REG_IME / 2u],
+                   ((struct GBA *)core->board)->memory.io[GBA_REG_DISPSTAT / 2u],
+                   ((struct GBA *)core->board)->memory.io[GBA_REG_VCOUNT / 2u],
+                   ((struct GBA *)core->board)->cpu->cpsr.i,
+                   ((struct GBA *)core->board)->cpu->halted);
         }
     }
     uint32_t pc = 0;
@@ -145,7 +182,8 @@ int main(int argc, char **argv) {
            " synthetic_reads=%" PRIu64 " synthetic_writes=%" PRIu64
            " delegated_reads=%" PRIu64 " delegated_writes=%" PRIu64
            " framebuffer=%ux%u fnv64=%016" PRIX64 " capture=%s"
-           " ie=0x%04X if=0x%04X ime=0x%04X keycnt=0x%04X keys=0x%03X halted=%d"
+           " ie=0x%04X if=0x%04X ime=0x%04X dispstat=0x%04X vcount=%u"
+           " keycnt=0x%04X keys=0x%03X halted=%d"
            " image=%s status=synthetic-ready-0 timing=UNVERIFIED\n",
            argv[1], frames, core->frameCounter(core) - frame_start, pc,
            model.commands, model.blocks_read, model.blocks_written, model.failures,
@@ -153,9 +191,24 @@ int main(int argc, char **argv) {
            adapter.delegated_reads, adapter.delegated_writes,
            video_width, video_height, video_hash, argc >= 5 ? argv[4] : "(none)",
            gba->memory.io[GBA_REG_IE / 2u], gba->memory.io[GBA_REG_IF / 2u],
-           gba->memory.io[GBA_REG_IME / 2u], gba->memory.io[GBA_REG_KEYCNT / 2u],
+           gba->memory.io[GBA_REG_IME / 2u], gba->memory.io[GBA_REG_DISPSTAT / 2u],
+           gba->memory.io[GBA_REG_VCOUNT / 2u], gba->memory.io[GBA_REG_KEYCNT / 2u],
            gba->keysActive, gba->cpu->halted,
            argv[3]);
+    const char *trace_word = getenv("A26_EZ_TRACE_EWRAM");
+    if (trace_word) {
+        char *address_end = NULL;
+        unsigned long address = strtoul(trace_word, &address_end, 0);
+        if (!address_end || *address_end || address < 0x02000000u ||
+            address > 0x02040000u - 8u || (address & 3u)) {
+            fprintf(stderr, "invalid A26_EZ_TRACE_EWRAM address\n");
+            goto cleanup;
+        }
+        size_t offset = (address - 0x02000000u) / 4u;
+        printf("ewram[%08lX]=%08" PRIX32 " ewram[%08lX]=%08" PRIX32 "\n",
+               address, gba->memory.wram[offset], address + 4u,
+               gba->memory.wram[offset + 1u]);
+    }
     result = 0;
 cleanup:
     if (adapter.core) ezflash_mgba_sd_detach(&adapter);
