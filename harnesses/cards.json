@@ -184,8 +184,8 @@
     "filesystem": "exFAT",
     "image_size_bytes": 4294967296,
     "cluster_size_bytes": 32768,
-    "pristine_sha256": "257ce8543273524128a070d3a03412a975af9418ff7a9b03ad4bcc2b8d2eb7d5",
-    "plugin_sha256": "ab91d38db0ad10c6c93ebdf930018815e93559d088a8a8679eef729c103d4964",
+    "pristine_sha256": "cf6c82bd06b5cad56023993b480869aae942feb42282a358e14ce38d15334e80",
+    "plugin_sha256": "4baab3c9a0445d5ff6be1cbe0607789def30c8572f8d449620e37c7aa522d8e5",
     "layout": [
       "SYSTEM/PLUG/a26.gba",
       "SYSTEM/PLUG/nes.gba",
@@ -196,7 +196,7 @@
     "kernel_on_image": false,
     "theme_style_payload_on_image": false,
     "method": "Copy the byte-identical pristine image to the run path before each matching profile; fsck.exfat -n before and after each run; profile kernels are supplied directly to their matching runners.",
-    "result": "Verified 2026-11-25 with plugin SHA-256 ab91d38db0ad10c6c93ebdf930018815e93559d088a8a8679eef729c103d4964: all six matching source-kernel/model runs restored this same pristine exFAT image, completed 3,200 GBA frames, and had zero reported SD/image load failures; before/after fsck.exfat -n passed. SuperCard SD/Lite/Chis reached cartridge-mapped code. EZ runs ended at the kernel save-error dialog, so EZ PocketNES and Atari plugin handoff remain UNVERIFIED in this shared-image scenario. This validates filesystem and storage paths at the synthetic model boundary only.",
+    "result": "Verified 2026-11-26 with plugin SHA-256 4baab3c9a0445d5ff6be1cbe0607789def30c8572f8d449620e37c7aa522d8e5: all six matching source-kernel/mGBA model runs restored this same pristine 4 GiB exFAT image (SHA-256 cf6c82bd06b5cad56023993b480869aae942feb42282a358e14ce38d15334e80), completed 3,200 GBA frames, and reported zero storage/model load failures; exFAT checks passed before/after each run. SuperCard SD/Lite/Chis reached cartridge-mapped code. EZ runs reached the matching kernel but Atari/PocketNES handoff remains UNVERIFIED in this shared-image scenario. This validates the synthetic storage boundary only.",
     "physical_status": "UNVERIFIED: no physical card or GBA timing evidence"
   }
 }

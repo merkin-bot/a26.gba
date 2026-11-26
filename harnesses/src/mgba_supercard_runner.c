@@ -462,14 +462,14 @@ int main(int argc, char **argv) {
             atari_trace_interval = 1ul;
         }
     }
-    unsigned atari_pc_offset = env_offset("A26_ATARI_PC_OFFSET", 0x5D90u);
-    unsigned atari_clk_offset = env_offset("A26_ATARI_CLK_OFFSET", 0x5D84u);
-    unsigned atari_clkcount_offset = env_offset("A26_ATARI_CLKCOUNT_OFFSET", 0x5BFCu);
-    unsigned atari_tv_counter_offset = env_offset("A26_ATARI_TV_COUNTER_OFFSET", 0x5C0Cu);
-    unsigned atari_ebeamy_offset = env_offset("A26_ATARI_EBEAMY_OFFSET", 0x679Cu);
-    unsigned atari_hbeam_offset = env_offset("A26_ATARI_HBEAM_OFFSET", 0x6468u);
-    unsigned atari_vbeam_offset = env_offset("A26_ATARI_VBEAM_OFFSET", 0x6474u);
-    unsigned atari_pace_offset = env_offset("A26_ATARI_PACE_OFFSET", 0x7A50u);
+    unsigned atari_pc_offset = env_offset("A26_ATARI_PC_OFFSET", 0x6220u);
+    unsigned atari_clk_offset = env_offset("A26_ATARI_CLK_OFFSET", 0x6214u);
+    unsigned atari_clkcount_offset = env_offset("A26_ATARI_CLKCOUNT_OFFSET", 0x608Cu);
+    unsigned atari_tv_counter_offset = env_offset("A26_ATARI_TV_COUNTER_OFFSET", 0x609Cu);
+    unsigned atari_ebeamy_offset = env_offset("A26_ATARI_EBEAMY_OFFSET", 0x6C2Cu);
+    unsigned atari_hbeam_offset = env_offset("A26_ATARI_HBEAM_OFFSET", 0x68F8u);
+    unsigned atari_vbeam_offset = env_offset("A26_ATARI_VBEAM_OFFSET", 0x6904u);
+    unsigned atari_pace_offset = env_offset("A26_ATARI_PACE_OFFSET", 0x7EE0u);
     unsigned long stop_atari_tv_counter = 0;
     const char *stop_tv_text = getenv("A26_STOP_ATARI_TV_COUNTER");
     if (stop_tv_text && *stop_tv_text) {
@@ -479,13 +479,28 @@ int main(int argc, char **argv) {
             stop_atari_tv_counter = value;
         }
     }
+    unsigned long start_atari_tv_counter = 0;
+    const char *start_tv_text = getenv("A26_START_ATARI_TV_COUNTER");
+    if (start_tv_text && *start_tv_text) {
+        char *end = NULL;
+        unsigned long value = strtoul(start_tv_text, &end, 0);
+        if (end && !*end && value <= UINT32_MAX) {
+            start_atari_tv_counter = value;
+        }
+    }
     int reset_tail_traced = 0;
     int pc_frame_window = 0;
     int first_bios_traced = 0;
     int atari_counter_started = 0;
     int precise_atari_stop = 0;
+    int atari_measurement_started = 0;
     uint32_t atari_stop_cycles = 0;
     uint32_t gba_cycles_start = (uint32_t)mTimingCurrentTime(&gba->timing);
+    uint32_t atari_start_cycles = 0;
+    if (!start_atari_tv_counter) {
+        atari_measurement_started = 1;
+        atari_start_cycles = gba_cycles_start;
+    }
     uint32_t atari_last_tv_counter = 0;
     uint64_t atari_display_calls = 0;
     uint64_t atari_rendered_calls = 0;
@@ -505,15 +520,33 @@ int main(int argc, char **argv) {
             while (core->frameCounter(core) == frame_before) {
                 core->runLoop(core);
                 int32_t stop_pc = -1;
-                if (!precise_atari_stop &&
+                int32_t atari_pc = (int32_t)(read_le32(
+                    iwram, atari_pc_offset) & 0xFFFFu);
+                uint32_t atari_clk = read_le32(iwram, atari_clk_offset);
+                uint32_t gba_now = (uint32_t)mTimingCurrentTime(&gba->timing);
+                uint32_t atari_tv_counter = read_le32(
+                    iwram, atari_tv_counter_offset);
+                if (!atari_measurement_started &&
+                    start_atari_tv_counter &&
+                    atari_tv_counter >= start_atari_tv_counter &&
+                    core->readRegister(core, "pc", &stop_pc) &&
+                    strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0) {
+                    atari_measurement_started = 1;
+                    atari_start_cycles = gba_now;
+                    printf("atari_start precise=1 frame=%lu gba_cycles=%" PRIu32
+                           " cpu_pc=0x%04" PRIX32 " clk=%" PRIu32
+                           " tv_counter=%" PRIu32 "\n",
+                           i + 1u,
+                           atari_start_cycles - gba_cycles_start,
+                           (uint32_t)atari_pc, atari_clk, atari_tv_counter);
+                }
+                if (!precise_atari_stop && atari_measurement_started &&
                     core->readRegister(core, "pc", &stop_pc) &&
                     strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0 &&
                     read_le32(iwram, atari_tv_counter_offset) >=
                         stop_atari_tv_counter) {
                     precise_atari_stop = 1;
-                    atari_stop_cycles =
-                        (uint32_t)mTimingCurrentTime(&gba->timing) -
-                        gba_cycles_start;
+                    atari_stop_cycles = gba_now - atari_start_cycles;
                     printf("atari_stop precise=1 frame=%lu gba_cycles=%" PRIu32
                            " cpu_pc=0x%04" PRIX32 " clk=%" PRIu32
                            " clkcount=%" PRIu32 " tv_counter=%" PRIu32

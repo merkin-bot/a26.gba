@@ -25,12 +25,17 @@ static uint8_t poly4[2];
 static uint8_t poly5[2];
 static uint16_t poly9[2];
 
-static const uint8_t tia_poly4[16] = {
-    0,0,0,1,0,1,0,1,1,1,1,0,1,1,0,0
+/* 15- and 31-step TIA counters; sequences follow StellaDS TIASound. */
+static const uint8_t tia_poly4[15] = {
+    1,1,0,1,1,1,0,0,0,0,1,0,1,0,0
 };
-static const uint8_t tia_poly5[32] = {
-    0,0,1,0,0,1,1,1,0,1,1,1,1,0,1,0,
-    1,0,1,1,0,0,1,1,0,0,0,1,0,0,0,0
+static const uint8_t tia_poly5[31] = {
+    0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,
+    1,1,0,1,1,1,0,1,0,1,0,0,0,0,1
+};
+static const uint8_t tia_div31[31] = {
+    0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,0,0,0
 };
 
 static unsigned poly4_bit(unsigned channel) {
@@ -38,7 +43,7 @@ static unsigned poly4_bit(unsigned channel) {
 }
 
 static unsigned poly5_bit(unsigned channel) {
-    return tia_poly5[poly5[channel] & 31u];
+    return tia_poly5[poly5[channel]];
 }
 
 static unsigned poly9_bit(unsigned channel) {
@@ -150,14 +155,15 @@ static unsigned channel_mix(TiaTone *t) {
     }
     t->divider = t->divider_max;
 
-    poly5[channel] = (poly5[channel] + 1u) & 31u;
+    if (++poly5[channel] == sizeof(tia_poly5))
+        poly5[channel] = 0;
     unsigned clocked = 1;
     if ((t->control & 2u) == 0)
         clocked = 1;
     else if ((t->control & 1u) == 0)
-        clocked = poly5[channel] & 1u;
+        clocked = tia_div31[poly5[channel]];
     else
-        clocked = poly5[channel] == 0 || poly5_bit(channel);
+        clocked = (t->control & poly5_bit(channel)) != 0;
 
     if (!clocked)
         return t->volume ? t->phase : 0;
@@ -171,7 +177,8 @@ static unsigned channel_mix(TiaTone *t) {
             return poly9_bit(channel) ? t->volume : 0;
         return poly5_bit(channel) ? t->volume : 0;
     }
-    poly4[channel] = (poly4[channel] + 1u) & 15u;
+    if (++poly4[channel] == sizeof(tia_poly4))
+        poly4[channel] = 0;
     return poly4_bit(channel) ? t->volume : 0;
 }
 
