@@ -3,8 +3,10 @@
 *.elf
 *.gba
 *.map
-# Latest generated Atari plugin build
+# Latest generated Atari plugin build is intentionally versioned.
 /candidate/
+!/candidate/
+!/candidate/a26.gba
 work/
 build/
 fixture-*.png
