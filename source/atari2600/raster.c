@@ -569,6 +569,7 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 	int uct=0;
 	int pending_unified_count=unified_count;
 	BYTE pad=0;
+	BYTE ctrlpf;
 	unsigned int tv_ptr;
 #ifdef A26_MODE4_RENDER
 	BYTE dirty_pairs[81];
@@ -586,17 +587,19 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 	
 	/* Use starting changes */
 	while(uct < pending_unified_count && unified[uct].x<0)
-	
 	use_unified_change(&unified[uct++]);
+	ctrlpf=tiaWrite[CTRLPF];
 
 	for(i=0; i< tv_width; i++) {
 
-	if(uct < pending_unified_count && unified[uct].x==i)
+	if(uct < pending_unified_count && unified[uct].x==i) {
 		use_unified_change(&unified[uct++]);
+		ctrlpf=tiaWrite[CTRLPF];
+	}
 	if (coltable[colvect[i]]) set_collisions(colvect[i]);
-	if(tiaWrite[CTRLPF] & 0x04) {
+	if(ctrlpf & 0x04) {
 		if(colvect[i] & (BL_MASK | PF_MASK)) {
-			if (tiaWrite[CTRLPF] & 0x02) {
+			if (ctrlpf & 0x02) {
 				pad=pl[0].col;
 				if (i > 79) pad=pl[1].col;
 			}
@@ -619,7 +622,7 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 			pad=pl[1].col;
 		else if(colvect[i] & (BL_MASK | PF_MASK)) {
 			if(colvect[i] & (BL_MASK | PF_MASK)) {
-				if (tiaWrite[CTRLPF] & 0x02) {
+				if (ctrlpf & 0x02) {
 					pad=pl[0].col;
 					if (i > 79) pad=pl[1].col;
 				}
