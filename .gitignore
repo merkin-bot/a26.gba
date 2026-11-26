@@ -3,6 +3,8 @@
 *.elf
 *.gba
 *.map
+# Latest generated Atari plugin build
+/candidate/
 work/
 build/
 fixture-*.png
