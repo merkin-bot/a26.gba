@@ -9,7 +9,7 @@ On a cold start, saying “Read AGENTS.md” is sufficient. Follow the instructi
 
 ## Current checkpoint
 
-- Current task and next action: `PROGRESS.md` §1.
+- Current task and next action: `PROGRESS.md` §1. The token-limit raster fast-path candidate was rebuilt and measured on 2026-11-26; it had no measured gain and has been reverted.
 - Build environment and exact commands: `WORKSPACE.md`.
 - Card profiles and harness evidence: `harnesses/cards.json`, `harnesses/README.md`, `docs/provenance/`.
 - Latest commit and verified/unverified results: run `git log`; see `PROGRESS.md`.
