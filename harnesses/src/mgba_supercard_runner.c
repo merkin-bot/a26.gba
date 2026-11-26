@@ -24,6 +24,41 @@ typedef struct SuperCardKeyEvent {
     uint32_t mask;
 } SuperCardKeyEvent;
 
+#define GUEST_PC_PROFILE_SLOTS 4096u
+typedef struct GuestPcSample {
+    uint32_t pc;
+    uint64_t samples;
+} GuestPcSample;
+
+static GuestPcSample guest_pc_profile[GUEST_PC_PROFILE_SLOTS];
+
+static void guest_pc_sample(uint32_t pc) {
+    unsigned slot=(pc ^ (pc >> 11) ^ (pc >> 19)) & (GUEST_PC_PROFILE_SLOTS-1u);
+    for(unsigned probe=0;probe<GUEST_PC_PROFILE_SLOTS;++probe) {
+        GuestPcSample *entry=&guest_pc_profile[(slot+probe)&(GUEST_PC_PROFILE_SLOTS-1u)];
+        if(!entry->samples || entry->pc==pc) {
+            entry->pc=pc;
+            ++entry->samples;
+            return;
+        }
+    }
+}
+
+static void guest_pc_report(void) {
+    for(unsigned rank=0;rank<24;++rank) {
+        unsigned best=GUEST_PC_PROFILE_SLOTS;
+        for(unsigned i=0;i<GUEST_PC_PROFILE_SLOTS;++i) {
+            if(guest_pc_profile[i].samples &&
+               (best==GUEST_PC_PROFILE_SLOTS ||
+                guest_pc_profile[i].samples>guest_pc_profile[best].samples)) best=i;
+        }
+        if(best==GUEST_PC_PROFILE_SLOTS) break;
+        printf("guest_pc_sample rank=%u pc=0x%08" PRIX32 " samples=%" PRIu64 "\n",
+               rank+1u,guest_pc_profile[best].pc,guest_pc_profile[best].samples);
+        guest_pc_profile[best].samples=0;
+    }
+}
+
 static void quiet_log(struct mLogger *logger, int category,
                       enum mLogLevel level, const char *format, va_list args) {
     (void) logger;
@@ -73,6 +108,15 @@ static uint32_t read_le32(const uint8_t *memory, unsigned offset) {
            ((uint32_t)memory[offset + 1u] << 8) |
            ((uint32_t)memory[offset + 2u] << 16) |
            ((uint32_t)memory[offset + 3u] << 24);
+}
+
+static uint64_t hash_bytes(const uint8_t *memory, unsigned offset, size_t length) {
+    uint64_t hash=UINT64_C(14695981039346656037);
+    for(size_t i=0;i<length;++i) {
+        hash^=memory[offset+i];
+        hash*=UINT64_C(1099511628211);
+    }
+    return hash;
 }
 
 static unsigned env_offset(const char *name, unsigned fallback) {
@@ -453,6 +497,18 @@ int main(int argc, char **argv) {
     int trace_pc_frames = getenv("A26_TRACE_PC_FRAMES") != NULL;
     int trace_reset_tail = getenv("A26_TRACE_RESET_TAIL") != NULL;
     int trace_atari_globals = getenv("A26_TRACE_ATARI_GLOBALS") != NULL;
+    int profile_guest_pc = getenv("A26_PROFILE_GUEST_PC") != NULL;
+    int trace_atari_state = getenv("A26_TRACE_ATARI_STATE") != NULL;
+    unsigned atari_ram_offset=env_offset("A26_ATARI_RAM_OFFSET",0x65B0u);
+    unsigned atari_tia_read_offset=env_offset("A26_ATARI_TIA_READ_OFFSET",0x64A0u);
+    unsigned atari_tia_write_offset=env_offset("A26_ATARI_TIA_WRITE_OFFSET",0x6938u);
+    unsigned atari_riot_read_offset=env_offset("A26_ATARI_RIOT_READ_OFFSET",0x664Cu);
+    unsigned atari_riot_write_offset=env_offset("A26_ATARI_RIOT_WRITE_OFFSET",0x7984u);
+    unsigned atari_a_offset=env_offset("A26_ATARI_A_OFFSET",0x5F4Cu);
+    unsigned atari_x_offset=env_offset("A26_ATARI_X_OFFSET",0x5F62u);
+    unsigned atari_y_offset=env_offset("A26_ATARI_Y_OFFSET",0x5F40u);
+    unsigned atari_sp_offset=env_offset("A26_ATARI_SP_OFFSET",0x5F64u);
+    unsigned atari_sr_offset=env_offset("A26_ATARI_SR_OFFSET",0x5F63u);
     unsigned long atari_trace_interval = 0;
     const char *atari_interval_text = getenv("A26_TRACE_ATARI_INTERVAL");
     if (trace_atari_globals) {
@@ -504,6 +560,7 @@ int main(int argc, char **argv) {
     uint32_t atari_last_tv_counter = 0;
     uint64_t atari_display_calls = 0;
     uint64_t atari_rendered_calls = 0;
+    uint32_t guest_pc_steps = 0;
     uint32_t min_atari_iwram_sp = UINT32_MAX;
     for (unsigned long i = 0; i < frames; ++i) {
         uint32_t keys = 0;
@@ -518,7 +575,17 @@ int main(int argc, char **argv) {
             uint32_t frame_before = core->frameCounter(core);
             const uint8_t *iwram = (const uint8_t *)gba->memory.iwram;
             while (core->frameCounter(core) == frame_before) {
-                core->runLoop(core);
+                if(profile_guest_pc) {
+                    int32_t sampled_pc=-1;
+                    uint32_t sample_tv=read_le32(iwram,atari_tv_counter_offset);
+                    if(atari_measurement_started && sample_tv<stop_atari_tv_counter &&
+                       (++guest_pc_steps & 31u)==0 &&
+                       core->readRegister(core,"pc",&sampled_pc))
+                        guest_pc_sample((uint32_t)sampled_pc);
+                    core->step(core);
+                } else {
+                    core->runLoop(core);
+                }
                 int32_t stop_pc = -1;
                 int32_t atari_pc = (int32_t)(read_le32(
                     iwram, atari_pc_offset) & 0xFFFFu);
@@ -539,6 +606,8 @@ int main(int argc, char **argv) {
                            i + 1u,
                            atari_start_cycles - gba_cycles_start,
                            (uint32_t)atari_pc, atari_clk, atari_tv_counter);
+                    if(trace_atari_state) printf("atari_video_state edge=start bscreen=%016" PRIX64 " vram=%016" PRIX64 "\n", hash_bytes((const uint8_t*)gba->memory.wram,0,62000), hash_bytes((const uint8_t*)gba->video.vram,0,0x18000));
+                    if(trace_atari_state) printf("atari_state edge=start ram=%016" PRIX64 " tia_read=%016" PRIX64 " tia_write=%016" PRIX64 " riot_read=%016" PRIX64 " riot_write=%016" PRIX64 " A=%02" PRIX32 " X=%02" PRIX32 " Y=%02" PRIX32 " SP=%02" PRIX32 " SR=%02" PRIX32 "\n", hash_bytes(iwram,atari_ram_offset,128), hash_bytes(iwram,atari_tia_read_offset,14), hash_bytes(iwram,atari_tia_write_offset,45), hash_bytes(iwram,atari_riot_read_offset,0x298), hash_bytes(iwram,atari_riot_write_offset,0x298), read_le32(iwram,atari_a_offset)&0xFFu, read_le32(iwram,atari_x_offset)&0xFFu, read_le32(iwram,atari_y_offset)&0xFFu, read_le32(iwram,atari_sp_offset)&0xFFu, read_le32(iwram,atari_sr_offset)&0xFFu);
                 }
                 if (!precise_atari_stop && atari_measurement_started &&
                     core->readRegister(core, "pc", &stop_pc) &&
@@ -558,6 +627,8 @@ int main(int argc, char **argv) {
                            read_le32(iwram, atari_tv_counter_offset),
                            read_le32(iwram, atari_ebeamy_offset),
                            read_le32(iwram, atari_pace_offset));
+                    if(trace_atari_state) printf("atari_video_state edge=stop bscreen=%016" PRIX64 " vram=%016" PRIX64 "\n", hash_bytes((const uint8_t*)gba->memory.wram,0,62000), hash_bytes((const uint8_t*)gba->video.vram,0,0x18000));
+                    if(trace_atari_state) printf("atari_state edge=stop ram=%016" PRIX64 " tia_read=%016" PRIX64 " tia_write=%016" PRIX64 " riot_read=%016" PRIX64 " riot_write=%016" PRIX64 " A=%02" PRIX32 " X=%02" PRIX32 " Y=%02" PRIX32 " SP=%02" PRIX32 " SR=%02" PRIX32 "\n", hash_bytes(iwram,atari_ram_offset,128), hash_bytes(iwram,atari_tia_read_offset,14), hash_bytes(iwram,atari_tia_write_offset,45), hash_bytes(iwram,atari_riot_read_offset,0x298), hash_bytes(iwram,atari_riot_write_offset,0x298), read_le32(iwram,atari_a_offset)&0xFFu, read_le32(iwram,atari_x_offset)&0xFFu, read_le32(iwram,atari_y_offset)&0xFFu, read_le32(iwram,atari_sp_offset)&0xFFu, read_le32(iwram,atari_sr_offset)&0xFFu);
                 }
             }
         } else {
@@ -849,6 +920,7 @@ int main(int argc, char **argv) {
     core->readRegister(core, "r2", &r2);
     core->readRegister(core, "r3", &r3);
     core->readRegister(core, "lr", &lr);
+    if(profile_guest_pc) guest_pc_report();
     printf("mGBA platform=GBA requested_frames=%lu frame_counter_delta=%" PRIu32
            " pc=%s0x%08" PRIX32 " r0=%08" PRIX32 " r1=%08" PRIX32
            " r2=%08" PRIX32 " r3=%08" PRIX32 " lr=%08" PRIX32

@@ -563,7 +563,7 @@ void reset_vector(void)
 
 /* draw the collision vector */
 
-void draw_vector1(void)
+void __attribute__((section(".iwram"))) draw_vector1(void)
 {
 	int i;
 	int uct=0;
