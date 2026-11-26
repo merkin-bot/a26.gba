@@ -535,6 +535,8 @@ int main(int argc, char **argv) {
     unsigned atari_vbeam_offset = env_offset("A26_ATARI_VBEAM_OFFSET", 0x6904u);
     unsigned atari_pace_offset = env_offset("A26_ATARI_PACE_OFFSET", 0x7EE0u);
     unsigned long stop_atari_tv_counter = 0;
+    uint32_t stop_atari_cpu_pc=env_u32("A26_STOP_ATARI_CPU_PC",0);
+    uint32_t stop_atari_clk=env_u32("A26_STOP_ATARI_CLK",0);
     const char *stop_tv_text = getenv("A26_STOP_ATARI_TV_COUNTER");
     if (stop_tv_text && *stop_tv_text) {
         char *end = NULL;
@@ -627,7 +629,9 @@ int main(int argc, char **argv) {
                     core->readRegister(core, "pc", &stop_pc) &&
                     strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0 &&
                     read_le32(iwram, atari_tv_counter_offset) >=
-                        stop_atari_tv_counter) {
+                        stop_atari_tv_counter &&
+                    (!stop_atari_cpu_pc || atari_pc==stop_atari_cpu_pc) &&
+                    (!stop_atari_clk || atari_clk>=stop_atari_clk)) {
                     precise_atari_stop = 1;
                     atari_stop_cycles = gba_now - atari_start_cycles;
                     printf("atari_stop precise=1 frame=%lu gba_cycles=%" PRIu32

@@ -567,6 +567,7 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 {
 	int i;
 	int uct=0;
+	int pending_unified_count=unified_count;
 	BYTE pad=0;
 	unsigned int tv_ptr;
 
@@ -574,13 +575,13 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 	else tv_ptr=line_ptr;
 	
 	/* Use starting changes */
-	while(uct < unified_count && unified[uct].x<0)
+	while(uct < pending_unified_count && unified[uct].x<0)
 	
 	use_unified_change(&unified[uct++]);
 
 	for(i=0; i< tv_width; i++) {
 
-	if(uct < unified_count && unified[uct].x==i)
+	if(uct < pending_unified_count && unified[uct].x==i)
 		use_unified_change(&unified[uct++]);
 	if (coltable[colvect[i]]) set_collisions(colvect[i]);
 	if(tiaWrite[CTRLPF] & 0x04) {
@@ -628,7 +629,7 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 		}
 	tv_ptr++;
 	}
-	while(uct < unified_count)
+	while(uct < pending_unified_count)
 	use_unified_change(&unified[uct++]);
 	unified_count=0;
 }
