@@ -661,6 +661,8 @@ int main(int argc, char **argv) {
                         const uint8_t *cache=(const uint8_t*)gba->memory.wram;
                         const uint8_t *indices=(const uint8_t*)gba->video.vram;
                         unsigned cache_mismatches=0,scanout_mismatches=0;
+                        unsigned first_x=UINT32_MAX,first_y=UINT32_MAX;
+                        mColor first_expected=0,first_actual=0;
                         unsigned width=0,height=0;
                         const void *pixels=NULL;
                         size_t stride=0;
@@ -674,14 +676,22 @@ int main(int argc, char **argv) {
                                 for(unsigned x=0;x<width;++x) {
                                     unsigned pixel=y*width+x;
                                     mColor expected=mColorFrom555(gba->video.palette[indices[pixel]]);
-                                    scanout_mismatches+=((row[x]&0x00FFFFFFu)!=expected);
+                                    if((row[x]&0x00FFFFFFu)!=expected) {
+                                        if(first_x==UINT32_MAX) {
+                                            first_x=x; first_y=y;
+                                            first_expected=expected;
+                                            first_actual=row[x]&0x00FFFFFFu;
+                                        }
+                                        scanout_mismatches++;
+                                    }
                                 }
                             }
                         } else {
                             scanout_mismatches=UINT32_MAX;
                         }
-                        printf("atari_indexed_video edge=stop pixels=%u cache_mismatches=%u scanout_mismatches=%u\n",
-                               240u*160u,cache_mismatches,scanout_mismatches);
+                        printf("atari_indexed_video edge=stop pixels=%u cache_mismatches=%u scanout_mismatches=%u first_x=%u first_y=%u expected=%08" PRIX32 " actual=%08" PRIX32 "\n",
+                               240u*160u,cache_mismatches,scanout_mismatches,
+                               first_x,first_y,(uint32_t)first_expected,(uint32_t)first_actual);
                         if(pixels && width==240u && height==160u && stride>=width) {
                             const mColor *row=(const mColor*)pixels+25u*stride;
                             unsigned pixel=25u*240u+35u;
