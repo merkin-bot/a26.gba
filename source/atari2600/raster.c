@@ -570,9 +570,19 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 	int pending_unified_count=unified_count;
 	BYTE pad=0;
 	unsigned int tv_ptr;
+#ifdef A26_MODE4_RENDER
+	BYTE dirty_pairs[81];
+	unsigned int mode4_line_base;
+	unsigned int pair_index;
+	unsigned int dirty_pair_count=0;
+	unsigned int last_dirty_pair=81;
+#endif
 
 	if ( squash) tv_ptr=line_ptr+240*25;
 	else tv_ptr=line_ptr;
+#ifdef A26_MODE4_RENDER
+	mode4_line_base=tv_ptr-35;
+#endif
 	
 	/* Use starting changes */
 	while(uct < pending_unified_count && unified[uct].x<0)
@@ -625,10 +635,25 @@ void __attribute__((section(".iwram"))) draw_vector1(void)
 
 	if ( bscreen[tv_ptr]!=pad) {
 		bscreen[tv_ptr]=pad;
+#ifdef A26_MODE4_RENDER
+		pair_index=(i+1)>>1;
+		if(pair_index!=last_dirty_pair) {
+			dirty_pairs[dirty_pair_count++]=(BYTE)pair_index;
+			last_dirty_pair=pair_index;
+		}
+#else
 		screen[tv_ptr]=color[pad];
+#endif
 		}
 	tv_ptr++;
 	}
+#ifdef A26_MODE4_RENDER
+	for(pair_index=0;pair_index<dirty_pair_count;pair_index++) {
+		unsigned int pixel=mode4_line_base+34+((unsigned int)dirty_pairs[pair_index]<<1);
+		((volatile u16 *)0x06000000)[pixel>>1]=
+			(u16)bscreen[pixel] | ((u16)bscreen[pixel+1]<<8);
+	}
+#endif
 	while(uct < pending_unified_count)
 	use_unified_change(&unified[uct++]);
 	unified_count=0;

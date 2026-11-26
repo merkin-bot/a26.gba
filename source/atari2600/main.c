@@ -60,7 +60,11 @@ int main(void)
 {
 //	int i;
 	char file[50];
-	SetMode(MODE_3 | BG2_ENABLE); // Sets the screen to mode 3 [a 240*160 array of 15-bit colors [5 bits per R,G,B = 0-31 each]], turns on background 2 [the only one accessible in bitmap mode], turns on sprites, sets sprites access mode to 1d 
+#ifdef A26_MODE4_RENDER
+	SetMode(MODE_4 | BG2_ENABLE);
+#else
+	SetMode(MODE_3 | BG2_ENABLE); // 240x160 direct-color bitmap.
+#endif
 	
 //	char attr[50],val[50];
 //	char *p;

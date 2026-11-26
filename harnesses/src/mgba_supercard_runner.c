@@ -508,6 +508,7 @@ int main(int argc, char **argv) {
     int trace_atari_start = getenv("A26_TRACE_ATARI_START") != NULL;
     int profile_guest_pc = getenv("A26_PROFILE_GUEST_PC") != NULL;
     int trace_atari_state = getenv("A26_TRACE_ATARI_STATE") != NULL;
+    int trace_indexed_video = getenv("A26_TRACE_ATARI_INDEXED_VIDEO") != NULL;
     unsigned atari_ram_offset=env_offset("A26_ATARI_RAM_OFFSET",0x65B0u);
     unsigned atari_tia_read_offset=env_offset("A26_ATARI_TIA_READ_OFFSET",0x64A0u);
     unsigned atari_tia_write_offset=env_offset("A26_ATARI_TIA_WRITE_OFFSET",0x6938u);
@@ -656,6 +657,40 @@ int main(int argc, char **argv) {
                            read_le32(iwram, atari_ebeamy_offset),
                            read_le32(iwram, atari_pace_offset));
                     if(trace_atari_state) printf("atari_video_state edge=stop bscreen=%016" PRIX64 " vram=%016" PRIX64 "\n", hash_bytes((const uint8_t*)gba->memory.wram,0,62000), hash_bytes((const uint8_t*)gba->video.vram,0,0x18000));
+                    if(trace_indexed_video) {
+                        const uint8_t *cache=(const uint8_t*)gba->memory.wram;
+                        const uint8_t *indices=(const uint8_t*)gba->video.vram;
+                        unsigned cache_mismatches=0,scanout_mismatches=0;
+                        unsigned width=0,height=0;
+                        const void *pixels=NULL;
+                        size_t stride=0;
+                        core->currentVideoSize(core,&width,&height);
+                        core->getPixels(core,&pixels,&stride);
+                        for(unsigned pixel=0;pixel<240u*160u;++pixel)
+                            cache_mismatches+=(cache[pixel]!=indices[pixel]);
+                        if(pixels && width==240u && height==160u && stride>=width) {
+                            for(unsigned y=0;y<height;++y) {
+                                const mColor *row=(const mColor*)pixels+y*stride;
+                                for(unsigned x=0;x<width;++x) {
+                                    unsigned pixel=y*width+x;
+                                    mColor expected=mColorFrom555(gba->video.palette[indices[pixel]]);
+                                    scanout_mismatches+=((row[x]&0x00FFFFFFu)!=expected);
+                                }
+                            }
+                        } else {
+                            scanout_mismatches=UINT32_MAX;
+                        }
+                        printf("atari_indexed_video edge=stop pixels=%u cache_mismatches=%u scanout_mismatches=%u\n",
+                               240u*160u,cache_mismatches,scanout_mismatches);
+                        if(pixels && width==240u && height==160u && stride>=width) {
+                            const mColor *row=(const mColor*)pixels+25u*stride;
+                            unsigned pixel=25u*240u+35u;
+                            printf("atari_indexed_video_sample x=35 y=25 index=%u palette=%04X expected=%08" PRIX32 " actual=%08" PRIX32 "\n",
+                                   indices[pixel],gba->video.palette[indices[pixel]],
+                                   (uint32_t)mColorFrom555(gba->video.palette[indices[pixel]]),
+                                   (uint32_t)row[35]);
+                        }
+                    }
                     if(trace_atari_state) printf("atari_state edge=stop ram=%016" PRIX64 " tia_read=%016" PRIX64 " tia_write=%016" PRIX64 " riot_read=%016" PRIX64 " riot_write=%016" PRIX64 " A=%02" PRIX32 " X=%02" PRIX32 " Y=%02" PRIX32 " SP=%02" PRIX32 " SR=%02" PRIX32 "\n", hash_bytes(iwram,atari_ram_offset,128), hash_bytes(iwram,atari_tia_read_offset,14), hash_bytes(iwram,atari_tia_write_offset,45), hash_bytes(iwram,atari_riot_read_offset,0x298), hash_bytes(iwram,atari_riot_write_offset,0x298), read_le32(iwram,atari_a_offset)&0xFFu, read_le32(iwram,atari_x_offset)&0xFFu, read_le32(iwram,atari_y_offset)&0xFFu, read_le32(iwram,atari_sp_offset)&0xFFu, read_le32(iwram,atari_sr_offset)&0xFFu);
                 }
             }

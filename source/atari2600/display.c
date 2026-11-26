@@ -67,6 +67,9 @@ void set_palette(int index,BYTE red,BYTE green,BYTE blue)
 {
 //color[index]=colortable[index];
 color[index]=RGB(red, green, blue);
+#ifdef A26_MODE4_RENDER
+	((volatile u16 *)0x05000000)[index]=(u16)color[index];
+#endif
 //color[index]=red<<10 | blue<<5 | green;
 /*	outportb(0x3c6,0xff);
 	outportb(0x3c8,index);
