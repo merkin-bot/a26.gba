@@ -129,6 +129,14 @@ static unsigned env_offset(const char *name, unsigned fallback) {
     return end && !*end && value <= 0x7FFCu ? (unsigned)value : fallback;
 }
 
+static uint32_t env_u32(const char *name, uint32_t fallback) {
+    const char *text=getenv(name);
+    if(!text || !*text) return fallback;
+    char *end=NULL;
+    unsigned long value=strtoul(text,&end,0);
+    return end && !*end && value<=UINT32_MAX ? (uint32_t)value : fallback;
+}
+
 static int capture_frame(struct mCore *core, const char *path,
                          uint64_t *hash_out, unsigned *width_out,
                          unsigned *height_out) {
@@ -537,6 +545,8 @@ int main(int argc, char **argv) {
     }
     unsigned long start_atari_tv_counter = 0;
     const char *start_tv_text = getenv("A26_START_ATARI_TV_COUNTER");
+    uint32_t start_atari_cpu_pc=env_u32("A26_START_ATARI_CPU_PC",0);
+    uint32_t start_atari_clk=env_u32("A26_START_ATARI_CLK",0);
     if (start_tv_text && *start_tv_text) {
         char *end = NULL;
         unsigned long value = strtoul(start_tv_text, &end, 0);
@@ -596,6 +606,9 @@ int main(int argc, char **argv) {
                 if (!atari_measurement_started &&
                     start_atari_tv_counter &&
                     atari_tv_counter >= start_atari_tv_counter &&
+                    atari_pc >= 0xF000u &&
+                    (!start_atari_cpu_pc || atari_pc==start_atari_cpu_pc) &&
+                    (!start_atari_clk || atari_clk>=start_atari_clk) &&
                     core->readRegister(core, "pc", &stop_pc) &&
                     strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0) {
                     atari_measurement_started = 1;
@@ -610,6 +623,7 @@ int main(int argc, char **argv) {
                     if(trace_atari_state) printf("atari_state edge=start ram=%016" PRIX64 " tia_read=%016" PRIX64 " tia_write=%016" PRIX64 " riot_read=%016" PRIX64 " riot_write=%016" PRIX64 " A=%02" PRIX32 " X=%02" PRIX32 " Y=%02" PRIX32 " SP=%02" PRIX32 " SR=%02" PRIX32 "\n", hash_bytes(iwram,atari_ram_offset,128), hash_bytes(iwram,atari_tia_read_offset,14), hash_bytes(iwram,atari_tia_write_offset,45), hash_bytes(iwram,atari_riot_read_offset,0x298), hash_bytes(iwram,atari_riot_write_offset,0x298), read_le32(iwram,atari_a_offset)&0xFFu, read_le32(iwram,atari_x_offset)&0xFFu, read_le32(iwram,atari_y_offset)&0xFFu, read_le32(iwram,atari_sp_offset)&0xFFu, read_le32(iwram,atari_sr_offset)&0xFFu);
                 }
                 if (!precise_atari_stop && atari_measurement_started &&
+                    atari_pc >= 0xF000u &&
                     core->readRegister(core, "pc", &stop_pc) &&
                     strcmp(pc_region((uint32_t)stop_pc), "cartridge") == 0 &&
                     read_le32(iwram, atari_tv_counter_offset) >=
